@@ -1,0 +1,49 @@
+type: Microsoft.App/containerApps
+identity:
+  type: 'UserAssigned'
+  userAssignedIdentities: {
+     {{userAssignedIdentity}}
+  }
+properties:
+  managedEnvironmentId: {{managedEnvironmentId}}
+  configuration:
+    ingress:
+      external: false
+      allowInsecure: false
+      targetPort: 8080
+      traffic:
+        - latestRevision: true
+          weight: 100
+      transport: Auto
+    registries:
+      - server: {{acrName}}.azurecr.io
+        identity: {{userAssignedIdentity}}
+    secrets:
+      - name: ado-pat
+        keyVaultUrl: https://{{keyvaultName}}.vault.azure.net/secrets/ADO-PAT
+        identity: {{userAssignedIdentity}}
+  template:
+    containers:
+      - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
+        name: {{imageRepoName}}
+        env:
+          - name: ASPNETCORE_ENVIRONMENT
+            value: "Development"
+          - name: Logging__LogLevel__Default
+            value: "Information"
+          - name: Logging__LogLevel__Microsoft.AspNetCore
+            value: "Warning"
+          - name: AdpAdoProject__Name
+            value: "DEFRA-FFC"
+          - name: Ado__OrganizationUrl
+            value: "https://dev.azure.com/defragovuk"
+          - name: Ado__UsePatToken
+            value: true
+          - name: Ado__PatToken
+            secretRef: ado-pat
+        resources:
+          cpu: 0.5
+          memory: 1Gi
+    scale:
+      minReplicas: 1
+      maxReplicas: 3  

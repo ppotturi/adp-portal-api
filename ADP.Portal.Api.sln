@@ -1,0 +1,63 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.8.34408.163
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{96D7E03D-EB83-46B9-8C18-B3FD2886C742}"
+	ProjectSection(SolutionItems) = preProject
+		src\.dockerignore = src\.dockerignore
+		src\Dockerfile = src\Dockerfile
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADP.Portal.Api", "src\ADP.Portal.Api\ADP.Portal.Api.csproj", "{9BBBBB95-849F-49B2-B387-6DC6F4A567EC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADP.Portal.Core", "src\ADP.Portal.Core\ADP.Portal.Core.csproj", "{ECEFC306-07C3-461A-A996-54F9E87BE682}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{00227A2B-A8A9-45EF-BDC7-4FD7C9FA962D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADP.Portal.Core.Tests", "test\ADP.Portal.Core.Tests\ADP.Portal.Core.Tests.csproj", "{D21A94F8-A73F-486C-8D87-F85B17ADB815}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".azuredevops", ".azuredevops", "{E621FA50-64ED-4745-821A-C52B68571D07}"
+	ProjectSection(SolutionItems) = preProject
+		.azuredevops\build.yaml = .azuredevops\build.yaml
+		.azuredevops\containerApp.yaml = .azuredevops\containerApp.yaml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADP.Portal.Api.Tests", "test\ADP.Portal.Api.Tests\ADP.Portal.Api.Tests.csproj", "{FCAE5020-5130-4FA8-8684-72EC6AE8C963}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9BBBBB95-849F-49B2-B387-6DC6F4A567EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9BBBBB95-849F-49B2-B387-6DC6F4A567EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9BBBBB95-849F-49B2-B387-6DC6F4A567EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9BBBBB95-849F-49B2-B387-6DC6F4A567EC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECEFC306-07C3-461A-A996-54F9E87BE682}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECEFC306-07C3-461A-A996-54F9E87BE682}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECEFC306-07C3-461A-A996-54F9E87BE682}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECEFC306-07C3-461A-A996-54F9E87BE682}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D21A94F8-A73F-486C-8D87-F85B17ADB815}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D21A94F8-A73F-486C-8D87-F85B17ADB815}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D21A94F8-A73F-486C-8D87-F85B17ADB815}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D21A94F8-A73F-486C-8D87-F85B17ADB815}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FCAE5020-5130-4FA8-8684-72EC6AE8C963}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FCAE5020-5130-4FA8-8684-72EC6AE8C963}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FCAE5020-5130-4FA8-8684-72EC6AE8C963}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FCAE5020-5130-4FA8-8684-72EC6AE8C963}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9BBBBB95-849F-49B2-B387-6DC6F4A567EC} = {96D7E03D-EB83-46B9-8C18-B3FD2886C742}
+		{ECEFC306-07C3-461A-A996-54F9E87BE682} = {96D7E03D-EB83-46B9-8C18-B3FD2886C742}
+		{D21A94F8-A73F-486C-8D87-F85B17ADB815} = {00227A2B-A8A9-45EF-BDC7-4FD7C9FA962D}
+		{FCAE5020-5130-4FA8-8684-72EC6AE8C963} = {00227A2B-A8A9-45EF-BDC7-4FD7C9FA962D}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3C3F4704-43A3-40AD-96B3-D4F93227562B}
+	EndGlobalSection
+EndGlobal

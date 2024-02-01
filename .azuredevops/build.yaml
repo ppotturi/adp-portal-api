@@ -1,0 +1,52 @@
+parameters:
+  - name: deployFromFeature
+    displayName: "Deploy from Feature Branch"
+    type: boolean
+    default: false
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    exclude:
+      - test-output/*
+      - bin/*
+      - obj/*
+  drafts: false
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - "main"
+  paths:
+    exclude:
+      - test-output/*
+      - bin/*
+      - obj/*
+
+resources:
+  repositories:
+    - repository: DEFRA-ADPPipelineCommon
+      name: DEFRA/adp-pipeline-common
+      endpoint: DEFRA
+      type: github
+      ref: main
+
+extends:
+  template: /pipelines/common-aca-app-build.yaml@DEFRA-ADPPipelineCommon
+  parameters:
+    deployFromFeature: ${{ parameters.deployFromFeature }}
+    privateAgentName: ''
+    containerAppName: 'SSVADPINFCA3402-portal-api'
+    appBuildConfig:
+      appFrameworkType: "dotnet"
+      frameworkVersion: "8.x"   
+      imageRepoName: "adp-portal-api"
+      appPath: "/src"
+      projectPath: "./ADP.Portal.Api/ADP.Portal.Api.csproj"
+      buildProjects: "**/ADP.Portal.Api.csproj"
+      testProjects: "**/*Tests.csproj"
+      dockerfilePath: "../src/Dockerfile"
+    appDeployConfig:
+      filepath: ".azuredevops/containerApp.yaml"  
