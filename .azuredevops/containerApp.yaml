@@ -22,6 +22,9 @@ properties:
       - name: ado-pat
         keyVaultUrl: https://{{keyvaultName}}.vault.azure.net/secrets/ADO-PAT
         identity: {{userAssignedIdentity}}
+      - name: clientsecret
+        keyVaultUrl: https://{{keyvaultName}}.vault.azure.net/secrets/adp-portal-api-ClientSecret
+        identity: {{userAssignedIdentity}}
   template:
     containers:
       - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
@@ -41,6 +44,16 @@ properties:
             value: true
           - name: Ado__PatToken
             secretRef: ado-pat
+
+          - name: AzureAd__TenantId
+            value: {{tenantid}}            
+          - name: AzureAd__ClientId
+            value: {{clientid}}
+          - name: AzureAd__ClientSecret
+            secretRef: clientsecret
+          - name: AADGroups__GroupId
+            value: {{groupid}}              
+
         resources:
           cpu: 0.5
           memory: 1Gi

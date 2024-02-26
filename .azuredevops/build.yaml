@@ -31,14 +31,14 @@ resources:
       name: DEFRA/adp-pipeline-common
       endpoint: DEFRA
       type: github
-      ref: main
+      ref: main  
 
 extends:
   template: /pipelines/common-aca-app-build.yaml@DEFRA-ADPPipelineCommon
   parameters:
     deployFromFeature: ${{ parameters.deployFromFeature }}
     privateAgentName: ''
-    containerAppName: 'SSVADPINFCA3402-portal-api'
+    containerAppName: 'ssvadpinfca3402-portal-api'
     appBuildConfig:
       appFrameworkType: "dotnet"
       frameworkVersion: "8.x"   
@@ -50,3 +50,8 @@ extends:
       dockerfilePath: "../src/Dockerfile"
     appDeployConfig:
       filepath: ".azuredevops/containerApp.yaml"  
+      variableGroups: 
+        - adp-portal-api-ssv3
+        - adp-portal-api-ssv5
+      variables:   
+        - adp-portal-api-ClientSecret

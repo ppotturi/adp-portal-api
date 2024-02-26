@@ -3,6 +3,7 @@ using ADP.Portal.Core.Ado.Infrastructure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Graph;
 using NUnit.Framework;
 
 namespace ADP.Portal.Api.Tests
@@ -11,7 +12,6 @@ namespace ADP.Portal.Api.Tests
     public class ProgramTests
     {
     
-
         [Test]
         public void TestConfigureApp()
         {
@@ -20,10 +20,10 @@ namespace ADP.Portal.Api.Tests
             Program.ConfigureApp(builder);
 
             // Act
-            var app = builder.Build();
+            var result = builder.Build();
 
             // Assert
-            Assert.That(app, Is.Not.Null);
+            Assert.That(result, Is.Not.Null);
         }
 
         [Test]
@@ -35,10 +35,10 @@ namespace ADP.Portal.Api.Tests
 
             // Act
             var app = builder.Build();
-            var azureCredential = app.Services.GetService<IAzureCredential>();
+            var result = app.Services.GetService<IAzureCredential>();
 
             // Assert
-            Assert.That(azureCredential, Is.Not.Null);
+            Assert.That(result, Is.Not.Null);
         }
 
         [Test]
@@ -63,10 +63,40 @@ namespace ADP.Portal.Api.Tests
 
             // Act
             var app = builder.Build();
-            var vssConnection = app.Services.GetService<Task<IVssConnection>>();
+            var result = app.Services.GetService<Task<IVssConnection>>();
 
             // Assert
-            Assert.That(vssConnection, Is.Not.Null);
+            Assert.That(result, Is.Not.Null);
+        }
+
+
+        [Test]
+        public void TestGraphServiceClientResolution()
+        {
+            // Arrange
+            var builder = WebApplication.CreateBuilder();
+            KeyValuePair<string, string?>[] aadConfig =
+                [
+                   new KeyValuePair<string, string?>("AzureAd:TenantId", Guid.NewGuid().ToString()),
+                   new KeyValuePair<string, string?>("AzureAd:ClientId", Guid.NewGuid().ToString()),
+                   new KeyValuePair<string, string?>("AzureAd:ClientSecret", Guid.NewGuid().ToString())
+                ];
+
+            IEnumerable<KeyValuePair<string, string?>> aadConfigList = aadConfig;
+            var configuration = new ConfigurationBuilder()
+                .AddInMemoryCollection(aadConfigList)
+                .Build();
+
+            builder.Configuration.AddConfiguration(configuration);
+            Program.ConfigureApp(builder);
+
+
+            // Act
+            var app = builder.Build();
+            var result = app.Services.GetService<GraphServiceClient>();
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
         }
     }
 }
