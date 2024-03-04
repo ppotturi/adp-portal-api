@@ -3,7 +3,8 @@
     public class AzureAdConfig
     {
         public required string TenantId { get; set; }
-        public required string ClientId { get; set; }
-        public required string ClientSecret { get; set;}
+        public required string SpClientId { get; set; }
+        public required string SpClientSecret { get; set; }
+        public required string SpObjectId { get; set; }
     }
 }

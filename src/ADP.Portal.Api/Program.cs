@@ -7,11 +7,13 @@ using ADP.Portal.Core.Ado.Infrastructure;
 using ADP.Portal.Core.Ado.Services;
 using ADP.Portal.Core.Azure.Infrastructure;
 using ADP.Portal.Core.Azure.Services;
+using ADP.Portal.Core.Git.Infrastructure;
+using ADP.Portal.Core.Git.Jwt;
+using ADP.Portal.Core.Git.Services;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
-using System.Net.Http.Headers;
+using Octokit;
 
 namespace ADP.Portal.Api
 {
@@ -49,7 +51,7 @@ namespace ADP.Portal.Api
             builder.Services.Configure<AdoConfig>(builder.Configuration.GetSection("Ado"));
             builder.Services.Configure<AdpAdoProjectConfig>(builder.Configuration.GetSection("AdpAdoProject"));
             builder.Services.Configure<AzureAdConfig>(builder.Configuration.GetSection("AzureAd"));
-            builder.Services.Configure<AadGroupConfig>(builder.Configuration.GetSection("AADGroups"));
+            builder.Services.Configure<AdpTeamGitRepoConfig>(builder.Configuration.GetSection("AdpTeamGitRepo"));
             builder.Services.AddScoped<IAzureCredential>(provider =>
             {
                 return new DefaultAzureCredentialWrapper();
@@ -69,21 +71,50 @@ namespace ADP.Portal.Api
             builder.Services.AddScoped(provider =>
             {
                 var azureAdConfig = provider.GetRequiredService<IOptions<AzureAdConfig>>().Value;
-                var clientSecretCredential = new ClientSecretCredential(azureAdConfig.TenantId, azureAdConfig.ClientId, azureAdConfig.ClientSecret);
+                var clientSecretCredential = new ClientSecretCredential(azureAdConfig.TenantId, azureAdConfig.SpClientId, azureAdConfig.SpClientSecret);
 
-                var graphBaseUrl = "https://graph.microsoft.com/v1.0"; 
+                var graphBaseUrl = "https://graph.microsoft.com/v1.0";
 
                 return new GraphServiceClient(clientSecretCredential, graphApiDefaultScope, graphBaseUrl);
 
             });
+
+            builder.Services.AddScoped<IGitHubClient>(provider =>
+            {
+                var repoConfig = provider.GetRequiredService<IOptions<AdpTeamGitRepoConfig>>().Value;
+                return GetGitHubClient(repoConfig);
+            });
+
+            builder.Services.AddScoped<IGitOpsConfigRepository, GitOpsConfigRepository>();
+            builder.Services.AddScoped<IGitOpsConfigService, GitOpsConfigService>();
 
             builder.Services.EntitiesConfigure();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
-
         }
+
+        private static GitHubClient GetGitHubClient(AdpTeamGitRepoConfig repoConfig)
+        {
+            var gitHubAppName = repoConfig.Auth.AppName.Replace(" ", "");
+
+            var appClient = new GitHubClient(new ProductHeaderValue(gitHubAppName))
+            {
+                Credentials = new Credentials(JwtTokenHelper.CreateEncodedJwtToken(repoConfig.Auth.PrivateKeyBase64, repoConfig.Auth.AppId), AuthenticationType.Bearer)
+            };
+
+            var installations = appClient.GitHubApps.GetAllInstallationsForCurrent().Result;
+
+            var instationId = installations.First(i => i.Account.Login.Equals(repoConfig.Organisation, StringComparison.CurrentCultureIgnoreCase)).Id;
+
+            var response = appClient.GitHubApps.CreateInstallationToken(instationId).Result;
+
+            return new GitHubClient(new ProductHeaderValue($"{gitHubAppName}-{instationId}"))
+            {
+                Credentials = new Credentials(response.Token)
+            };
+        }
+
     }
 }

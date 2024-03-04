@@ -1,7 +1,6 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Wrappers;
 using ADP.Portal.Core.Ado.Infrastructure;
-using Azure.Identity;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.OAuth;
 
@@ -25,7 +24,7 @@ namespace ADP.Portal.Api.Providers
 
             if (adoConfig.UsePatToken)
             {
-                var patToken =  adoConfig.PatToken;
+                var patToken = adoConfig.PatToken;
                 connection = new VssConnectionWrapper(new Uri(adoConfig.OrganizationUrl), new VssBasicCredential(string.Empty, patToken));
             }
             else

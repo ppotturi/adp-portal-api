@@ -1,7 +1,7 @@
-﻿using Microsoft.TeamFoundation.Core.WebApi;
-using Microsoft.Extensions.Logging;
-using ADP.Portal.Core.Ado.Entities;
+﻿using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Infrastructure;
+using Microsoft.Extensions.Logging;
+using Microsoft.TeamFoundation.Core.WebApi;
 
 namespace ADP.Portal.Core.Ado.Services
 {
@@ -37,7 +37,7 @@ namespace ADP.Portal.Core.Ado.Services
 
             await adoService.ShareAgentPoolsAsync(adpProjectName, onboardProject.AgentPools, onboardProject.ProjectReference);
 
-            if(onboardProject.VariableGroups != null)
+            if (onboardProject.VariableGroups != null)
             {
                 await adoService.AddOrUpdateVariableGroupsAsync(onboardProject.VariableGroups, onboardProject.ProjectReference);
             }

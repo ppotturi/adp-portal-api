@@ -2,8 +2,8 @@
 {
     public class AdoConfig
     {
-        public required string OrganizationUrl { get; set; } 
+        public required string OrganizationUrl { get; set; }
         public required bool UsePatToken { get; set; }
-        public string? PatToken { get; set; } 
+        public string? PatToken { get; set; }
     }
 }

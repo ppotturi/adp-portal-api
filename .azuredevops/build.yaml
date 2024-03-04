@@ -39,6 +39,7 @@ extends:
     deployFromFeature: ${{ parameters.deployFromFeature }}
     privateAgentName: ''
     containerAppName: 'ssvadpinfca3402-portal-api'
+    appName: 'adp-portal-api'
     appBuildConfig:
       appFrameworkType: "dotnet"
       frameworkVersion: "8.x"   
@@ -53,5 +54,6 @@ extends:
       variableGroups: 
         - adp-portal-api-ssv3
         - adp-portal-api-ssv5
-      variables:   
-        - adp-portal-api-ClientSecret
+      variables:
+        - ADP-PORTAL-API-GITHUB-APP-ID
+        - ADP-PORTAL-API-GITHUB-PRIVATE-KEY-BASE64

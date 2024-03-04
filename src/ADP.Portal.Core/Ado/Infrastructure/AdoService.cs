@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.TeamFoundation.Core.WebApi;
-using Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi;
-using Microsoft.VisualStudio.Services.ServiceEndpoints;
-using ADP.Portal.Core.Ado.Entities;
-using Microsoft.TeamFoundation.DistributedTask.WebApi;
-using ProjectReference = Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi.ProjectReference;
-using DistributedTaskProjectReference = Microsoft.TeamFoundation.DistributedTask.WebApi.ProjectReference;
+﻿using ADP.Portal.Core.Ado.Entities;
 using Mapster;
+using Microsoft.Extensions.Logging;
+using Microsoft.TeamFoundation.Core.WebApi;
+using Microsoft.TeamFoundation.DistributedTask.WebApi;
+using Microsoft.VisualStudio.Services.ServiceEndpoints;
+using Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi;
+using DistributedTaskProjectReference = Microsoft.TeamFoundation.DistributedTask.WebApi.ProjectReference;
+using ProjectReference = Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi.ProjectReference;
 
 namespace ADP.Portal.Core.Ado.Infrastructure
 {
@@ -122,7 +122,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
 
                     await taskAgentClient.AddAgentQueueAsync(onBoardProject.Id, adpAgentQueue);
 
-                    logger.LogInformation("Agent pool {agentPool} created",agentPool);
+                    logger.LogInformation("Agent pool {agentPool} created", agentPool);
                 }
                 else
                 {

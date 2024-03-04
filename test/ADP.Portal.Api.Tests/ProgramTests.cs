@@ -78,8 +78,8 @@ namespace ADP.Portal.Api.Tests
             KeyValuePair<string, string?>[] aadConfig =
                 [
                    new KeyValuePair<string, string?>("AzureAd:TenantId", Guid.NewGuid().ToString()),
-                   new KeyValuePair<string, string?>("AzureAd:ClientId", Guid.NewGuid().ToString()),
-                   new KeyValuePair<string, string?>("AzureAd:ClientSecret", Guid.NewGuid().ToString())
+                   new KeyValuePair<string, string?>("AzureAd:SpClientId", Guid.NewGuid().ToString()),
+                   new KeyValuePair<string, string?>("AzureAd:SpClientSecret", Guid.NewGuid().ToString())
                 ];
 
             IEnumerable<KeyValuePair<string, string?>> aadConfigList = aadConfig;
