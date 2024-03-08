@@ -87,7 +87,7 @@ namespace ADP.Portal.Core.Git.Services
             return result;
         }
 
-        public async Task SyncFluxServices(string teamName, GitRepo gitRepo)
+        public async Task GenerateFluxTeamConfig(string teamName, GitRepo gitRepo)
         {
             var fileName = GetFileName(teamName, ConfigType.FluxServices);
             var groupsConfig = await gitOpsConfigRepository.GetConfigAsync<FluxTeam>(fileName, gitRepo);

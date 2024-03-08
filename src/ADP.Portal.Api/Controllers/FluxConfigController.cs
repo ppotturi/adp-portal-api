@@ -9,14 +9,14 @@ namespace ADP.Portal.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ScaffolderController(IGitOpsConfigService gitOpsConfigService, ILogger<ScaffolderController> logger, IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig) : Controller
+    public class FluxConfigController(IGitOpsConfigService gitOpsConfigService, ILogger<FluxConfigController> logger, IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig) : Controller
     {
         private readonly IGitOpsConfigService gitOpsConfigService = gitOpsConfigService;
-        private readonly ILogger<ScaffolderController> logger = logger;
+        private readonly ILogger<FluxConfigController> logger = logger;
         private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig = adpTeamGitRepoConfig;
 
-        [HttpPost("onboardfluxservices/{teamName}/{serviceName?}", Name = "OnBoardFluxServices")]
-        public async Task<ActionResult> OnBoardFluxServicesAsync(string teamName, string? serviceName)
+        [HttpPost("generateteamconfig/{teamName}/{serviceName?}", Name = "GenerateTeamConfig")]
+        public async Task<ActionResult> GenerateTeamConfigAsync(string teamName, string? serviceName)
         {
             var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
 
@@ -29,7 +29,7 @@ namespace ADP.Portal.Api.Controllers
             }
 
             logger.LogInformation("Sync Flux Services for the Team:{TeamName}", teamName);
-            await gitOpsConfigService.SyncFluxServices(teamName, teamRepo);
+            await gitOpsConfigService.GenerateFluxTeamConfig(teamName, teamRepo);
 
             return Ok();
         }

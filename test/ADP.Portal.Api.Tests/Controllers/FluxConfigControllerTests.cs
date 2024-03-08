@@ -13,10 +13,10 @@ using NUnit.Framework;
 namespace ADP.Portal.Api.Tests.Controllers
 {
     [TestFixture]
-    public class ScaffolderControllerTests
+    public class FluxConfigControllerTests
     {
-        private readonly ScaffolderController controller;
-        private readonly ILogger<ScaffolderController> loggerMock;
+        private readonly FluxConfigController controller;
+        private readonly ILogger<FluxConfigController> loggerMock;
         private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfigMock;
         private readonly IGitOpsConfigService gitOpsConfigServiceMock;
 
@@ -26,12 +26,12 @@ namespace ADP.Portal.Api.Tests.Controllers
             TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
         }
 
-        public ScaffolderControllerTests()
+        public FluxConfigControllerTests()
         {
             adpTeamGitRepoConfigMock = Substitute.For<IOptions<AdpTeamGitRepoConfig>>();
-            loggerMock = Substitute.For<ILogger<ScaffolderController>>();
+            loggerMock = Substitute.For<ILogger<FluxConfigController>>();
             gitOpsConfigServiceMock = Substitute.For<IGitOpsConfigService>();
-            controller = new ScaffolderController(gitOpsConfigServiceMock, loggerMock, adpTeamGitRepoConfigMock);
+            controller = new FluxConfigController(gitOpsConfigServiceMock, loggerMock, adpTeamGitRepoConfigMock);
         }
 
         [Test]
@@ -41,7 +41,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>()).Returns(false);
 
             // Act
-            var result = await controller.OnBoardFluxServicesAsync("teamName", string.Empty);
+            var result = await controller.GenerateTeamConfigAsync("teamName", string.Empty);
 
             // Assert
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
