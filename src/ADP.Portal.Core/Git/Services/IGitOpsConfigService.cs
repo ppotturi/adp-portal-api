@@ -6,5 +6,6 @@ namespace ADP.Portal.Core.Git.Services
     {
         Task<bool> IsConfigExistsAsync(string teamName, ConfigType configType, GitRepo gitRepo);
         Task<GroupSyncResult> SyncGroupsAsync(string teamName, string ownerId, ConfigType configType, GitRepo gitRepo);
+        Task SyncFluxServices(string teamName, GitRepo gitRepo);
     }
 }

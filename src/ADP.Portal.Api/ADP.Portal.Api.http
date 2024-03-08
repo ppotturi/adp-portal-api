@@ -1,0 +1,13 @@
+﻿@ADP.Portal.Api_HostAddress = https://localhost:7280
+
+GET {{ADP.Portal.Api_HostAddress}}/api/adoproject/string
+
+###
+
+PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
+
+###
+
+POST {{ADP.Portal.Api_HostAddress}}/api/scaffolder/onboardfluxservices/ffc-demo
+
+###

@@ -1,11 +1,11 @@
-﻿using ADP.Portal.Core.Azure.Entities;
+﻿using System.Text.RegularExpressions;
+using ADP.Portal.Core.Azure.Entities;
 using ADP.Portal.Core.Azure.Services;
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using Octokit;
-using System.Text.RegularExpressions;
 
 namespace ADP.Portal.Core.Git.Services
 {
@@ -85,6 +85,14 @@ namespace ADP.Portal.Core.Git.Services
             }
 
             return result;
+        }
+
+        public async Task SyncFluxServices(string teamName, GitRepo gitRepo)
+        {
+            var fileName = GetFileName(teamName, ConfigType.FluxServices);
+            var groupsConfig = await gitOpsConfigRepository.GetConfigAsync<FluxTeam>(fileName, gitRepo);
+
+            await Task.CompletedTask;
         }
 
         private async Task SyncMembersAsync(GroupSyncResult result, Entities.Group group, string? groupId, bool isNewGroup)
@@ -168,6 +176,6 @@ namespace ADP.Portal.Core.Git.Services
         private static string ToKebabCase(string name)
         {
             return KebabCaseRegex().Replace(name, "-$1").ToLower();
-        }
+        }        
     }
 }
