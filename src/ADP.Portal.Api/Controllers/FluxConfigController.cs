@@ -9,19 +9,21 @@ namespace ADP.Portal.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FluxConfigController(IGitOpsConfigService gitOpsConfigService, ILogger<FluxConfigController> logger, IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig) : Controller
+    public class FluxConfigController(IGitOpsConfigService gitOpsConfigService, ILogger<FluxConfigController> logger, IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig, IOptions<AzureAdConfig> azureAdConfig) : Controller
     {
         private readonly IGitOpsConfigService gitOpsConfigService = gitOpsConfigService;
         private readonly ILogger<FluxConfigController> logger = logger;
         private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig = adpTeamGitRepoConfig;
+        private readonly IOptions<AzureAdConfig> azureAdConfig = azureAdConfig;
 
         [HttpPost("generateteamconfig/{teamName}/{serviceName?}", Name = "GenerateTeamConfig")]
         public async Task<ActionResult> GenerateTeamConfigAsync(string teamName, string? serviceName)
         {
             var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
+            var tenantName = azureAdConfig.Value.TenantName;
 
             logger.LogInformation("Check if Flux Services config exists for team:{TeamName}", teamName);
-            var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, ConfigType.FluxServices, teamRepo);
+            var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, ConfigType.FluxServices, tenantName, teamRepo);
             if (!isConfigExists)
             {
                 logger.LogWarning("Config not found for the Team:{TeamName} and configType:{ConfigType}", teamName, ConfigType.FluxServices);

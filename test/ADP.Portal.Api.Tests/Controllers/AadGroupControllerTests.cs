@@ -67,7 +67,7 @@ namespace ADP.Portal.Api.Tests.Controllers
         public async Task SyncGroupsAsync_ConfigDoesNotExist_ReturnsBadRequest()
         {
             // Arrange
-            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>()).Returns(false);
+            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(false);
 
             // Act
             var result = await controller.SyncGroupsAsync("teamName", "UserGroupsMembers");
@@ -80,8 +80,8 @@ namespace ADP.Portal.Api.Tests.Controllers
         public async Task SyncGroupsAsync_ConfigExistsAndSyncHasErrors_ReturnsOk()
         {
             // Arrange
-            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>()).Returns(true);
-            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>())
+            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(true);
+            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>())
                 .Returns(new GroupSyncResult { Error = ["Error"] });
 
             adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<AdpTeamGitRepoConfig>());
@@ -98,8 +98,8 @@ namespace ADP.Portal.Api.Tests.Controllers
         public async Task SyncGroupsAsync_ConfigExistsAndSyncHasNoErrors_ReturnsNoContent()
         {
             // Arrange
-            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>()).Returns(true);
-            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>())
+            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(true);
+            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>())
                 .Returns(new GroupSyncResult { Error = new List<string>() });
 
             adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<AdpTeamGitRepoConfig>());

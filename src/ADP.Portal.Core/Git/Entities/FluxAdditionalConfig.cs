@@ -1,6 +1,6 @@
 ﻿namespace ADP.Portal.Core.Git.Entities
 {
-    public class FluxConfig
+    public class FluxAdditionalConfig
     {
         public required string Name { get; set; }
 

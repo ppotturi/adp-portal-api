@@ -25,7 +25,7 @@ namespace ADP.Portal.Core.Git.Services
             this.groupService = groupService;
         }
 
-        public async Task<bool> IsConfigExistsAsync(string teamName, ConfigType configType, GitRepo gitRepo)
+        public async Task<bool> IsConfigExistsAsync(string teamName, ConfigType configType, string tenantName, GitRepo gitRepo)
         {
             var fileName = GetFileName(teamName, configType);
             try
@@ -39,7 +39,7 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        public async Task<GroupSyncResult> SyncGroupsAsync(string teamName, string ownerId, ConfigType configType, GitRepo gitRepo)
+        public async Task<GroupSyncResult> SyncGroupsAsync(string teamName, string ownerId, ConfigType configType, string tenantName, GitRepo gitRepo)
         {
             var result = new GroupSyncResult();
             var fileName = GetFileName(teamName, configType);
@@ -88,6 +88,14 @@ namespace ADP.Portal.Core.Git.Services
             return await groupService.AddGroupAsync(aadGroup);
         }
 
+        public async Task GenerateFluxTeamConfig(string teamName, GitRepo gitRepo)
+        {
+            var fileName = GetFileName(teamName, ConfigType.FluxServices);
+            var teamConfig = await gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(fileName, gitRepo);
+
+            await Task.CompletedTask;
+        }
+
         private async Task SyncGroupMembersAsync(Entities.Group group, string groupId, ConfigType configType, GroupSyncResult result)
         {
             logger.LogInformation("Syncing group members for the group({DisplayName})", group.DisplayName);
@@ -107,14 +115,6 @@ namespace ADP.Portal.Core.Git.Services
             {
                 await SyncGroupTypeMembersAsync(result, group, groupId, false);
             }
-        }
-
-        public async Task GenerateFluxTeamConfig(string teamName, GitRepo gitRepo)
-        {
-            var fileName = GetFileName(teamName, ConfigType.FluxServices);
-            var groupsConfig = await gitOpsConfigRepository.GetConfigAsync<FluxTeam>(fileName, gitRepo);
-
-            await Task.CompletedTask;
         }
 
         private async Task SyncUserTypeMembersAsync(GroupSyncResult result, Entities.Group group, string? groupId, bool isNewGroup)
@@ -235,6 +235,6 @@ namespace ADP.Portal.Core.Git.Services
         private static string ToKebabCase(string name)
         {
             return KebabCaseRegex().Replace(name, "-$1").ToLower();
-        }        
+        }
     }
 }

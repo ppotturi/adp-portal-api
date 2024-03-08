@@ -115,6 +115,5 @@ namespace ADP.Portal.Api
                 Credentials = new Credentials(response.Token)
             };
         }
-
     }
 }

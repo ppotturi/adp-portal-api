@@ -8,7 +8,7 @@
 
         public required List<string> Environments { get; set; }
 
-        public List<FluxConfig> AdditionalConfig { get; set; } = [];
+        public List<FluxAdditionalConfig> AdditionalConfig { get; set; } = [];
     }
 
     public enum FluxServiceType

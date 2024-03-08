@@ -37,9 +37,10 @@ namespace ADP.Portal.Api.Controllers
 
             var configType = (ConfigType)syncConfigTypeEnum;
             var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
+            var tenantName = azureAdConfig.Value.TenantName;
 
             logger.LogInformation("Check if config exists for team:{TeamName} and configType:{ConfigType}", teamName, configType);
-            var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, configType, teamRepo);
+            var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, configType, tenantName, teamRepo);
             if (!isConfigExists)
             {
                 logger.LogWarning("Config not found for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
@@ -48,7 +49,7 @@ namespace ADP.Portal.Api.Controllers
 
             var ownerId = azureAdConfig.Value.SpObjectId;
             logger.LogInformation("Sync Groups for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
-            var result = await gitOpsConfigService.SyncGroupsAsync(teamName, ownerId, configType, teamRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync(teamName, ownerId, configType, tenantName, teamRepo);
 
             if (result.Error.Count > 0)
             {

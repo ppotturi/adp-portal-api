@@ -41,7 +41,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             .Returns("config");
 
             // Act
-            var result = await gitOpsConfigService.IsConfigExistsAsync("teamName", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.IsConfigExistsAsync("teamName", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result, Is.True);
@@ -55,7 +55,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
                 .Returns(string.Empty);
 
             // Act
-            var result = await gitOpsConfigService.IsConfigExistsAsync("teamName", ConfigType.OpenVpnMembers, gitRepo);
+            var result = await gitOpsConfigService.IsConfigExistsAsync("teamName", ConfigType.OpenVpnMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result, Is.False);
@@ -69,7 +69,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
 
             // Act
-            var result = await gitOpsConfigService.IsConfigExistsAsync("teamName", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.IsConfigExistsAsync("teamName", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result, Is.False);
@@ -87,7 +87,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Empty);
@@ -114,7 +114,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             groupServiceMock.GetUserIdAsync(Arg.Is(groupsRoot.Groups[0].Members[0].ToString())).Returns(memberId);
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.OpenVpnMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.OpenVpnMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Empty);
@@ -141,7 +141,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.OpenVpnMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.OpenVpnMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Empty);
@@ -171,7 +171,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             groupServiceMock.GetGroupMemberShipsAsync(Arg.Is(groupId)).Returns([]);
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Empty);
@@ -201,7 +201,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             groupServiceMock.GetGroupMemberShipsAsync(Arg.Is(groupId)).Returns(exstingMembershipsToberemoved);
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Empty);
@@ -230,7 +230,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
            
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Empty);
@@ -252,7 +252,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             gitOpsConfigRepositoryMock.GetConfigAsync<GroupsRoot>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(groupsRoot);
             groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns("");
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Not.Empty);
@@ -279,7 +279,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             groupServiceMock.GetGroupMemberShipsAsync(Arg.Any<string>()).Returns([]);
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Not.Empty);
@@ -301,7 +301,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             gitOpsConfigRepositoryMock.GetConfigAsync<GroupsRoot>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(groupsRoot);
             groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns("");
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Not.Empty);
@@ -327,7 +327,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             groupServiceMock.GetGroupIdAsync(Arg.Is(groupsRoot.Groups[0].Members[0].ToString())).Returns((string?)null);
 
             // Act
-            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, gitRepo);
+            var result = await gitOpsConfigService.SyncGroupsAsync("teamName", "ownerId", ConfigType.GroupsMembers, "tenantName", gitRepo);
 
             // Assert
             Assert.That(result.Error, Is.Not.Empty);

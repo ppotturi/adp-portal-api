@@ -18,6 +18,7 @@ namespace ADP.Portal.Api.Tests.Controllers
         private readonly FluxConfigController controller;
         private readonly ILogger<FluxConfigController> loggerMock;
         private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfigMock;
+        private readonly IOptions<AzureAdConfig> azureAdConfigMock;
         private readonly IGitOpsConfigService gitOpsConfigServiceMock;
 
         [SetUp]
@@ -29,16 +30,17 @@ namespace ADP.Portal.Api.Tests.Controllers
         public FluxConfigControllerTests()
         {
             adpTeamGitRepoConfigMock = Substitute.For<IOptions<AdpTeamGitRepoConfig>>();
+            azureAdConfigMock = Substitute.For<IOptions<AzureAdConfig>>();
             loggerMock = Substitute.For<ILogger<FluxConfigController>>();
             gitOpsConfigServiceMock = Substitute.For<IGitOpsConfigService>();
-            controller = new FluxConfigController(gitOpsConfigServiceMock, loggerMock, adpTeamGitRepoConfigMock);
+            controller = new FluxConfigController(gitOpsConfigServiceMock, loggerMock, adpTeamGitRepoConfigMock, azureAdConfigMock);
         }
 
         [Test]
         public async Task SyncGroupsAsync_ConfigDoesNotExist_ReturnsBadRequest()
         {
             // Arrange
-            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>()).Returns(false);
+            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(false);
 
             // Act
             var result = await controller.GenerateTeamConfigAsync("teamName", string.Empty);
