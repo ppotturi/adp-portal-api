@@ -1,22 +1,20 @@
-﻿
-
-
-using ADP.Portal.Core.Azure.Entities;
-using Microsoft.Graph.Models;
+﻿using ADP.Portal.Core.Azure.Entities;
 
 namespace ADP.Portal.Core.Azure.Services
 {
-    public interface IUserGroupService
+    public interface IGroupService
     {
         Task<string?> GetUserIdAsync(string userPrincipalName);
 
-        public Task<bool> AddGroupMemberAsync(string groupId, string memberId);
+        Task<bool> AddGroupMemberAsync(string groupId, string memberId);
 
         Task<bool> RemoveGroupMemberAsync(string groupId, string memberId);
 
         Task<string?> GetGroupIdAsync(string groupName);
 
-        Task<List<AadGroupMember>> GetGroupMembersAsync(string groupId);
+        Task<List<AadGroupMember>> GetUserTypeGroupMembersAsync(string groupId);
+
+        Task<List<AadGroupMember>> GetGroupTypeGroupMembersAsync(string groupId);
 
         Task<List<AadGroup>> GetGroupMemberShipsAsync(string groupId);
 

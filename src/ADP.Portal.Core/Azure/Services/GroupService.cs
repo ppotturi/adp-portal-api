@@ -8,12 +8,12 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace ADP.Portal.Core.Azure.Services
 {
-    public class UserGroupService : IUserGroupService
+    public class GroupService : IGroupService
     {
-        private readonly ILogger<UserGroupService> logger;
+        private readonly ILogger<GroupService> logger;
         private readonly IAzureAadGroupService azureAADGroupService;
 
-        public UserGroupService(IAzureAadGroupService azureAADGroupService, ILogger<UserGroupService> logger)
+        public GroupService(IAzureAadGroupService azureAADGroupService, ILogger<GroupService> logger)
         {
             this.azureAADGroupService = azureAADGroupService;
             this.logger = logger;
@@ -27,20 +27,21 @@ namespace ADP.Portal.Core.Azure.Services
 
                 if (!string.IsNullOrEmpty(result))
                 {
-                    logger.LogInformation("User '{userPrincipalName}' found.", userPrincipalName);
+                    logger.LogInformation("User '{UserPrincipalName}' found.", userPrincipalName);
                 }
-               
+
                 return result;
             }
             catch (ODataError odataException)
             {
                 if (odataException.ResponseStatusCode == 404)
                 {
-                    logger.LogWarning("User '{userPrincipalName}' does not exist.", userPrincipalName);
+                    logger.LogWarning("User '{UserPrincipalName}' does not exist.", userPrincipalName);
                     return null;
                 }
                 else
                 {
+                    logger.LogError(odataException, "Error occurred while getting user '{UserPrincipalName}'", userPrincipalName);
                     throw;
                 }
             }
@@ -51,7 +52,7 @@ namespace ADP.Portal.Core.Azure.Services
             var result = await azureAADGroupService.AddGroupMemberAsync(groupId, memberId);
             if (result)
             {
-                logger.LogInformation("Added user({memberId}) to group({groupId})", memberId, groupId);
+                logger.LogInformation("Added user({MemberId}) to group({GroupId})", memberId, groupId);
             }
             return result;
         }
@@ -62,7 +63,7 @@ namespace ADP.Portal.Core.Azure.Services
 
             if (result)
             {
-                logger.LogInformation("Removed user({memberId}) from the group({groupId})", memberId, groupId);
+                logger.LogInformation("Removed user({MemberId}) from the group({GroupId})", memberId, groupId);
             }
 
             return result;
@@ -74,18 +75,30 @@ namespace ADP.Portal.Core.Azure.Services
 
             if (!string.IsNullOrEmpty(result))
             {
-                logger.LogInformation("Group '{groupName}' found.", groupName);
+                logger.LogInformation("Group '{GroupName}' found.", groupName);
             }
 
             return result;
 
         }
-        public async Task<List<AadGroupMember>> GetGroupMembersAsync(string groupId)
+        public async Task<List<AadGroupMember>> GetUserTypeGroupMembersAsync(string groupId)
         {
-            var result = await azureAADGroupService.GetGroupMembersAsync(groupId);
+            var result =   await azureAADGroupService.GetGroupMembersAsync<User>(groupId);
             if (result != null)
             {
-                logger.LogInformation("Retrieved group members({Count}) from group({groupId}))", result.Count, groupId);
+                logger.LogInformation("Retrieved user type group members({Count}) from group({GroupId}))", result.Count, groupId);
+                return result.Adapt<List<AadGroupMember>>();
+            }
+
+            return [];
+        }
+
+        public async Task<List<AadGroupMember>> GetGroupTypeGroupMembersAsync(string groupId)
+        {
+            var result = await azureAADGroupService.GetGroupMembersAsync<Group>(groupId);
+            if (result != null)
+            {
+                logger.LogInformation("Retrieved group type group members({Count}) from group({GroupId}))", result.Count, groupId);
                 return result.Adapt<List<AadGroupMember>>();
             }
 
@@ -96,9 +109,9 @@ namespace ADP.Portal.Core.Azure.Services
         {
             var result = await azureAADGroupService.GetGroupMemberShipsAsync(groupId);
 
-            if(result != null)
+            if (result != null)
             {
-                logger.LogInformation("Retrieved group memberships({Count}) from group({groupId}))", result.Count, groupId);
+                logger.LogInformation("Retrieved group memberships({Count}) from group({GroupId}))", result.Count, groupId);
                 return result.Adapt<List<AadGroup>>();
             }
 

@@ -1,12 +1,10 @@
 ﻿using ADP.Portal.Core.Azure.Infrastructure;
 using AutoFixture;
 using Microsoft.Graph;
-using Microsoft.Graph.DirectoryObjects;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions;
 using NSubstitute;
 using NUnit.Framework;
-using Octokit;
 
 
 namespace ADP.Portal.Core.Tests.Azure.Infrastructure
@@ -94,7 +92,7 @@ namespace ADP.Portal.Core.Tests.Azure.Infrastructure
             var result = await azureAadGroupService.AddGroupMemberAsync(groupId, userId);
 
             // Assert
-            
+
             Assert.That(result, Is.True);
         }
 
@@ -122,8 +120,8 @@ namespace ADP.Portal.Core.Tests.Azure.Infrastructure
             var expectedGroupId = "groupId";
 
             var group = new Group { Id = expectedGroupId };
-            var existingGroup = new GroupCollectionResponse() { Value  = [new Group { Id = group.Id }] } ;
-            
+            var existingGroup = new GroupCollectionResponse() { Value = [new Group { Id = group.Id }] };
+
 
             graphServiceClientMock.Groups.GetAsync().ReturnsForAnyArgs(existingGroup);
 
@@ -131,49 +129,49 @@ namespace ADP.Portal.Core.Tests.Azure.Infrastructure
             var result = await azureAadGroupService.GetGroupIdAsync(groupName);
 
             // Assert
-            Assert.That(result,Is.EqualTo(expectedGroupId));
+            Assert.That(result, Is.EqualTo(expectedGroupId));
         }
 
 
-         [Test]
+        [Test]
         public async Task GetGroupIdAsync_GivenGroupName_NotExists_ReturnsDefault()
         {
             // Arrange
             var groupName = "testGroup";
-            
-            GroupCollectionResponse? existingGroup = null ;
-            
+
+            GroupCollectionResponse? existingGroup = null;
+
             graphServiceClientMock.Groups.GetAsync().ReturnsForAnyArgs(existingGroup);
 
             // Act
             var result = await azureAadGroupService.GetGroupIdAsync(groupName);
 
             // Assert
-            Assert.That(result,Is.Null);
+            Assert.That(result, Is.Null);
         }
 
         [Test]
-        public async Task GetGroupMembersAsync_GivenGroupId_ReturnsGroupMembers()
+        public async Task GetGroupMembersAsync_GivenGroupId_Returns_UserType_GroupMembers()
         {
             // Arrange
             var groupId = "groupId";
             var expectedUser = new Microsoft.Graph.Models.User { Id = "userId", UserPrincipalName = "user@domain.com" };
             var directoryObjectResponse = new DirectoryObjectCollectionResponse { Value = [expectedUser] };
-            
+
 
             graphServiceClientMock.Groups[groupId].Members.GetAsync()
                 .ReturnsForAnyArgs(directoryObjectResponse);
 
             // Act
-            var result = await azureAadGroupService.GetGroupMembersAsync(groupId);
+            var result = await azureAadGroupService.GetGroupMembersAsync<Microsoft.Graph.Models.User>(groupId);
 
             // Assert
-            Assert.That(result,Is.Not.Null);
+            Assert.That(result, Is.Not.Null);
             Assert.That(result?.Count, Is.EqualTo(1));
         }
 
         [Test]
-        public async Task GetGroupMembersAsync_GivenGroupIdButNoMembers_ReturnsEmptyList()
+        public async Task GetGroupMembersAsync_GivenGroupIdButNoUserTypeMembers_Returns_EmptyList()
         {
             // Arrange
             var groupId = "groupId";
@@ -184,7 +182,46 @@ namespace ADP.Portal.Core.Tests.Azure.Infrastructure
                 .ReturnsForAnyArgs(directoryObjectResponse);
 
             // Act
-            var result = await azureAadGroupService.GetGroupMembersAsync(groupId);
+            var result = await azureAadGroupService.GetGroupMembersAsync<Microsoft.Graph.Models.User>(groupId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result?.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task GetGroupMembersAsync_GivenGroupId_Returns_GroupType_GroupMembers()
+        {
+            // Arrange
+            var groupId = "groupId";
+            var expectedGroup = new Group { Id = "userId", DisplayName = "Test group" };
+            var directoryObjectResponse = new DirectoryObjectCollectionResponse { Value = [expectedGroup] };
+
+
+            graphServiceClientMock.Groups[groupId].Members.GetAsync()
+                .ReturnsForAnyArgs(directoryObjectResponse);
+
+            // Act
+            var result = await azureAadGroupService.GetGroupMembersAsync<Group>(groupId);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result?.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task GetGroupMembersAsync_GivenGroupIdButNoGroupTypeMembers_Returns_EmptyList()
+        {
+            // Arrange
+            var groupId = "groupId";
+
+            var directoryObjectResponse = new DirectoryObjectCollectionResponse { Value = [] };
+
+            graphServiceClientMock.Groups[groupId].Members.GetAsync()
+                .ReturnsForAnyArgs(directoryObjectResponse);
+
+            // Act
+            var result = await azureAadGroupService.GetGroupMembersAsync<Group>(groupId);
 
             // Assert
             Assert.That(result, Is.Not.Null);

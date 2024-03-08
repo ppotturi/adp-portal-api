@@ -1,13 +1,7 @@
 ﻿using ADP.Portal.Core.Git.Jwt;
-using Microsoft.Graph.Models.Security;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading.Tasks;
-using static Microsoft.Graph.CoreConstants;
 
 namespace ADP.Portal.Core.Tests.Git.Jwt
 {
@@ -22,7 +16,7 @@ namespace ADP.Portal.Core.Tests.Git.Jwt
             var privateKeyBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(GenerateTestPrivateKey()));
             var githubAppId = 123;
             var expirationSeconds = 600;
-            TimeSpan? iatOffset = timeSpan? TimeSpan.Zero: null;
+            TimeSpan? iatOffset = timeSpan ? TimeSpan.Zero : null;
 
             // Act
             var token = JwtTokenHelper.CreateEncodedJwtToken(privateKeyBase64, githubAppId, expirationSeconds, iatOffset);

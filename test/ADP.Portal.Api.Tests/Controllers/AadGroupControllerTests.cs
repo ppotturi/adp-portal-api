@@ -82,13 +82,13 @@ namespace ADP.Portal.Api.Tests.Controllers
             // Arrange
             gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>()).Returns(true);
             gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<GitRepo>())
-                .Returns(new GroupSyncResult { Error = new List<string> { "Error" } });
+                .Returns(new GroupSyncResult { Error = ["Error"] });
 
             adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<AdpTeamGitRepoConfig>());
             azureAdConfigMock.Value.Returns(fixture.Create<AzureAdConfig>());
 
             // Act
-            var result = await controller.SyncGroupsAsync("teamName", "UserGroupsMembers");
+            var result = await controller.SyncGroupsAsync("teamName", "GroupsMembers");
 
             // Assert
             Assert.That(result, Is.InstanceOf<OkObjectResult>());
@@ -106,7 +106,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             azureAdConfigMock.Value.Returns(fixture.Create<AzureAdConfig>());
 
             // Act
-            var result = await controller.SyncGroupsAsync("teamName", "UserGroupsMembers");
+            var result = await controller.SyncGroupsAsync("teamName", "GroupsMembers");
 
             // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());

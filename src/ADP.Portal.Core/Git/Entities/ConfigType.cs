@@ -2,7 +2,7 @@
 {
     public enum ConfigType
     {
-        UserGroupsMembers,
+        GroupsMembers,
         OpenVpnMembers
     }
 }

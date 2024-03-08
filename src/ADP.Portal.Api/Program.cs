@@ -66,7 +66,7 @@ namespace ADP.Portal.Api
             });
             builder.Services.AddScoped<IAdoProjectService, AdoProjectService>();
             builder.Services.AddScoped<IAdoService, AdoService>();
-            builder.Services.AddScoped<IUserGroupService, UserGroupService>();
+            builder.Services.AddScoped<IGroupService, GroupService>();
             builder.Services.AddScoped<IAzureAadGroupService, AzureAadGroupService>();
             builder.Services.AddScoped(provider =>
             {

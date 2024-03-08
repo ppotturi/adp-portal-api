@@ -74,16 +74,16 @@ namespace ADP.Portal.Core.Azure.Infrastructure
             return default;
         }
 
-        public async Task<List<User>?> GetGroupMembersAsync(string groupId)
+        public async Task<List<T>?> GetGroupMembersAsync<T>(string groupId)
         {
             var result = await graphServiceClient.Groups[groupId].Members.GetAsync((request) =>
             {
-                request.QueryParameters.Select = ["id", "userPrincipalName"];
+                request.QueryParameters.Select = ["id", "userPrincipalName", "displayName"];
             });
 
             if (result != null)
             {
-                return result.Value?.Select(item => (User)item).ToList();
+                return result.Value?.Where(item => item.GetType() == typeof(T)).Select(item => (T)Convert.ChangeType(item, typeof(T))).ToList();
             }
             return default;
         }

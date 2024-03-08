@@ -1,10 +1,12 @@
-﻿namespace ADP.Portal.Core.Git.Entities
+﻿
+
+namespace ADP.Portal.Core.Git.Entities
 {
     public class Group()
     {
         public required string DisplayName { get; set; }
 
-        public bool ManageMembersOnly { get; set; } = default;
+        public GroupType? Type { get; set; }
 
         public string? Description { get; set; }
 

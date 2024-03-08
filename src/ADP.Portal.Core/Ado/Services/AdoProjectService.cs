@@ -22,9 +22,9 @@ namespace ADP.Portal.Core.Ado.Services
             {
                 return await adoService.GetTeamProjectAsync(projectName);
             }
-            catch (ProjectDoesNotExistWithNameException)
+            catch (ProjectDoesNotExistWithNameException ex)
             {
-                logger.LogWarning("Project {projectName} does not exist", projectName);
+                logger.LogWarning(ex, "Project {ProjectName} does not exist", projectName);
                 return null;
             }
         }

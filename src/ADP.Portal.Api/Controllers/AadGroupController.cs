@@ -29,25 +29,25 @@ namespace ADP.Portal.Api.Controllers
         [HttpPut("sync/{teamName}/{syncConfigType}")]
         public async Task<ActionResult> SyncGroupsAsync(string teamName, string syncConfigType)
         {
-            if (!Enum.TryParse<SyncConfigType>(syncConfigType, true, out var syncConfigtypeEnum))
+            if (!Enum.TryParse<SyncConfigType>(syncConfigType, true, out var syncConfigTypeEnum))
             {
-                logger.LogWarning("Invalid syncConfigType:{syncConfigType}", syncConfigType);
+                logger.LogWarning("Invalid syncConfigType:{SyncConfigType}", syncConfigType);
                 return BadRequest("Invalid syncConfigType.");
             }
 
-            var configType = (ConfigType)syncConfigtypeEnum;
+            var configType = (ConfigType)syncConfigTypeEnum;
             var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
 
-            logger.LogInformation("Check if config exists for team:{teamName} and configType:{configType}", teamName, configType);
+            logger.LogInformation("Check if config exists for team:{TeamName} and configType:{ConfigType}", teamName, configType);
             var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, configType, teamRepo);
             if (!isConfigExists)
             {
-                logger.LogWarning("Config not found for the Team:{teamName} and configType:{configType}", teamName, configType);
+                logger.LogWarning("Config not found for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
                 return BadRequest($"Team '{teamName}' config not found.");
             }
 
             var ownerId = azureAdConfig.Value.SpObjectId;
-            logger.LogInformation("Sync Groups for the Team:{teamName} and configType:{configType}", teamName, configType);
+            logger.LogInformation("Sync Groups for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
             var result = await gitOpsConfigService.SyncGroupsAsync(teamName, ownerId, configType, teamRepo);
 
             if (result.Error.Count > 0)
