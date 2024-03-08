@@ -1,12 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.TeamFoundation.Core.WebApi;
-using Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi;
-using Microsoft.VisualStudio.Services.ServiceEndpoints;
-using ADP.Portal.Core.Ado.Entities;
-using Microsoft.TeamFoundation.DistributedTask.WebApi;
-using ProjectReference = Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi.ProjectReference;
-using DistributedTaskProjectReference = Microsoft.TeamFoundation.DistributedTask.WebApi.ProjectReference;
+﻿using ADP.Portal.Core.Ado.Entities;
 using Mapster;
+using Microsoft.Extensions.Logging;
+using Microsoft.TeamFoundation.Core.WebApi;
+using Microsoft.TeamFoundation.DistributedTask.WebApi;
+using Microsoft.VisualStudio.Services.ServiceEndpoints;
+using Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi;
+using DistributedTaskProjectReference = Microsoft.TeamFoundation.DistributedTask.WebApi.ProjectReference;
+using ProjectReference = Microsoft.VisualStudio.Services.ServiceEndpoints.WebApi.ProjectReference;
 
 namespace ADP.Portal.Core.Ado.Infrastructure
 {
@@ -23,7 +23,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
 
         public async Task<TeamProject> GetTeamProjectAsync(string projectName)
         {
-            logger.LogInformation("Getting project {projectName}", projectName);
+            logger.LogInformation("Getting project {ProjectName}", projectName);
             using var projectClient = await vssConnection.GetClientAsync<ProjectHttpClient>();
 
             var project = await projectClient.GetProject(projectName);
@@ -34,7 +34,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
         {
             var serviceEndpointClient = await vssConnection.GetClientAsync<ServiceEndpointHttpClient>();
 
-            logger.LogInformation("Getting service endpoints for project {adpProjectName}", adpProjectName);
+            logger.LogInformation("Getting service endpoints for project {AdpProjectName}", adpProjectName);
 
             var endpoints = await serviceEndpointClient.GetServiceEndpointsAsync(adpProjectName);
             var serviceEndpointIds = new List<Guid>();
@@ -48,7 +48,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     var isAlreadyShared = endpoint.ServiceEndpointProjectReferences.Any(r => r.ProjectReference.Id == onBoardProject.Id);
                     if (!isAlreadyShared)
                     {
-                        logger.LogInformation("Sharing service endpoint {serviceConnection} with project {Name}", serviceConnection, onBoardProject.Name);
+                        logger.LogInformation("Sharing service endpoint {ServiceConnection} with project {Name}", serviceConnection, onBoardProject.Name);
 
                         var serviceEndpointProjectReferences = new List<ServiceEndpointProjectReference>() {
                             new() { Name = serviceConnection,ProjectReference = onBoardProject.Adapt<ProjectReference>() }
@@ -58,14 +58,14 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     }
                     else
                     {
-                        logger.LogInformation("Service endpoint {serviceConnection} already shared with project {Name}", serviceConnection, onBoardProject.Name);
+                        logger.LogInformation("Service endpoint {ServiceConnection} already shared with project {Name}", serviceConnection, onBoardProject.Name);
                     }
 
                     serviceEndpointIds.Add(endpoint.Id);
                 }
                 else
                 {
-                    logger.LogWarning("Service endpoint {serviceConnection} not found", serviceConnection);
+                    logger.LogWarning("Service endpoint {ServiceConnection} not found", serviceConnection);
                 }
             }
 
@@ -125,21 +125,21 @@ namespace ADP.Portal.Core.Ado.Infrastructure
 
                     if (existingAgentQueue != null)
                     {
-                        logger.LogInformation("Agent pool {agentPool} already exists in the {Name} project", agentPool, onBoardProject.Name);
+                        logger.LogInformation("Agent pool {AgentPool} already exists in the {Name} project", agentPool, onBoardProject.Name);
                         agentQueueIds.Add(existingAgentQueue.Id);
                         continue;
                     }
 
-                    logger.LogInformation("Adding agent pool {agentPool} to the {Name} project", agentPool, onBoardProject.Name);
+                    logger.LogInformation("Adding agent pool {AgentPool} to the {Name} project", agentPool, onBoardProject.Name);
 
                     var agentQueue = await taskAgentClient.AddAgentQueueAsync(onBoardProject.Id, adpAgentQueue);
                     agentQueueIds.Add(agentQueue.Id);
 
-                    logger.LogInformation("Agent pool {agentPool} created",agentPool);
+                    logger.LogInformation("Agent pool {AgentPool} created", agentPool);
                 }
                 else
                 {
-                    logger.LogWarning("Agent pool {agentPool} not found in the adp project.", agentPool);
+                    logger.LogWarning("Agent pool {AgentPool} not found in the adp project.", agentPool);
                 }
             }
 

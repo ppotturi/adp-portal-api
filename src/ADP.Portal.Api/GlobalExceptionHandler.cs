@@ -26,7 +26,7 @@ namespace ADP.Portal.Api
             httpContext.Response.StatusCode = problemDetails.Status.Value;
 
             await httpContext
-                    .Response 
+                    .Response
                     .WriteAsJsonAsync(problemDetails, cancellationToken);
 
             return true;

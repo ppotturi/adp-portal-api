@@ -1,8 +1,8 @@
-﻿using Microsoft.TeamFoundation.Core.WebApi;
-using Microsoft.Extensions.Logging;
-using ADP.Portal.Core.Ado.Entities;
+﻿using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Infrastructure;
 using ADP.Portal.Core.Ado.Dtos;
+using Microsoft.Extensions.Logging;
+using Microsoft.TeamFoundation.Core.WebApi;
 
 namespace ADP.Portal.Core.Ado.Services
 {
@@ -23,9 +23,9 @@ namespace ADP.Portal.Core.Ado.Services
             {
                 return await adoService.GetTeamProjectAsync(projectName);
             }
-            catch (ProjectDoesNotExistWithNameException)
+            catch (ProjectDoesNotExistWithNameException ex)
             {
-                logger.LogWarning("Project {projectName} does not exist", projectName);
+                logger.LogWarning(ex, "Project {ProjectName} does not exist", projectName);
                 return null;
             }
         }

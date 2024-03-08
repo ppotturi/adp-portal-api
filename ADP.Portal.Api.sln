@@ -19,11 +19,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADP.Portal.Core.Tests", "te
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".azuredevops", ".azuredevops", "{E621FA50-64ED-4745-821A-C52B68571D07}"
 	ProjectSection(SolutionItems) = preProject
-		.azuredevops\build.yaml = .azuredevops\build.yaml
 		.azuredevops\containerApp.yaml = .azuredevops\containerApp.yaml
+		.azuredevops\build.yaml = .azuredevops\build.yaml
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ADP.Portal.Api.Tests", "test\ADP.Portal.Api.Tests\ADP.Portal.Api.Tests.csproj", "{FCAE5020-5130-4FA8-8684-72EC6AE8C963}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ADP.Portal.Api.Tests", "test\ADP.Portal.Api.Tests\ADP.Portal.Api.Tests.csproj", "{FCAE5020-5130-4FA8-8684-72EC6AE8C963}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

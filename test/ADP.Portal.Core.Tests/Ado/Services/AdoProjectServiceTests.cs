@@ -7,7 +7,6 @@ using Microsoft.TeamFoundation.Core.WebApi;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
-using System.Collections.Generic;
 
 namespace ADP.Portal.Core.Tests.Ado.Services
 {
@@ -55,7 +54,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         {
             // Arrange
             var projectName = "TestProject";
-            
+
             adoServiceMock.GetTeamProjectAsync(projectName).ThrowsAsync<ProjectDoesNotExistWithNameException>();
 
             // Act
@@ -70,7 +69,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         {
             var adpProjectName = "TestProject";
             var onboardProject = new AdoProject(Substitute.For<TeamProjectReference>(),
-                Substitute.For<List<string>>(), Substitute.For<List<string>>(), Substitute.For<List<AdoEnvironment>>() , Substitute.For<List<AdoVariableGroup>>()
+                Substitute.For<List<string>>(), Substitute.For<List<string>>(), Substitute.For<List<AdoEnvironment>>(), Substitute.For<List<AdoVariableGroup>>()
                 );
 
             var fixture = new Fixture();

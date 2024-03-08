@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace ADP.Portal.Api.Models
+﻿namespace ADP.Portal.Api.Models
 {
     public class AdoEnvironment
     {
