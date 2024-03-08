@@ -1,6 +1,6 @@
-﻿namespace ADP.Portal.Core.Git.Entities
+﻿namespace ADP.Portal.Api.Models
 {
-    public enum GroupType
+    public enum SyncGroupType
     {
         UserGroup,
         AccessGroup,

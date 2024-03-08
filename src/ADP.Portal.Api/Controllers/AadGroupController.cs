@@ -26,34 +26,27 @@ namespace ADP.Portal.Api.Controllers
             this.adpTeamGitRepoConfig = adpTeamGitRepoConfig;
         }
 
-        [HttpPut("sync/{teamName}/{syncConfigType}")]
-        public async Task<ActionResult> SyncGroupsAsync(string teamName, string syncConfigType)
+        [HttpPut("sync/{teamName}/{groupType?}")]
+        public async Task<ActionResult> SyncGroupsAsync(string teamName, string? groupType = null)
         {
-            if (!Enum.TryParse<SyncConfigType>(syncConfigType, true, out var syncConfigTypeEnum))
+            var isValidtype = Enum.TryParse<SyncGroupType>(groupType, true, out var syncGroupTypeEnum); 
+            if(groupType!= null && !isValidtype)
             {
-                logger.LogWarning("Invalid syncConfigType:{SyncConfigType}", syncConfigType);
-                return BadRequest("Invalid syncConfigType.");
+                logger.LogWarning("Invalid Group Type:{GroupType}", groupType);
+                return BadRequest("Invalid Group Type.");
             }
 
-            var configType = (ConfigType)syncConfigTypeEnum;
             var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
             var tenantName = azureAdConfig.Value.TenantName;
 
-            logger.LogInformation("Check if config exists for team:{TeamName} and configType:{ConfigType}", teamName, configType);
-            var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, configType, tenantName, teamRepo);
-            if (!isConfigExists)
-            {
-                logger.LogWarning("Config not found for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
-                return BadRequest($"Team '{teamName}' config not found.");
-            }
-
             var ownerId = azureAdConfig.Value.SpObjectId;
-            logger.LogInformation("Sync Groups for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
-            var result = await gitOpsConfigService.SyncGroupsAsync(teamName, ownerId, configType, tenantName, teamRepo);
+            
+            //logger.LogInformation("Sync Groups for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
+            var result = await gitOpsConfigService.SyncGroupsAsync(tenantName,teamName, ownerId, groupType==null? null: (GroupType)syncGroupTypeEnum, teamRepo);
 
-            if (result.Error.Count > 0)
+            if (result.Errors.Count > 0)
             {
-                return Ok(result.Error);
+                return BadRequest(result.Errors);
             }
 
             return NoContent();

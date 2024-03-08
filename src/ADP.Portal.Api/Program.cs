@@ -2,6 +2,7 @@
 using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Mapster;
 using ADP.Portal.Api.Providers;
+using ADP.Portal.Api.Swagger;
 using ADP.Portal.Api.Wrappers;
 using ADP.Portal.Core.Ado.Infrastructure;
 using ADP.Portal.Core.Ado.Services;
@@ -13,6 +14,8 @@ using ADP.Portal.Core.Git.Services;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
+using Microsoft.OpenApi.Models;
+using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Octokit;
 
 namespace ADP.Portal.Api
@@ -92,7 +95,11 @@ namespace ADP.Portal.Api
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Adp.Portal.Api", Version = "v1" });
+                c.OperationFilter<OptionalPathParameterOperationFilter>();
+            });
         }
 
         private static GitHubClient GetGitHubClient(AdpTeamGitRepoConfig repoConfig)

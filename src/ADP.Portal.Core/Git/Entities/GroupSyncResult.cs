@@ -2,10 +2,6 @@
 {
     public class GroupSyncResult
     {
-        public GroupSyncResult()
-        {
-            Error = [];
-        }
-        public List<string> Error { get; set; }
+        public List<string> Errors { get; set; } = [];
     }
 }
