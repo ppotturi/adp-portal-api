@@ -2,7 +2,7 @@
 {
     public enum SyncConfigType
     {
-        UserGroupsMembers,
+        GroupsMembers,
         OpenVpnMembers
     }
 }

@@ -13,29 +13,29 @@ using NUnit.Framework;
 namespace ADP.Portal.Core.Tests.Ado.Services
 {
     [TestFixture]
-    public class UserGroupServiceTests
+    public class GroupServiceTests
     {
-        private readonly IAzureAadGroupService azureAADGroupServicMock;
-        private readonly ILogger<UserGroupService> loggerMock;
-        private readonly UserGroupService userGroupService;
+        private readonly IAzureAadGroupService azureAADGroupServiceMock;
+        private readonly ILogger<GroupService> loggerMock;
+        private readonly GroupService groupService;
         private readonly Fixture fixture;
 
-        public UserGroupServiceTests()
+        public GroupServiceTests()
         {
-            azureAADGroupServicMock = Substitute.For<IAzureAadGroupService>();
-            loggerMock = Substitute.For<ILogger<UserGroupService>>();
-            userGroupService = new UserGroupService(azureAADGroupServicMock, loggerMock);
-            fixture= new Fixture();
+            azureAADGroupServiceMock = Substitute.For<IAzureAadGroupService>();
+            loggerMock = Substitute.For<ILogger<GroupService>>();
+            groupService = new GroupService(azureAADGroupServiceMock, loggerMock);
+            fixture = new Fixture();
         }
 
         [Test]
         public void Constructor_WithValidParameters_SetsUserGroupService()
         {
             // Act
-            var userGroupService2 = new UserGroupService(azureAADGroupServicMock, loggerMock);
+            var groupService2 = new GroupService(azureAADGroupServiceMock, loggerMock);
 
             // Assert
-            Assert.That(userGroupService2, Is.Not.Null);
+            Assert.That(groupService2, Is.Not.Null);
         }
 
         [Test]
@@ -44,10 +44,10 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             var userPrincipalName = "test@domain.com";
             var userId = "12345";
-            azureAADGroupServicMock.GetUserIdAsync(userPrincipalName).Returns(userId);
+            azureAADGroupServiceMock.GetUserIdAsync(userPrincipalName).Returns(userId);
 
             // Act
-            var result = await userGroupService.GetUserIdAsync(userPrincipalName);
+            var result = await groupService.GetUserIdAsync(userPrincipalName);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -59,10 +59,10 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         {
             // Arrange
             var userPrincipalName = "test@domain.com";
-            azureAADGroupServicMock.GetUserIdAsync(userPrincipalName).ThrowsAsync(new ODataError() { ResponseStatusCode = 404 });
+            azureAADGroupServiceMock.GetUserIdAsync(userPrincipalName).ThrowsAsync(new ODataError() { ResponseStatusCode = 404 });
 
             // Act
-            var result = await userGroupService.GetUserIdAsync(userPrincipalName);
+            var result = await groupService.GetUserIdAsync(userPrincipalName);
 
             // Assert
             Assert.That(result, Is.Null);
@@ -73,11 +73,11 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         {
             // Arrange
             var userPrincipalName = "test@domain.com";
-            azureAADGroupServicMock.GetUserIdAsync(userPrincipalName).ThrowsAsync<ODataError>();
+            azureAADGroupServiceMock.GetUserIdAsync(userPrincipalName).ThrowsAsync<ODataError>();
 
 
             // Assert
-            Assert.ThrowsAsync<ODataError>(async () => await userGroupService.GetUserIdAsync(userPrincipalName));
+            Assert.ThrowsAsync<ODataError>(async () => await groupService.GetUserIdAsync(userPrincipalName));
         }
 
         [Test]
@@ -86,13 +86,13 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             var groupId = Guid.NewGuid().ToString();
             var userId = "12345";
-            azureAADGroupServicMock.AddGroupMemberAsync(groupId, userId).Returns(true);
+            azureAADGroupServiceMock.AddGroupMemberAsync(groupId, userId).Returns(true);
 
             // Act
-            var result = await userGroupService.AddGroupMemberAsync(groupId, userId);
+            var result = await groupService.AddGroupMemberAsync(groupId, userId);
 
             // Assert
-            await azureAADGroupServicMock.Received().AddGroupMemberAsync(groupId, userId);
+            await azureAADGroupServiceMock.Received().AddGroupMemberAsync(groupId, userId);
             Assert.That(result, Is.True);
         }
 
@@ -102,13 +102,13 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             var groupId = Guid.NewGuid().ToString();
             var userId = "12345";
-            azureAADGroupServicMock.AddGroupMemberAsync(groupId, userId).Returns(false);
+            azureAADGroupServiceMock.AddGroupMemberAsync(groupId, userId).Returns(false);
 
             // Act
-            var result = await userGroupService.AddGroupMemberAsync(groupId, userId);
+            var result = await groupService.AddGroupMemberAsync(groupId, userId);
 
             // Assert
-            await azureAADGroupServicMock.Received().AddGroupMemberAsync(groupId, userId);
+            await azureAADGroupServiceMock.Received().AddGroupMemberAsync(groupId, userId);
             Assert.That(result, Is.False);
         }
 
@@ -119,13 +119,13 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             var groupId = "groupId";
             var memberId = "memberId";
 
-            azureAADGroupServicMock.RemoveGroupMemberAsync(groupId, memberId).Returns(true);
+            azureAADGroupServiceMock.RemoveGroupMemberAsync(groupId, memberId).Returns(true);
 
             // Act
-            var result = await userGroupService.RemoveGroupMemberAsync(groupId, memberId);
+            var result = await groupService.RemoveGroupMemberAsync(groupId, memberId);
 
             // Assert
-            Assert.That(result,Is.True);
+            Assert.That(result, Is.True);
         }
 
         [Test]
@@ -135,10 +135,10 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             var groupId = "groupId";
             var memberId = "memberId";
 
-            azureAADGroupServicMock.RemoveGroupMemberAsync(groupId, memberId).Returns(false);
+            azureAADGroupServiceMock.RemoveGroupMemberAsync(groupId, memberId).Returns(false);
 
             // Act
-            var result = await userGroupService.RemoveGroupMemberAsync(groupId, memberId);
+            var result = await groupService.RemoveGroupMemberAsync(groupId, memberId);
 
             // Assert
             Assert.That(result, Is.False);
@@ -150,10 +150,10 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             var groupName = "testGroup";
             var groupId = "testId";
-            azureAADGroupServicMock.GetGroupIdAsync(groupName).Returns(groupId);
+            azureAADGroupServiceMock.GetGroupIdAsync(groupName).Returns(groupId);
 
             // Act
-            var result = await userGroupService.GetGroupIdAsync(groupName);
+            var result = await groupService.GetGroupIdAsync(groupName);
 
             // Assert
             Assert.That(result, Is.EqualTo(groupId));
@@ -164,45 +164,77 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         {
             // Arrange
             var groupName = "testGroup";
-            azureAADGroupServicMock.GetGroupIdAsync(groupName).Returns((string?)null);
+            azureAADGroupServiceMock.GetGroupIdAsync(groupName).Returns((string?)null);
 
             // Act
-            var result = await userGroupService.GetGroupIdAsync(groupName);
+            var result = await groupService.GetGroupIdAsync(groupName);
 
             // Assert
             Assert.That(result, Is.Null);
         }
 
         [Test]
-        public async Task GetGroupMembersAsync_GivenGroupId_ReturnsGroupMembersAndLogsInformation()
+        public async Task GetGroupMembersAsync_GivenGroupId_Returns_UserTypeGroupMembersAndLogsInformation()
         {
             // Arrange
             var groupId = "groupId";
             var groupMembers = new List<User> { new User { Id = "memberId", UserPrincipalName = "user@domain.com" } };
 
-            azureAADGroupServicMock.GetGroupMembersAsync(groupId).Returns(groupMembers);
+            azureAADGroupServiceMock.GetGroupMembersAsync<User>(groupId).Returns(groupMembers);
 
             // Act
-            var result = await userGroupService.GetGroupMembersAsync(groupId);
+            var result = await groupService.GetUserTypeGroupMembersAsync(groupId);
 
             // Assert
-            
+
             Assert.That(groupMembers.Count, Is.EqualTo(result.Count));
         }
 
         [Test]
-        public async Task GetGroupMembersAsync_GivenGroupIdButNoMembers_ReturnsEmptyListAndDoesNotLogInformation()
+        public async Task GetGroupMembersAsync_GivenGroupIdButNo_UserTypeMembers_ReturnsEmpty_ListAndDoesNotLogInformation()
         {
             // Arrange
             var groupId = "groupId";
             List<User>? listUsers = null;
-            azureAADGroupServicMock.GetGroupMembersAsync(groupId).Returns(listUsers);
+            azureAADGroupServiceMock.GetGroupMembersAsync<User>(groupId).Returns(listUsers);
 
             // Act
-            var result = await userGroupService.GetGroupMembersAsync(groupId);
+            var result = await groupService.GetUserTypeGroupMembersAsync(groupId);
 
             // Assert
-            Assert.That(result,Is.Empty);
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public async Task GetGroupMembersAsync_GivenGroupId_Returns_GroupType_GroupMembersAndLogsInformation()
+        {
+            // Arrange
+            var groupId = "groupId";
+            var groupMembers = new List<Group> { new Group { Id = "memberId", DisplayName = "Test group" } };
+
+            azureAADGroupServiceMock.GetGroupMembersAsync<Group>(groupId).Returns(groupMembers);
+
+            // Act
+            var result = await groupService.GetGroupTypeGroupMembersAsync(groupId);
+
+            // Assert
+
+            Assert.That(groupMembers.Count, Is.EqualTo(result.Count));
+        }
+
+        [Test]
+        public async Task GetGroupMembersAsync_GivenGroupIdButNoMembers_ReturnsEmpty_GroupType_ListAndDoesNotLogInformation()
+        {
+            // Arrange
+            var groupId = "groupId";
+            List<Group>? listUsers = null;
+            azureAADGroupServiceMock.GetGroupMembersAsync<Group>(groupId).Returns(listUsers);
+
+            // Act
+            var result = await groupService.GetUserTypeGroupMembersAsync(groupId);
+
+            // Assert
+            Assert.That(result, Is.Empty);
         }
 
         [Test]
@@ -211,11 +243,11 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             var groupId = "groupId";
             var groupMemberships = new List<Group> { new Group { Id = "groupId2", DisplayName = "group2" } };
-            
-            azureAADGroupServicMock.GetGroupMemberShipsAsync(groupId).Returns(groupMemberships);
+
+            azureAADGroupServiceMock.GetGroupMemberShipsAsync(groupId).Returns(groupMemberships);
 
             // Act
-            var result = await userGroupService.GetGroupMemberShipsAsync(groupId);
+            var result = await groupService.GetGroupMemberShipsAsync(groupId);
 
             // Assert
             Assert.That(groupMemberships.Count, Is.EqualTo(result.Count));
@@ -227,10 +259,10 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             var groupId = "groupId";
             List<Group>? listGroups = null;
-            azureAADGroupServicMock.GetGroupMemberShipsAsync(groupId).Returns(listGroups);
+            azureAADGroupServiceMock.GetGroupMemberShipsAsync(groupId).Returns(listGroups);
 
             // Act
-            var result = await userGroupService.GetGroupMemberShipsAsync(groupId);
+            var result = await groupService.GetGroupMemberShipsAsync(groupId);
 
             // Assert
             Assert.That(result, Is.Empty);
@@ -239,18 +271,18 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         public async Task AddGroupAsync_GivenAadGroup_ReturnsGroupIdAndLogsInformation()
         {
             // Arrange
-            var aadGroup = fixture.Build<AadGroup>().With(i=>i.DisplayName, "group").Create();
+            var aadGroup = fixture.Build<AadGroup>().With(i => i.DisplayName, "group").Create();
             var group = aadGroup.Adapt<Group>();
             group.Id = "groupId";
 
-            azureAADGroupServicMock.AddGroupAsync(Arg.Any<Group>()).Returns(group);
+            azureAADGroupServiceMock.AddGroupAsync(Arg.Any<Group>()).Returns(group);
 
             // Act
-            var result = await userGroupService.AddGroupAsync(aadGroup);
+            var result = await groupService.AddGroupAsync(aadGroup);
 
             // Assert
             Assert.That(result, Is.EqualTo(group.Id));
-            
+
         }
 
         [Test]
@@ -258,12 +290,12 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         {
             // Arrange
             var aadGroup = fixture.Build<AadGroup>().With(i => i.DisplayName, "group").Create();
-            
-            
-            azureAADGroupServicMock.AddGroupAsync(Arg.Any<Group>()).Returns((Group?)null);
+
+
+            azureAADGroupServiceMock.AddGroupAsync(Arg.Any<Group>()).Returns((Group?)null);
 
             // Act
-            var result = await userGroupService.AddGroupAsync(aadGroup);
+            var result = await groupService.AddGroupAsync(aadGroup);
 
             // Assert
             Assert.That(result, Is.Null);

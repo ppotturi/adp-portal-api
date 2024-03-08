@@ -1,6 +1,5 @@
 ﻿using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
-using AutoFixture;
 using NSubstitute;
 using NUnit.Framework;
 using Octokit;

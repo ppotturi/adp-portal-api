@@ -18,7 +18,7 @@ trigger:
   batch: true
   branches:
     include:
-      - "main"
+      - "*"
   paths:
     exclude:
       - test-output/*

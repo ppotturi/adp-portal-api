@@ -28,11 +28,11 @@ namespace ADP.Portal.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetAdoProject(string projectName)
         {
-            logger.LogInformation("Getting project {projectName}", projectName);
+            logger.LogInformation("Getting project {ProjectName}", projectName);
             var project = await adoProjectService.GetProjectAsync(projectName);
             if (project == null)
             {
-                logger.LogWarning("Project {projectName} not found", projectName);
+                logger.LogWarning("Project {ProjectName} not found", projectName);
                 return NotFound();
             }
             return Ok(project);
@@ -44,7 +44,7 @@ namespace ADP.Portal.Api.Controllers
             var project = await adoProjectService.GetProjectAsync(projectName);
             if (project == null)
             {
-                logger.LogWarning("Project {projectName} not found", projectName);
+                logger.LogWarning("Project {ProjectName} not found", projectName);
                 return NotFound();
             }
 
