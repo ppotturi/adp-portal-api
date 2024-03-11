@@ -227,16 +227,6 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private static string GetFileName(string teamName, string tenantName)
-        {
-            return $"{tenantName}/{ToKebabCase(teamName)}.yaml";
-        }
-
-        private static string ToKebabCase(string name)
-        {
-            return KebabCaseRegex().Replace(name, "-$1").ToLower();
-        }
-
         private static bool CanCreateGroup(GroupType groupType)
         {
             return (groupType == GroupType.UserGroup || groupType == GroupType.AccessGroup);
