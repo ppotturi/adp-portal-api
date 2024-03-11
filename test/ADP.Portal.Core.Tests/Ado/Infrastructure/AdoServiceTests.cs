@@ -30,6 +30,10 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             TypeAdapterConfig<AdoVariableGroup, DistributedTask.VariableGroupParameters>.NewConfig()
                 .Map(dest => dest.VariableGroupProjectReferences, src => new List<DistributedTask.VariableGroupProjectReference>() { new() { Name = src.Name, Description = src.Description } })
                 .Map(dest => dest.Variables, src => src.Variables.ToDictionary(v => v.Name, v => new DistributedTask.VariableValue(v.Value, v.IsSecret)));
+
+            vssConnectionMock.ClearReceivedCalls();
+            serviceEndpointClientMock.ClearReceivedCalls();
+            taskAgentClientMock.ClearReceivedCalls();
         }
 
         public AdoServiceTests()
@@ -200,6 +204,54 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
         }
 
         [Test]
+        public async Task ShareServiceEndpointsAsync_ReturnsExistingEndpointIds()
+        {
+            // Arrange - given the ADO project to onboard and the service connections to add...
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid() };
+            var serviceConnections = new List<string> { "TestServiceConnection1", "TestServiceConnection2" };
+
+            // Arrange - ...and given an existing reference project and service connections...
+            var adpProjectName = "TestProject";
+            var adpProjectId = Guid.NewGuid();
+            var serviceEndpoints = new List<ServiceEndpoint>
+            {
+                new() 
+                {
+                    Name = "TestServiceConnection1",
+                    Id = Guid.NewGuid(),
+                    ServiceEndpointProjectReferences = [ new() { ProjectReference = new ProjectReference { Id = adpProjectId } } ]
+                },
+                new()
+                {
+                    Name = "TestServiceConnection2",
+                    Id = Guid.NewGuid(),
+                    ServiceEndpointProjectReferences = [ new() { ProjectReference = new ProjectReference { Id = adpProjectId } } ]
+                },
+                new()
+                {
+                    Name = "TestServiceConnection3",
+                    Id = Guid.NewGuid(),
+                    ServiceEndpointProjectReferences = [ new() { ProjectReference = new ProjectReference { Id = adpProjectId } } ]
+                },
+            };
+
+            serviceEndpointClientMock.GetServiceEndpointsAsync(adpProjectName, null, null, null, null, null, null, null, Arg.Any<CancellationToken>())
+                .Returns(serviceEndpoints);
+            vssConnectionMock.GetClientAsync<ServiceEndpointHttpClient>(Arg.Any<CancellationToken>())
+               .Returns(serviceEndpointClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Act - ...when sharing service endpoints from onBoardProject to adpProjectName...
+            var endpontIds = await adoService.ShareServiceEndpointsAsync(adpProjectName, serviceConnections, onBoardProject);
+
+            // Assert - ...the service connection IDs required for onboarding should be returned.
+            var expectedEndpointIds = serviceEndpoints.Where(e => serviceConnections.Exists(c => c == e.Name)).Select(e => e.Id);
+            Assert.That(endpontIds, Is.EquivalentTo(expectedEndpointIds));
+        }
+
+        [Test]
         public async Task AddEnvironmentsAsync_LogsInformationMessage_WhenEnvironmentExists()
         {
             // Arrange
@@ -237,7 +289,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             var environments = new List<DistributedTask.EnvironmentInstance>();
 
             taskAgentClientMock.GetEnvironmentsAsync(onBoardProject.Id, null, null, null, null, Arg.Any<CancellationToken>()).Returns(environments);
-
+            taskAgentClientMock.AddEnvironmentAsync(onBoardProject.Id, Arg.Any<DistributedTask.EnvironmentCreateParameter>(), null, Arg.Any<CancellationToken>()).Returns(x => new DistributedTask.EnvironmentInstance { Name = x.Arg<DistributedTask.EnvironmentCreateParameter>().Name, Id = 123 });
             vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
                .Returns(taskAgentClientMock);
 
@@ -249,6 +301,61 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 
             // Assert
             await taskAgentClientMock.Received(1).AddEnvironmentAsync(onBoardProject.Id, Arg.Any<DistributedTask.EnvironmentCreateParameter>(), null, Arg.Any<CancellationToken>());
+        }
+
+        [Test]
+        public async Task AddEnvironmentsAsync_ReturnsExistingEnvironmentIds()
+        {
+            // Arrange - given the ADO project to onboard and the environments to add...
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "TestProject" };
+            var adoEnvironments = new List<AdoEnvironment> { new("TestEnvironment1", ""), new("TestEnvironment2", ""), new("TestEnvironment3", "") };
+
+            // Arrange - ...and given the environments have already been added to the project...
+            var environments = new List<DistributedTask.EnvironmentInstance>
+            {
+                new DistributedTask.EnvironmentInstance { Name = "TestEnvironment1", Id = 111 },
+                new DistributedTask.EnvironmentInstance { Name = "TestEnvironment2", Id = 222 },
+                new DistributedTask.EnvironmentInstance { Name = "TestEnvironment3", Id = 333 }
+            };
+
+            taskAgentClientMock.GetEnvironmentsAsync(onBoardProject.Id, null, null, null, null, Arg.Any<CancellationToken>()).Returns(environments);
+            vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
+               .Returns(taskAgentClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Act - ...when we attempt to add environments to the project...
+            var environmentIds = await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
+
+            // Assert - ...the environment IDs are returned.
+            var expectedEnvironmentIds = environments.Select(e => e.Id);
+            Assert.That(environmentIds, Is.EquivalentTo(expectedEnvironmentIds));
+        }
+
+        [Test]
+        public async Task AddEnvironmentsAsync_ReturnsNewEnvironmentIds()
+        {
+            // Arrange - given the ADO project to onboard and the environments to add...
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "TestProject" };
+            var adoEnvironments = new List<AdoEnvironment> { new("TestEnvironment1", ""), new("TestEnvironment2", ""), new("TestEnvironment3", "") };
+
+            // Arrange - ...and given the project does not already have environments configured...
+            var environments = new List<DistributedTask.EnvironmentInstance>();
+
+            taskAgentClientMock.GetEnvironmentsAsync(onBoardProject.Id, null, null, null, null, Arg.Any<CancellationToken>()).Returns(environments);
+            taskAgentClientMock.AddEnvironmentAsync(onBoardProject.Id, Arg.Any<DistributedTask.EnvironmentCreateParameter>(), null, Arg.Any<CancellationToken>()).Returns(x => new DistributedTask.EnvironmentInstance { Name = x.Arg<DistributedTask.EnvironmentCreateParameter>().Name, Id = 123 });
+            vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
+               .Returns(taskAgentClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Act - ...when we attempt to add environments to the project...
+            var environmentIds = await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
+
+            // Assert - ...the environment IDs are returned.
+            Assert.That(environmentIds, Has.Exactly(adoEnvironments.Count).Items);
         }
 
         [Test]
@@ -294,6 +401,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 
             taskAgentClientMock.GetAgentQueuesAsync(adpProjectName, string.Empty, null, null, Arg.Any<CancellationToken>()).Returns(adpAgentQueues);
             taskAgentClientMock.GetAgentQueuesAsync(onBoardProject.Id, null, null, null, Arg.Any<CancellationToken>()).Returns(agentPools);
+            taskAgentClientMock.AddAgentQueueAsync(onBoardProject.Id, Arg.Any<DistributedTask.TaskAgentQueue>()).Returns(new DistributedTask.TaskAgentQueue { Id = 111 });
 
             vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
                 .Returns(taskAgentClientMock);
@@ -309,6 +417,69 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
         }
 
         [Test]
+        public async Task ShareAgentPoolsAsync_ReturnsExistingAgentQueueIds_WhenAgentPoolAlreadySharedWithProject()
+        {
+            // Arrange - given the ADO project to onboard and agent pools to share...
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "TestProject" };
+            var adoAgentPoolsToShare = new List<string> { "TestAgentPool1" };
+
+            // Arrange - ...and the agent pools have already been shared with the project...
+            var adpProjectName = "TestProject";
+            var adpAgentQueues = new List<DistributedTask.TaskAgentQueue> { new() { Name = "TestAgentPool1", Id = 111 } };
+            var onboardProjectAgentPools = new List<DistributedTask.TaskAgentQueue> { new() { Name = "TestAgentPool1", Id = 111 } };
+
+            taskAgentClientMock.GetAgentQueuesAsync(adpProjectName, string.Empty, null, null, Arg.Any<CancellationToken>()).Returns(adpAgentQueues);
+            taskAgentClientMock.GetAgentQueuesAsync(onBoardProject.Id, null, null, null, Arg.Any<CancellationToken>()).Returns(onboardProjectAgentPools);
+
+            vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
+                .Returns(taskAgentClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Act - ...when sharing agent pools from adpProject to onboardProject...
+            var agentPoolIds = await adoService.ShareAgentPoolsAsync(adpProjectName, adoAgentPoolsToShare, onBoardProject);
+
+            // Assert - ...the existing agent pool IDs are returned.
+            var expectedAgentPoolIds = onboardProjectAgentPools.Select(p => p.Id);
+            Assert.That(agentPoolIds, Is.EquivalentTo(expectedAgentPoolIds));
+        }
+
+        public async Task ShareAgentPoolsAsync_AgentQueueIds_WhenAgentPoolHasNotBeenShared()
+        {
+            // Arrange - given the ADO project to onboard and agent pools to share...
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "TestProject" };
+            var adoAgentPoolsToShare = new List<string> { "TestAgentPool1" };
+
+            var expectedAgentQueue = new DistributedTask.TaskAgentQueue
+            {
+                Id = 222,
+                Name = "TestProject1"
+            };
+
+            // Arrange - ...and the agent pools have already been shared with the project...
+            var adpProjectName = "TestProject";
+            var adpAgentQueues = new List<DistributedTask.TaskAgentQueue> { new() { Name = "TestAgentPool1", Id = 111 } };
+            var onboardProjectAgentPools = new List<DistributedTask.TaskAgentQueue>();
+
+            taskAgentClientMock.GetAgentQueuesAsync(adpProjectName, string.Empty, null, null, Arg.Any<CancellationToken>()).Returns(adpAgentQueues);
+            taskAgentClientMock.GetAgentQueuesAsync(onBoardProject.Id, null, null, null, Arg.Any<CancellationToken>()).Returns(onboardProjectAgentPools);
+            taskAgentClientMock.AddAgentQueueAsync(onBoardProject.Id, Arg.Any<DistributedTask.TaskAgentQueue>()).Returns(expectedAgentQueue);
+
+            vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
+                .Returns(taskAgentClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Act - ...when sharing agent pools from adpProject to onboardProject...
+            var agentPoolIds = await adoService.ShareAgentPoolsAsync(adpProjectName, adoAgentPoolsToShare, onBoardProject);
+
+            // Assert - ...the new agent queue ID is returned.
+            Assert.That(agentPoolIds, Contains.Item(expectedAgentQueue.Id));
+        }
+
+        [Test]
         public async Task AddOrUpdateVariableGroupsAsync_CreatesVariableGroup_WhenVariableGroupDoesNotExist()
         {
             // Arrange
@@ -321,6 +492,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             var variableGroups = new List<DistributedTask.VariableGroup>();
 
             taskAgentClientMock.GetVariableGroupsAsync(onBoardProject.Id, null, null, null, null, null, null, Arg.Any<CancellationToken>()).Returns(variableGroups);
+            taskAgentClientMock.AddVariableGroupAsync(Arg.Any<DistributedTask.VariableGroupParameters>()).Returns(new DistributedTask.VariableGroup { Id = 111, Name = "TestVariableGroup" });
 
             vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
                 .Returns(taskAgentClientMock);
@@ -345,7 +517,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             var adoVariableGroup = new AdoVariableGroup("TestVariableGroup", adoVariables, "TestVariableGroup Description");
             var adoVariableGroups = new List<AdoVariableGroup> { adoVariableGroup };
             var variableGroups = new List<DistributedTask.VariableGroup> { new DistributedTask.VariableGroup { Name = "TestVariableGroup", Id = 1 } };
-
+            
             taskAgentClientMock.GetVariableGroupsAsync(onBoardProject.Id, null, null, null, null, null, null, Arg.Any<CancellationToken>()).Returns(variableGroups);
 
             vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
@@ -359,6 +531,64 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 
             // Assert
             await taskAgentClientMock.Received(1).UpdateVariableGroupAsync(Arg.Any<int>(), Arg.Any<DistributedTask.VariableGroupParameters>(), null, Arg.Any<CancellationToken>());
+        }
+
+        [Test]
+        public async Task AddOrUpdateVariableGroupsAsync_ReturnsVariableGroupIds_ForExistingVariableGroup()
+        {
+            // Arrange - given the ADO project to onboard and variable groups to add...
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "TestProject" };
+            var fixture = new Fixture();
+            var adoVariables = fixture.Build<AdoVariable>().CreateMany(2).ToList();
+            var adoVariableGroup = new AdoVariableGroup("TestVariableGroup", adoVariables, "TestVariableGroup Description");
+            var adoVariableGroups = new List<AdoVariableGroup> { adoVariableGroup };
+
+            // Arrange - ...and given the variable groups have already been added to the project...
+            var existingVariableGroup = new DistributedTask.VariableGroup { Name = "TestVariableGroup", Id = 1 };
+
+            taskAgentClientMock.GetVariableGroupsAsync(onBoardProject.Id, null, null, null, null, null, null, Arg.Any<CancellationToken>()).Returns(new List<DistributedTask.VariableGroup> { existingVariableGroup});
+            taskAgentClientMock.UpdateVariableGroupAsync(existingVariableGroup.Id, Arg.Any<DistributedTask.VariableGroupParameters>()).Returns(existingVariableGroup);
+
+            vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
+                .Returns(taskAgentClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Act - ...when we attempt to update the variable groups...
+            var variableGroupIds = await adoService.AddOrUpdateVariableGroupsAsync(adoVariableGroups, onBoardProject);
+
+            // Assert - ...the existing variable group IDs are returned.
+            Assert.That(variableGroupIds, Contains.Item(existingVariableGroup.Id));
+        }
+
+        [Test]
+        public async Task AddOrUpdateVariableGroupsAsync_ReturnsVariableGroupIds_WhenVariableGroupsCreated()
+        {
+            // Arrange - given the ADO project to onboard and variable groups to add...
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "TestProject" };
+            var fixture = new Fixture();
+            var adoVariables = fixture.Build<AdoVariable>().CreateMany(2).ToList();
+            var adoVariableGroup = new AdoVariableGroup("TestVariableGroup", adoVariables, "TestVariableGroup Description");
+            var adoVariableGroups = new List<AdoVariableGroup> { adoVariableGroup };
+
+            // Arrange - ...and given the variable groups have not yet been added to the project...
+            var expectedVariableGroup = new DistributedTask.VariableGroup { Name = "TestVariableGroup", Id = 1 };
+
+            taskAgentClientMock.GetVariableGroupsAsync(onBoardProject.Id, null, null, null, null, null, null, Arg.Any<CancellationToken>()).Returns(new List<DistributedTask.VariableGroup>());
+            taskAgentClientMock.AddVariableGroupAsync(Arg.Any<DistributedTask.VariableGroupParameters>()).Returns(expectedVariableGroup);
+
+            vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
+                .Returns(taskAgentClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Act - ...when we attempt to add the variable groups...
+            var variableGroupIds = await adoService.AddOrUpdateVariableGroupsAsync(adoVariableGroups, onBoardProject);
+
+            // Assert - ...the new variable group IDs are returned.
+            Assert.That(variableGroupIds, Contains.Item(expectedVariableGroup.Id));
         }
     }
 }

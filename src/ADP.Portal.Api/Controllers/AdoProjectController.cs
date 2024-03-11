@@ -1,5 +1,6 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Models;
+using ADP.Portal.Core.Ado.Dtos;
 using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Services;
 using Mapster;
@@ -39,6 +40,7 @@ namespace ADP.Portal.Api.Controllers
         }
 
         [HttpPatch("{projectName}/onboard")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OnboardProjectResult))]
         public async Task<ActionResult> OnBoardAsync(string projectName, [FromBody] OnBoardAdoProjectRequest onBoardRequest)
         {
             var project = await adoProjectService.GetProjectAsync(projectName);
@@ -51,9 +53,9 @@ namespace ADP.Portal.Api.Controllers
             var adoProject = onBoardRequest.Adapt<AdoProject>();
             adoProject.ProjectReference = project;
 
-            await adoProjectService.OnBoardAsync(adpAdpProjectConfig.Value.Name, adoProject);
+            var onboardResult = await adoProjectService.OnBoardAsync(adpAdpProjectConfig.Value.Name, adoProject);
 
-            return NoContent();
+            return Ok(onboardResult);
         }
     }
 }
