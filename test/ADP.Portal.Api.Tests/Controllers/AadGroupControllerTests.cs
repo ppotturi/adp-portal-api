@@ -20,14 +20,14 @@ namespace ADP.Portal.Api.Tests.Controllers
         private readonly IOptions<AzureAdConfig> azureAdConfigMock;
         private readonly ILogger<AadGroupController> loggerMock;
         private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfigMock;
-        private readonly IGitOpsConfigService gitOpsConfigServiceMock;
+        private readonly IGitOpsGroupsConfigService gitOpsConfigServiceMock;
         private readonly Fixture fixture;
 
         [SetUp]
         public void SetUp()
         {
             TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
-            
+
         }
 
         public AadGroupControllerTests()
@@ -35,7 +35,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             azureAdConfigMock = Substitute.For<IOptions<AzureAdConfig>>();
             adpTeamGitRepoConfigMock = Substitute.For<IOptions<AdpTeamGitRepoConfig>>();
             loggerMock = Substitute.For<ILogger<AadGroupController>>();
-            gitOpsConfigServiceMock = Substitute.For<IGitOpsConfigService>();
+            gitOpsConfigServiceMock = Substitute.For<IGitOpsGroupsConfigService>();
             controller = new AadGroupController(gitOpsConfigServiceMock, loggerMock, azureAdConfigMock, adpTeamGitRepoConfigMock);
             fixture = new Fixture();
         }
@@ -63,50 +63,39 @@ namespace ADP.Portal.Api.Tests.Controllers
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
-        [Test]
-        public async Task SyncGroupsAsync_ConfigDoesNotExist_ReturnsBadRequest()
+        [TestCase("UserGroup")]
+        [TestCase("AccessGroup")]
+        [TestCase("OpenVpnGroup")]
+        public async Task SyncGroupsAsync_ConfigExistsAndSyncHasErrors_ReturnsOk(string groupType)
         {
             // Arrange
-            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(false);
-
-            // Act
-            var result = await controller.SyncGroupsAsync("teamName", "UserGroupsMembers");
-
-            // Assert
-            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
-        }
-
-        [Test]
-        public async Task SyncGroupsAsync_ConfigExistsAndSyncHasErrors_ReturnsOk()
-        {
-            // Arrange
-            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(true);
-            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>())
-                .Returns(new GroupSyncResult { Error = ["Error"] });
+            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<GroupType?>(), Arg.Any<GitRepo>())
+                .Returns(new GroupSyncResult { Errors = ["Error"] });
 
             adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<AdpTeamGitRepoConfig>());
             azureAdConfigMock.Value.Returns(fixture.Create<AzureAdConfig>());
 
             // Act
-            var result = await controller.SyncGroupsAsync("teamName", "GroupsMembers");
+            var result = await controller.SyncGroupsAsync("teamName", groupType);
 
             // Assert
             Assert.That(result, Is.InstanceOf<OkObjectResult>());
         }
 
-        [Test]
-        public async Task SyncGroupsAsync_ConfigExistsAndSyncHasNoErrors_ReturnsNoContent()
+        [TestCase("UserGroup")]
+        [TestCase("AccessGroup")]
+        [TestCase("OpenVpnGroup")]
+        public async Task SyncGroupsAsync_ConfigExistsAndSyncHasNoErrors_ReturnsNoContent(string groupType)
         {
             // Arrange
-            gitOpsConfigServiceMock.IsConfigExistsAsync(Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(true);
-            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<ConfigType>(), Arg.Any<string>(), Arg.Any<GitRepo>())
-                .Returns(new GroupSyncResult { Error = new List<string>() });
+            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<GroupType?>(), Arg.Any<GitRepo>())
+                .Returns(new GroupSyncResult { Errors = new List<string>() });
 
             adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<AdpTeamGitRepoConfig>());
             azureAdConfigMock.Value.Returns(fixture.Create<AzureAdConfig>());
 
             // Act
-            var result = await controller.SyncGroupsAsync("teamName", "GroupsMembers");
+            var result = await controller.SyncGroupsAsync("teamName", groupType);
 
             // Assert
             Assert.That(result, Is.InstanceOf<NoContentResult>());

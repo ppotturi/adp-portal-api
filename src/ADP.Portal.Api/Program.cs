@@ -15,7 +15,6 @@ using Azure.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.OpenApi.Models;
-using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Octokit;
 
 namespace ADP.Portal.Api
@@ -89,7 +88,7 @@ namespace ADP.Portal.Api
             });
 
             builder.Services.AddScoped<IGitOpsConfigRepository, GitOpsConfigRepository>();
-            builder.Services.AddScoped<IGitOpsConfigService, GitOpsConfigService>();
+            builder.Services.AddScoped<IGitOpsGroupsConfigService, GitOpsGroupsConfigService>();
 
             builder.Services.EntitiesConfigure();
 

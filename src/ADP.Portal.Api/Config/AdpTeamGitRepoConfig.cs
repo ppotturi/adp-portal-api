@@ -4,7 +4,7 @@
     {
         public required string RepoName { get; set; }
         public required string BranchName { get; set; }
-        public required string Organisation { get; set;}
+        public required string Organisation { get; set; }
         public required GitHubAppAuthConfig Auth { get; set; }
         public class GitHubAppAuthConfig
         {

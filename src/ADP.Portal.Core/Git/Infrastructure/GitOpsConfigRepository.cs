@@ -1,7 +1,7 @@
 ﻿using ADP.Portal.Core.Git.Entities;
 using Octokit;
-using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 
 namespace ADP.Portal.Core.Git.Infrastructure
@@ -17,7 +17,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         public async Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo)
         {
-             var file = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.RepoName, fileName, gitRepo.BranchName);
+            var file = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.RepoName, fileName, gitRepo.BranchName);
             if (typeof(T) == typeof(string))
             {
                 return (T)Convert.ChangeType(file[0].Content, typeof(T));

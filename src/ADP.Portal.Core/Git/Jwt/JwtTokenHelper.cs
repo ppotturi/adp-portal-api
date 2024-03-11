@@ -42,6 +42,6 @@ namespace ADP.Portal.Core.Git.Jwt
             return (dt.ToUniversalTime().Ticks - TicksSince197011) / TimeSpan.TicksPerSecond;
         }
 
-    
+
     }
 }

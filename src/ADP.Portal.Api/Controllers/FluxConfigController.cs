@@ -9,9 +9,10 @@ namespace ADP.Portal.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FluxConfigController(IGitOpsConfigService gitOpsConfigService, ILogger<FluxConfigController> logger, IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig, IOptions<AzureAdConfig> azureAdConfig) : Controller
+    public class FluxConfigController(IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService, ILogger<FluxConfigController> logger,
+        IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig, IOptions<AzureAdConfig> azureAdConfig) : Controller
     {
-        private readonly IGitOpsConfigService gitOpsConfigService = gitOpsConfigService;
+        private readonly IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService = gitOpsFluxTeamConfigService;
         private readonly ILogger<FluxConfigController> logger = logger;
         private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig = adpTeamGitRepoConfig;
         private readonly IOptions<AzureAdConfig> azureAdConfig = azureAdConfig;
@@ -22,16 +23,8 @@ namespace ADP.Portal.Api.Controllers
             var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
             var tenantName = azureAdConfig.Value.TenantName;
 
-            logger.LogInformation("Check if Flux Services config exists for team:{TeamName}", teamName);
-            var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, ConfigType.FluxServices, tenantName, teamRepo);
-            if (!isConfigExists)
-            {
-                logger.LogWarning("Config not found for the Team:{TeamName} and configType:{ConfigType}", teamName, ConfigType.FluxServices);
-                return BadRequest($"Team '{teamName}' config not found.");
-            }
-
             logger.LogInformation("Sync Flux Services for the Team:{TeamName}", teamName);
-            await gitOpsConfigService.GenerateFluxTeamConfig(teamName, teamRepo);
+            await gitOpsFluxTeamConfigService.GenerateFluxTeamConfig(teamName, teamRepo);
 
             return Ok();
         }
