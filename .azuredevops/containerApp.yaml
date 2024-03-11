@@ -43,7 +43,7 @@ properties:
         name: {{imageRepoName}}
         env:
           - name: ASPNETCORE_ENVIRONMENT
-            value: "Development"
+            value: "Production"
           - name: Logging__LogLevel__Default
             value: "Information"
           - name: Logging__LogLevel__Microsoft.AspNetCore
