@@ -6,6 +6,6 @@
 
         public required List<FluxService> Services { get; set; }
 
-        public List<FluxAdditionalConfig> AdditionalConfig { get; set; } = [];
+        public List<FluxConfig> Tokens { get; set; } = [];
     }
 }

@@ -89,6 +89,7 @@ namespace ADP.Portal.Api
 
             builder.Services.AddScoped<IGitOpsConfigRepository, GitOpsConfigRepository>();
             builder.Services.AddScoped<IGitOpsGroupsConfigService, GitOpsGroupsConfigService>();
+            builder.Services.AddScoped<IGitOpsFluxTeamConfigService, GitOpsFluxTeamConfigService>();
 
             builder.Services.EntitiesConfigure();
 

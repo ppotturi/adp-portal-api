@@ -1,11 +1,12 @@
-﻿using ADP.Portal.Core.Azure.Entities;
+﻿using System.Text.RegularExpressions;
+using ADP.Portal.Core.Azure.Entities;
 using ADP.Portal.Core.Azure.Services;
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using Mapster;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.Services.Common;
 using Octokit;
-using System.Text.RegularExpressions;
 
 namespace ADP.Portal.Core.Git.Services
 {
@@ -226,10 +227,11 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private static string GetFileName(string teamName, ConfigType configType)
+        private static string GetFileName(string teamName, string tenantName)
         {
-            return $"{teamName}/{ToKebabCase(configType.ToString())}.yaml";
+            return $"{tenantName}/{ToKebabCase(teamName)}.yaml";
         }
+
         private static string ToKebabCase(string name)
         {
             return KebabCaseRegex().Replace(name, "-$1").ToLower();
@@ -254,6 +256,5 @@ namespace ADP.Portal.Core.Git.Services
         {
             return groupType == GroupType.UserGroup;
         }
-
     }
 }

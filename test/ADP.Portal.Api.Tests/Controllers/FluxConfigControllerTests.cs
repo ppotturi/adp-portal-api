@@ -1,15 +1,13 @@
-﻿using ADP.Portal.Api.Config;
+﻿using System.Reflection;
+using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Controllers;
-using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Services;
 using AutoFixture;
 using Mapster;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using NUnit.Framework;
-using System.Reflection;
 
 namespace ADP.Portal.Api.Tests.Controllers
 {
@@ -19,7 +17,6 @@ namespace ADP.Portal.Api.Tests.Controllers
         private readonly FluxConfigController controller;
         private readonly ILogger<FluxConfigController> loggerMock;
         private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfigMock;
-        private readonly IOptions<AzureAdConfig> azureAdConfigMock;
         private readonly IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService;
         private readonly Fixture fixture;
 
@@ -32,10 +29,9 @@ namespace ADP.Portal.Api.Tests.Controllers
         public FluxConfigControllerTests()
         {
             adpTeamGitRepoConfigMock = Substitute.For<IOptions<AdpTeamGitRepoConfig>>();
-            azureAdConfigMock = Substitute.For<IOptions<AzureAdConfig>>();
             loggerMock = Substitute.For<ILogger<FluxConfigController>>();
             gitOpsFluxTeamConfigService = Substitute.For<IGitOpsFluxTeamConfigService>();
-            controller = new FluxConfigController(gitOpsFluxTeamConfigService, loggerMock, adpTeamGitRepoConfigMock, azureAdConfigMock);
+            controller = new FluxConfigController(gitOpsFluxTeamConfigService, loggerMock, adpTeamGitRepoConfigMock);
             fixture = new Fixture();
         }
     }

@@ -4,6 +4,6 @@ namespace ADP.Portal.Core.Git.Services
 {
     public interface IGitOpsFluxTeamConfigService
     {
-        Task GenerateFluxTeamConfig(string teamName, GitRepo gitRepo);
+        Task GenerateFluxTeamConfig(GitRepo gitRepo, string teamName, string? serviceName = null);
     }
 }
