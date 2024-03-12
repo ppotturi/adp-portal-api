@@ -38,15 +38,11 @@ namespace ADP.Portal.Core.Git.Services
 
             // Create a PR
 
-
-            await Task.CompletedTask;
         }
 
-
-
-        private static Dictionary<string, Dictionary<string, object>> ProcessTemplates(Dictionary<string, Dictionary<string, object>> files, FluxTeamConfig? fluxTeamConfig, string? serviceName = null)
+        private static Dictionary<string, Dictionary<object, object>> ProcessTemplates(Dictionary<string, Dictionary<object, object>> files, FluxTeamConfig? fluxTeamConfig, string? serviceName = null)
         {
-            var finalFiles = new Dictionary<string, Dictionary<string, object>>();
+            var finalFiles = new Dictionary<string, Dictionary<object, object>>();
 
             var services = (serviceName != null ? fluxTeamConfig?.Services.Where(x => x.Name.Equals(serviceName)) : fluxTeamConfig?.Services) ?? [];
             if (services.Any())
@@ -54,75 +50,103 @@ namespace ADP.Portal.Core.Git.Services
                 // Create service files
                 finalFiles = CreateServices(files, fluxTeamConfig, services);
 
-                // Create environments
-                finalFiles.AddRange(CreateEnvironments(files, fluxTeamConfig, services));
-
                 // Replace tokens
-                //fluxTeamConfig?.Tokens.ForEach(finalFiles.ReplaceToken);
+                ApplyTeamTokens(fluxTeamConfig, finalFiles);
             }
 
             return finalFiles;
         }
 
-        private static Dictionary<string, Dictionary<string, object>> CreateServices(Dictionary<string, Dictionary<string, object>> files, FluxTeamConfig? fluxTeamConfig, IEnumerable<FluxService> services)
+        private static Dictionary<string, Dictionary<object, object>> CreateServices(Dictionary<string, Dictionary<object, object>> templates, FluxTeamConfig? teamConfig, IEnumerable<FluxService> services)
         {
-            var finalFiles = new Dictionary<string, Dictionary<string, object>>();
+            var finalFiles = new Dictionary<string, Dictionary<object, object>>();
 
-            var programme = fluxTeamConfig?.ServiceCode[..3];
-            fluxTeamConfig?.Tokens.Add(new FluxConfig { Key = "PROGRAMME_NAME", Value = programme ?? string.Empty });
-            fluxTeamConfig?.Tokens.Add(new FluxConfig { Key = "TEAM_NAME", Value = fluxTeamConfig?.ServiceCode ?? string.Empty });
-            fluxTeamConfig?.Tokens.Add(new FluxConfig { Key = "SERVICE_CODE", Value = fluxTeamConfig?.ServiceCode ?? string.Empty });
-
+            var programme = teamConfig?.ServiceCode[..3];
+            
             // Collect all non-service files
-            files.Where(x => !x.Key.StartsWith("flux/templates/programme/team/service") &&
-                             !x.Key.StartsWith("flux/templates/programme/team/environment")).ForEach(file =>
+            templates.Where(x => !x.Key.StartsWith(FluxConstants.SERVICE_FOLDER) &&
+                             !x.Key.StartsWith(FluxConstants.ENVIRONMENT_FOLDER)).ForEach(file =>
             {
-                var key = file.Key.Replace("flux/templates/programme", programme)
-                                .Replace("team", fluxTeamConfig?.ServiceCode);
+                var key = file.Key.Replace("flux/templates/programme", programme).Replace("team", teamConfig?.ServiceCode);
                 finalFiles.Add(key, file.Value);
             });
-            fluxTeamConfig?.Tokens.ForEach(finalFiles.ReplaceToken);
+
+            // Create team environments
+            var envTemplates = templates.Where(x => x.Key.Contains(FluxConstants.TEAM_ENV_FOLDER));
+            finalFiles.AddRange(CreateEnvironmentFiles(envTemplates, teamConfig, services));
 
             // Create files for each service
-            var serviceTemplates = files.Where(x => x.Key.StartsWith("flux/templates/programme/team/service")).ToList();
+            var serviceTemplates = templates.Where(x => x.Key.StartsWith(FluxConstants.SERVICE_FOLDER)).ToList();
             foreach (var service in services)
             {
-                var serviceFiles = new Dictionary<string, Dictionary<string, object>>();
-                foreach (var file in serviceTemplates)
+                var serviceFiles = new Dictionary<string, Dictionary<object, object>>();
+                var serviceTypeBasedTemplates = ServiceTypeBasedFiles(serviceTemplates, service);
+
+                foreach (var template in serviceTypeBasedTemplates)
                 {
-                    var key = file.Key.Replace("flux/templates/programme", programme).Replace("team", fluxTeamConfig?.ServiceCode)
-                                        .Replace("service", service.Name);
-                    serviceFiles.Add(key, file.Value);
+                    if (!template.Key.Contains("environment"))
+                    {
+                        var key = template.Key.Replace("flux/templates/programme", programme).Replace("team", teamConfig?.ServiceCode).Replace("service", service.Name);
+                        serviceFiles.Add(key, template.Value);
+                    }
+                    else
+                    {
+                        serviceFiles.AddRange(CreateEnvironmentFiles([template], teamConfig, [service]));
+                    }
                 }
+                //UpdateServiceDependencies();
 
                 service.Tokens.Add(new FluxConfig { Key = "SERVICE_NAME", Value = service.Name });
-                fluxTeamConfig?.Tokens.Union(service.Tokens).ForEach(serviceFiles.ReplaceToken);
+                service.Tokens.ForEach(serviceFiles.ReplaceToken);
                 finalFiles.AddRange(serviceFiles);
             }
+
             return finalFiles;
         }
 
-        private static Dictionary<string, Dictionary<string, object>> CreateEnvironments(Dictionary<string, Dictionary<string, object>> files, FluxTeamConfig? fluxTeamConfig, IEnumerable<FluxService> services)
+        private static IEnumerable<KeyValuePair<string, Dictionary<object, object>>> ServiceTypeBasedFiles(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> serviceTemplates, FluxService service)
         {
-            var finalFiles = new Dictionary<string, Dictionary<string, object>>();
-            var envFiles = files.Where(x => x.Key.StartsWith("flux/templates/programme/team/environment"));
-            var programme = fluxTeamConfig?.ServiceCode[..3];
+            return serviceTemplates.Where(filter =>
+            {
+                var matched = true;
+                if (IsBackendServiceWithDatabase(service))
+                {
+                    matched = !filter.Key.StartsWith(FluxConstants.PRE_DEPLOY_FOLDER) && !filter.Key.StartsWith(FluxConstants.PRE_DEPLOY_KUSTOMIZE_FILE);
+                }
+                return matched;
+            });
+        }
+
+        private static bool IsBackendServiceWithDatabase(FluxService service)
+        {
+            return service.Type.Equals(FluxServiceType.Frontend) || !service.Tokens.Exists(token => token.Key.Equals(FluxConstants.POSTGRES_DB));
+        }
+
+        private static Dictionary<string, Dictionary<object, object>> CreateEnvironmentFiles(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> templates, FluxTeamConfig? teamConfig, IEnumerable<FluxService> services)
+        {
+            var finalFiles = new Dictionary<string, Dictionary<object, object>>();
+            var programme = teamConfig?.ServiceCode[..3];
 
             foreach (var service in services)
             {
-                foreach (var envFile in envFiles)
+                foreach (var template in templates)
                 {
                     service.Environments.ForEach(env =>
                     {
-                        var key = envFile.Key.Replace("flux/templates/programme", programme).Replace("team", fluxTeamConfig?.ServiceCode).Replace("environment", $"{env[..3]}/{env[3..]}");
-                        if (finalFiles.TryGetValue(key, out var existingEnv))
+                        var key = template.Key.Replace("flux/templates/programme", programme).Replace("team", teamConfig?.ServiceCode).Replace("environment", $"{env[..3]}/{env[3..]}").Replace("service", service.Name);
+
+                        if (template.Key.Equals(FluxConstants.TEAM_ENV_KUSTOMIZATION_FILE, StringComparison.InvariantCultureIgnoreCase) &&
+                            finalFiles.TryGetValue(key, out var existingEnv))
                         {
                             ((List<object>)existingEnv["resources"]).Add($"../../{service.Name}");
                         }
                         else
                         {
-                            var newValue = DeepCopy(envFile.Value);
-                            ((List<object>)newValue["resources"]).Add($"../../{service.Name}");
+                            var newValue = template.Value.DeepCopy();
+                            if (template.Key.Equals(FluxConstants.TEAM_ENV_KUSTOMIZATION_FILE, StringComparison.InvariantCultureIgnoreCase))
+                            {
+                                ((List<object>)newValue["resources"]).Add($"../../{service.Name}");
+                            }
                             finalFiles.Add(key, newValue);
                         }
                     });
@@ -132,18 +156,14 @@ namespace ADP.Portal.Core.Git.Services
             return finalFiles;
         }
 
-        public static Dictionary<string, object> DeepCopy(Dictionary<string, object> original)
+        private static void ApplyTeamTokens(FluxTeamConfig? teamConfig, Dictionary<string, Dictionary<object, object>> files)
         {
-            var serializer = new SerializerBuilder()
-                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                    .Build();
+            var programme = teamConfig?.ServiceCode[..3];
+            teamConfig?.Tokens.Add(new FluxConfig { Key = "PROGRAMME_NAME", Value = programme ?? string.Empty });
+            teamConfig?.Tokens.Add(new FluxConfig { Key = "TEAM_NAME", Value = teamConfig?.ServiceCode ?? string.Empty });
+            teamConfig?.Tokens.Add(new FluxConfig { Key = "SERVICE_CODE", Value = teamConfig?.ServiceCode ?? string.Empty });
 
-            var deserializer = new DeserializerBuilder()
-                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                    .Build();
-
-            string json = serializer.Serialize(original);
-            return deserializer.Deserialize<Dictionary<string, object>>(json);
+            teamConfig?.Tokens.ForEach(files.ReplaceToken);
         }
 
     }
@@ -152,7 +172,7 @@ namespace ADP.Portal.Core.Git.Services
     {
         const string TOKEN_FORMAT = "__{0}__";
 
-        public static void ReplaceToken(this Dictionary<string, Dictionary<string, object>> instance, FluxConfig config)
+        public static void ReplaceToken(this Dictionary<string, Dictionary<object, object>> instance, FluxConfig config)
         {
             foreach (var item in instance)
             {
@@ -160,11 +180,11 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        public static void ReplaceToken(this Dictionary<string, object> instance, FluxConfig config)
+        public static void ReplaceToken(this Dictionary<object, object> instance, FluxConfig config)
         {
             foreach (var key in instance.Keys)
             {
-                if (instance[key] is Dictionary<string, object> value)
+                if (instance[key] is Dictionary<object, object> value)
                 {
                     value.ReplaceToken(config);
                 }
@@ -173,6 +193,15 @@ namespace ADP.Portal.Core.Git.Services
                     instance[key] = instance[key].ToString()?.Replace(string.Format(TOKEN_FORMAT, config.Key), config.Value) ?? instance[key];
                 }
             }
+        }
+
+        public static Dictionary<object, object> DeepCopy(this Dictionary<object, object> instance)
+        {
+            var serializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            var deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+
+            var serializedValue = serializer.Serialize(instance);
+            return deserializer.Deserialize<Dictionary<object, object>>(serializedValue);
         }
     }
 }

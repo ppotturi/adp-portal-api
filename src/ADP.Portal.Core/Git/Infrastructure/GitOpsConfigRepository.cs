@@ -34,12 +34,12 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return result;
         }
 
-        public async Task<Dictionary<string, Dictionary<string, object>>> GetAllFilesAsync(GitRepo gitRepo, string path)
+        public async Task<Dictionary<string, Dictionary<object, object>>> GetAllFilesAsync(GitRepo gitRepo, string path)
         {
             return await GetAllFilesContentsAsync(gitRepo, path);
         }
 
-        public async Task<bool> CommitGeneratedFilesToBranchAsync(GitRepo gitRepoFluxServices, Dictionary<string, Dictionary<string, object>> generatedFiles, string branchName)
+        public async Task<bool> CommitGeneratedFilesToBranchAsync(GitRepo gitRepoFluxServices, Dictionary<string, Dictionary<object, object>> generatedFiles, string branchName)
         {
             // create a branch
             var mainRef = await gitHubClient.Git.Reference.Get(gitRepoFluxServices.Organisation, gitRepoFluxServices.Name, gitRepoFluxServices.BranchName);
@@ -56,14 +56,14 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return true;
         }
 
-        private async Task<Dictionary<string, Dictionary<string, object>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
+        private async Task<Dictionary<string, Dictionary<object, object>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
         {
             var repositoryItems = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, path, gitRepo.BranchName);
             var deserializer = new DeserializerBuilder()
                     .WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .Build();
 
-            var files = new Dictionary<string, Dictionary<string, object>>();
+            var files = new Dictionary<string, Dictionary<object, object>>();
             foreach (var item in repositoryItems)
             {
                 if (item.Type.Equals(ContentType.Dir))
@@ -74,7 +74,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
                 {
                     var file = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, item.Path, gitRepo.BranchName);
 
-                    var result = deserializer.Deserialize<Dictionary<string, object>>(file[0].Content);
+                    var result = deserializer.Deserialize<Dictionary<object, object>>(file[0].Content);
                     files.Add(item.Path, result);
                 }
             }

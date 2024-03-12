@@ -6,8 +6,8 @@ namespace ADP.Portal.Core.Git.Infrastructure
     {
         Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo);
 
-        Task<Dictionary<string, Dictionary<string, object>>> GetAllFilesAsync(GitRepo gitRepo, string path);
+        Task<Dictionary<string, Dictionary<object, object>>> GetAllFilesAsync(GitRepo gitRepo, string path);
 
-        Task<bool> CommitGeneratedFilesToBranchAsync(GitRepo gitRepoFluxServices, Dictionary<string, Dictionary<string, object>> generatedFiles, string branchName);
+        Task<bool> CommitGeneratedFilesToBranchAsync(GitRepo gitRepoFluxServices, Dictionary<string, Dictionary<object, object>> generatedFiles, string branchName);
     }
 }
