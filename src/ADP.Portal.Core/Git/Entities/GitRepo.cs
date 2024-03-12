@@ -2,8 +2,15 @@
 {
     public class GitRepo
     {
-        public required string RepoName { get; set; }
-        public required string BranchName { get; set; }
-        public required string Organisation { get; set; }
+        public GitRepo(string name, string branchName, string organisation)
+        {
+            Name = name;
+            BranchName = branchName;
+            Organisation = organisation;
+        }
+
+        public string Name { get; set; }
+        public string BranchName { get; set; }
+        public string Organisation { get; set; }
     }
 }

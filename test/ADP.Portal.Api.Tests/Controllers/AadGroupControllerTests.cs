@@ -19,7 +19,7 @@ namespace ADP.Portal.Api.Tests.Controllers
         private readonly AadGroupController controller;
         private readonly IOptions<AzureAdConfig> azureAdConfigMock;
         private readonly ILogger<AadGroupController> loggerMock;
-        private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfigMock;
+        private readonly IOptions<TeamGitRepoConfig> adpTeamGitRepoConfigMock;
         private readonly IGitOpsGroupsConfigService gitOpsConfigServiceMock;
         private readonly Fixture fixture;
 
@@ -33,7 +33,7 @@ namespace ADP.Portal.Api.Tests.Controllers
         public AadGroupControllerTests()
         {
             azureAdConfigMock = Substitute.For<IOptions<AzureAdConfig>>();
-            adpTeamGitRepoConfigMock = Substitute.For<IOptions<AdpTeamGitRepoConfig>>();
+            adpTeamGitRepoConfigMock = Substitute.For<IOptions<TeamGitRepoConfig>>();
             loggerMock = Substitute.For<ILogger<AadGroupController>>();
             gitOpsConfigServiceMock = Substitute.For<IGitOpsGroupsConfigService>();
             controller = new AadGroupController(gitOpsConfigServiceMock, loggerMock, azureAdConfigMock, adpTeamGitRepoConfigMock);
@@ -72,7 +72,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<GroupType?>(), Arg.Any<GitRepo>())
                 .Returns(new GroupSyncResult { Errors = ["Error"] });
 
-            adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<AdpTeamGitRepoConfig>());
+            adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<TeamGitRepoConfig>());
             azureAdConfigMock.Value.Returns(fixture.Create<AzureAdConfig>());
 
             // Act
@@ -91,7 +91,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<GroupType?>(), Arg.Any<GitRepo>())
                 .Returns(new GroupSyncResult { Errors = new List<string>() });
 
-            adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<AdpTeamGitRepoConfig>());
+            adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<TeamGitRepoConfig>());
             azureAdConfigMock.Value.Returns(fixture.Create<AzureAdConfig>());
 
             // Act

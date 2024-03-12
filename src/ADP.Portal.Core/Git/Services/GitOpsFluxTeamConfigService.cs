@@ -1,20 +1,25 @@
-﻿using System.Text.Json;
-using ADP.Portal.Core.Git.Entities;
+﻿using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
-using Newtonsoft.Json;
-using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Core.Git.Services
 {
-    public class GitOpsFluxTeamConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsFluxTeamConfigService> logger) : IGitOpsFluxTeamConfigService
+    public class GitOpsFluxTeamConfigService : IGitOpsFluxTeamConfigService
     {
-        private readonly IGitOpsConfigRepository gitOpsConfigRepository = gitOpsConfigRepository;
-        private readonly ILogger<GitOpsFluxTeamConfigService> logger = logger;
+        private readonly IGitOpsConfigRepository gitOpsConfigRepository;
+        private readonly ILogger<GitOpsFluxTeamConfigService> logger;
 
-        public async Task GenerateFluxTeamConfig(GitRepo gitRepo, string teamName, string? serviceName = null)
+        public GitOpsFluxTeamConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsFluxTeamConfigService> logger)
+        {
+            this.gitOpsConfigRepository = gitOpsConfigRepository;
+            this.logger = logger;
+
+        }
+
+        public async Task GenerateFluxTeamConfig(GitRepo gitRepo, GitRepo gitRepoFluxServices, string teamName, string? serviceName = null)
         {
             var teamConfig = await gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>($"flux/services/{teamName}.yaml", gitRepo);
 
@@ -27,13 +32,17 @@ namespace ADP.Portal.Core.Git.Services
             var generatedFiles = ProcessTemplates(templates, teamConfig, serviceName);
 
             // Push files to Flux Repository
-
+            var branchName = $"features/{teamName}" + (string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}");
+            logger.LogInformation("Commit generated flux file to the branch:'{BranchName}'.", branchName);
+            await gitOpsConfigRepository.CommitGeneratedFilesToBranchAsync(gitRepoFluxServices, generatedFiles, branchName);
 
             // Create a PR
 
 
             await Task.CompletedTask;
         }
+
+
 
         private static Dictionary<string, Dictionary<string, object>> ProcessTemplates(Dictionary<string, Dictionary<string, object>> files, FluxTeamConfig? fluxTeamConfig, string? serviceName = null)
         {
@@ -136,6 +145,7 @@ namespace ADP.Portal.Core.Git.Services
             string json = serializer.Serialize(original);
             return deserializer.Deserialize<Dictionary<string, object>>(json);
         }
+
     }
 
     public static partial class Extensions

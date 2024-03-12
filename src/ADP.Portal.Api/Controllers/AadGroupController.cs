@@ -15,15 +15,15 @@ namespace ADP.Portal.Api.Controllers
         private readonly IGitOpsGroupsConfigService gitOpsConfigService;
         private readonly ILogger<AadGroupController> logger;
         public readonly IOptions<AzureAdConfig> azureAdConfig;
-        private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig;
+        private readonly IOptions<TeamGitRepoConfig> teamGitRepoConfig;
 
         public AadGroupController(IGitOpsGroupsConfigService gitOpsConfigService, ILogger<AadGroupController> logger,
-            IOptions<AzureAdConfig> azureAdConfig, IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig)
+            IOptions<AzureAdConfig> azureAdConfig, IOptions<TeamGitRepoConfig> teamGitRepoConfig)
         {
             this.gitOpsConfigService = gitOpsConfigService;
             this.logger = logger;
             this.azureAdConfig = azureAdConfig;
-            this.adpTeamGitRepoConfig = adpTeamGitRepoConfig;
+            this.teamGitRepoConfig = teamGitRepoConfig;
         }
 
         [HttpPut("sync/{teamName}/{groupType?}")]
@@ -36,7 +36,7 @@ namespace ADP.Portal.Api.Controllers
                 return BadRequest("Invalid Group Type.");
             }
 
-            var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
+            var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
             var tenantName = azureAdConfig.Value.TenantName;
             var ownerId = azureAdConfig.Value.SpObjectId;
 

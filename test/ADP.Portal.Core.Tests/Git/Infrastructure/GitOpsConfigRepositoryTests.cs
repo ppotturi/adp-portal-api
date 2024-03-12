@@ -24,12 +24,12 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task GetConfigAsync_WhenCalledWithStringType_ReturnsStringContent()
         {
             // Arrange
-            var gitRepo = new GitRepo { Organisation = "org", RepoName = "repo", BranchName = "branch" };
+            var gitRepo = new GitRepo("repo", "branch", "org") ;
 
 
             var contentFile = CreateRepositoryContent("fileContent");
 
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.RepoName, "fileName", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "fileName", gitRepo.BranchName)
                 .Returns(new List<RepositoryContent> { contentFile });
 
             // Act
@@ -42,10 +42,10 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         [Test]
         public async Task GetConfigAsync_WhenCalledWithNonStringType_DeserializesContent()
         {
-            var gitRepo = new GitRepo { Organisation = "org", RepoName = "repo", BranchName = "branch" };
+            var gitRepo = new GitRepo("repo", "branch", "org");
             var yamlContent = "property:\n - name: \"test\"";
             var contentFile = CreateRepositoryContent(yamlContent);
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.RepoName, "fileName", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "fileName", gitRepo.BranchName)
                 .Returns(new List<RepositoryContent> { contentFile });
 
             var result = await repository.GetConfigAsync<TestType>("fileName", gitRepo);

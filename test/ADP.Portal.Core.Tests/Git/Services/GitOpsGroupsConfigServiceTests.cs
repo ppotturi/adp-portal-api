@@ -30,7 +30,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             groupServiceMock = Substitute.For<IGroupService>();
             gitOpsConfigService = new GitOpsGroupsConfigService(gitOpsConfigRepositoryMock, loggerMock, groupServiceMock);
             fixture = new Fixture();
-            gitRepo = fixture.Build<GitRepo>().With(i => i.BranchName, "main").With(i => i.Organisation, "defra").With(i => i.RepoName, "test").Create();
+            gitRepo = fixture.Build<GitRepo>().With(i => i.BranchName, "main").With(i => i.Organisation, "defra").With(i => i.Name, "test").Create();
         }
 
 
