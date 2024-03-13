@@ -35,9 +35,14 @@ namespace ADP.Portal.Api.Controllers
             logger.LogInformation("Sync Flux Services for the Team:{TeamName}", teamName);
             var result = await gitOpsFluxTeamConfigService.GenerateFluxTeamConfig(teamRepo, fluxServicesRepo, teamName, serviceName);
 
-            if (!result.IsConfigExists)
+            if (result.Errors.Count > 0)
             {
-                return BadRequest($"Flux generator config not for the team:{teamName}");
+                if (!result.IsConfigExists)
+                {
+                    return BadRequest($"Flux generator config not for the team:{teamName}");
+                }
+
+                return BadRequest(result.Errors);
             }
 
             return Ok();

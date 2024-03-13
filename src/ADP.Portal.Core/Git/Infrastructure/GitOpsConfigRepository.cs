@@ -35,6 +35,18 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return await GetAllFilesContentsAsync(gitRepo, path);
         }
 
+        public async Task<Reference?> GetRefrenceAsync(GitRepo gitRepo, string branchName)
+        {
+            try
+            {
+                return await gitHubClient.Git.Reference.Get(gitRepo.Organisation, gitRepo.Name, branchName);
+            }
+            catch (NotFoundException)
+            {
+                return default;
+            }
+        }
+
         public async Task<bool> CommitFilesToBranchAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string branchName, string message)
         {
             var mainBranch = $"heads/{gitRepo.BranchName}";
@@ -131,6 +143,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             var newCommit = new NewCommit(message, sha, parent);
             return await client.Git.Commit.Create(repository.Owner.Login, repository.Name, newCommit);
         }
+
 
     }
 }

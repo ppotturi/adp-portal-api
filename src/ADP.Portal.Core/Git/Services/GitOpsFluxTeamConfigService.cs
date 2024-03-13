@@ -44,14 +44,26 @@ namespace ADP.Portal.Core.Git.Services
             {
                 var branchName = $"refs/heads/features/{teamName}" + (string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}");
                 
-                logger.LogInformation("Commit generated flux file to the branch:'{BranchName}'.", branchName);
-                var message = $"Flux manifest for team({teamName}) and service({(string.IsNullOrEmpty(serviceName) ? "All" : serviceName)})";
-                var commitFiles = await gitOpsConfigRepository.CommitFilesToBranchAsync(gitRepoFluxServices, generatedFiles, branchName, message);
+                logger.LogInformation("Checking if the branch:'{BranchName}' already exists.", branchName);
+                var branchRef = await gitOpsConfigRepository.GetRefrenceAsync(gitRepoFluxServices, branchName);
 
-                if (commitFiles)
+                if (branchRef != null)
                 {
-                    logger.LogInformation("Creating pull request for the branch:'{BranchName}'.", branchName);
-                    await gitOpsConfigRepository.CreatePullRequestAsync(gitRepoFluxServices, branchName, message);
+                    logger.LogWarning("Flux Services feature branch: '{BranchName}' already exists.", branchName);
+                    result.Errors.Add($"Flux Services feature branch: '{branchName}' already exists.");
+                }
+                else
+                {
+                    logger.LogInformation("Commit generated flux file to the branch:'{BranchName}'.", branchName);
+                    
+                    var message = $"Flux manifest for team({teamName}) and service({(string.IsNullOrEmpty(serviceName) ? "All" : serviceName)})";
+                    var commitFiles = await gitOpsConfigRepository.CommitFilesToBranchAsync(gitRepoFluxServices, generatedFiles, branchName, message);
+
+                    if (commitFiles)
+                    {
+                        logger.LogInformation("Creating pull request for the branch:'{BranchName}'.", branchName);
+                        await gitOpsConfigRepository.CreatePullRequestAsync(gitRepoFluxServices, branchName, message);
+                    }
                 }
             }
 
