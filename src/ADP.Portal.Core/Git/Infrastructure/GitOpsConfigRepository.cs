@@ -35,7 +35,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return await GetAllFilesContentsAsync(gitRepo, path);
         }
 
-        public async Task<Reference?> GetRefrenceAsync(GitRepo gitRepo, string branchName)
+        public async Task<Reference?> GetBranchAsync(GitRepo gitRepo, string branchName)
         {
             try
             {
@@ -47,27 +47,38 @@ namespace ADP.Portal.Core.Git.Infrastructure
             }
         }
 
-        public async Task<bool> CommitFilesToBranchAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string branchName, string message)
+        public async Task<Reference> CreateBranchAsync(GitRepo gitRepo, string branchName, string sha)
         {
-            var mainBranch = $"heads/{gitRepo.BranchName}";
+            return await gitHubClient.Git.Reference
+                 .Create(gitRepo.Organisation, gitRepo.Name, new NewReference(branchName, sha));
+        }
+
+        public async Task<Reference> UpdateBranchAsync(GitRepo gitRepo, string branchName, string sha)
+        {
+            return await gitHubClient.Git.Reference
+                 .Update(gitRepo.Organisation, gitRepo.Name, branchName, new ReferenceUpdate(sha));
+        }
+
+        public async Task<Commit?> CreateCommitAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string message, string? branchName = null)
+        {
+            var branch = branchName ?? $"heads/{gitRepo.BranchName}";
 
             var repository = await gitHubClient.Repository
                 .Get(gitRepo.Organisation, gitRepo.Name);
 
-            var mainRef = await gitHubClient.Git.Reference
-                .Get(repository.Owner.Login, repository.Name, mainBranch);
+            var branchRef = await gitHubClient.Git.Reference
+                .Get(repository.Owner.Login, repository.Name, branch);
 
-            var mainLatestCommit = await gitHubClient.Git.Commit
-                .Get(repository.Owner.Login, repository.Name, mainRef.Object.Sha);
+            var latestCommit = await gitHubClient.Git.Commit
+                .Get(repository.Owner.Login, repository.Name, branchRef.Object.Sha);
 
-            var featureBranchTree = await CreateTree(gitHubClient, repository, generatedFiles, mainLatestCommit.Sha);
-
-            var featureBranchCommit = await CreateCommit(gitHubClient, repository, message, featureBranchTree.Sha, mainRef.Object.Sha);
-
-            var result = await gitHubClient.Git.Reference
-                 .Create(repository.Owner.Login, repository.Name, new NewReference(branchName, featureBranchCommit.Sha));
-
-            return result != null;
+            var featureBranchTree = await CreateTree(gitHubClient, repository, generatedFiles, latestCommit.Sha);
+            if (featureBranchTree != null)
+            {
+                var featureBranchCommit = await CreateCommit(gitHubClient, repository, message, featureBranchTree.Sha, branchRef.Object.Sha);
+                return featureBranchCommit;
+            }
+            return default;
         }
 
         public async Task<bool> CreatePullRequestAsync(GitRepo gitRepo, string branchName, string message)
@@ -110,9 +121,11 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return allResults.SelectMany(x => x);
         }
 
-        private async Task<TreeResponse> CreateTree(IGitHubClient client, Repository repository, Dictionary<string, Dictionary<object, object>> treeContents, string parentSha)
+        private async Task<TreeResponse?> CreateTree(IGitHubClient client, Repository repository, Dictionary<string, Dictionary<object, object>> treeContents, string parentSha)
         {
             var newTree = new NewTree() { BaseTree = parentSha };
+
+            var existingTree = await client.Git.Tree.GetRecursive(repository.Owner.Login, repository.Name, parentSha);
 
             var tasks = treeContents.Select(async treeContent =>
             {
@@ -133,9 +146,15 @@ namespace ADP.Portal.Core.Git.Infrastructure
                 };
             });
 
-            newTree.Tree.AddRange(await Task.WhenAll(tasks));
+            var newTreeItems = await Task.WhenAll(tasks);
 
-            return await client.Git.Tree.Create(repository.Owner.Login, repository.Name, newTree);
+            newTree.Tree.AddRange(newTreeItems.Where(newItem => !existingTree.Tree.Any(existingItem => existingItem.Path == newItem.Path && existingItem.Sha == newItem.Sha)));
+
+            if (newTree.Tree.Count > 0)
+            {
+                return await client.Git.Tree.Create(repository.Owner.Login, repository.Name, newTree);
+            }
+            return default;
         }
 
         private async Task<Commit> CreateCommit(IGitHubClient client, Repository repository, string message, string sha, string parent)
@@ -143,7 +162,6 @@ namespace ADP.Portal.Core.Git.Infrastructure
             var newCommit = new NewCommit(message, sha, parent);
             return await client.Git.Commit.Create(repository.Owner.Login, repository.Name, newCommit);
         }
-
 
     }
 }

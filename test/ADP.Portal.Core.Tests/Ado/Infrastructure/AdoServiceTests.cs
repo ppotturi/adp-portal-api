@@ -150,15 +150,16 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
             var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var expectedLogs = new List<string>() { $"Getting service endpoints for project '{adpProjectName}'", $"Service endpoint '{serviceEndpoint.Name}' already shared with project '{onBoardProject.Name}'" };
 
             // Act
             await adoService.ShareServiceEndpointsAsync(adpProjectName, serviceConnections, onBoardProject);
 
             // Assert
-            loggerMock.Received(1).Log(
+            loggerMock.Received(2).Log(
                 Arg.Is<LogLevel>(l => l == LogLevel.Information),
                 Arg.Any<EventId>(),
-                Arg.Is<object>(v => v.ToString() == $"Service endpoint {serviceEndpoint.Name} already shared with project {onBoardProject.Name}"),
+                Arg.Is<object>(v => ContainMessage(expectedLogs, v.ToString())),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>());
         }
@@ -186,6 +187,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
             var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var expectedLogs = new List<string>() { $"Getting agent pools for project '{adpProjectName}'", $"Service endpoint '{serviceConnections[0]}' not found" };
 
             // Act
             await adoService.ShareServiceEndpointsAsync(adpProjectName, serviceConnections, onBoardProject);
@@ -194,7 +196,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             loggerMock.Received(1).Log(
                 Arg.Is<LogLevel>(l => l == LogLevel.Warning),
                 Arg.Any<EventId>(),
-                Arg.Is<object>(v => v.ToString() == $"Service endpoint {serviceConnections[0]} not found"),
+                Arg.Is<object>(v => ContainMessage(expectedLogs, v.ToString())),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>());
         }
@@ -220,10 +222,10 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
 
             // Assert
-            loggerMock.Received(1).Log(
+            loggerMock.Received(2).Log(
                 Arg.Is<LogLevel>(l => l == LogLevel.Information),
                 Arg.Any<EventId>(),
-                Arg.Is<object>(v => v.ToString() == $"Environment {adoEnvironments[0].Name} already exists"),
+                Arg.Is<object>(v => v.ToString() == $"Environment '{adoEnvironments[0].Name}' already exists"),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>());
         }
@@ -260,6 +262,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "TestProject" };
             var adpAgentQueues = new List<DistributedTask.TaskAgentQueue> { new() { Name = "TestAgentPool" } };
             var agentPools = new List<DistributedTask.TaskAgentQueue> { new() { Name = "TestAgentPool" } };
+            var expectedLogs = new List<string>() { "Getting agent pools for project 'TestProject'", "Agent pool 'TestAgentPool' already exists in the 'TestProject' project" };
 
             taskAgentClientMock.GetAgentQueuesAsync(adpProjectName, string.Empty, null, null, Arg.Any<CancellationToken>()).Returns(adpAgentQueues);
             taskAgentClientMock.GetAgentQueuesAsync(onBoardProject.Id, null, null, null, Arg.Any<CancellationToken>()).Returns(agentPools);
@@ -274,14 +277,17 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             await adoService.ShareAgentPoolsAsync(adpProjectName, adoAgentPoolsToShare, onBoardProject);
 
             // Assert
-            loggerMock.Received(1).Log(
-                Arg.Is<LogLevel>(l => l == LogLevel.Information),
+
+            loggerMock.Received(2).Log(Arg.Is<LogLevel>(l => l == LogLevel.Information),
                 Arg.Any<EventId>(),
-                Arg.Is<object>(v => v.ToString() == $"Agent pool {adoAgentPoolsToShare[0]} already exists in the {onBoardProject.Name} project"),
+                Arg.Is<object>(v => ContainMessage(expectedLogs,v.ToString())),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>());
+
+           
         }
 
+      
         [Test]
         public async Task ShareAgentPoolsAsync_CreatesAgentPool_WhenAgentPoolDoesNotExist()
         {
@@ -359,6 +365,11 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 
             // Assert
             await taskAgentClientMock.Received(1).UpdateVariableGroupAsync(Arg.Any<int>(), Arg.Any<DistributedTask.VariableGroupParameters>(), null, Arg.Any<CancellationToken>());
+        }
+
+        bool ContainMessage(List<string> expectedLogs, string? v)
+        {
+            return v != null && expectedLogs.Contains(v);
         }
     }
 }

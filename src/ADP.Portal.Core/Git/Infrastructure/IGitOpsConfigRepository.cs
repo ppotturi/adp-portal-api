@@ -9,9 +9,13 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesAsync(GitRepo gitRepo, string path);
 
-        Task<Reference?> GetRefrenceAsync(GitRepo gitRepo, string branchName);
+        Task<Reference?> GetBranchAsync(GitRepo gitRepo, string branchName);
 
-        Task<bool> CommitFilesToBranchAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string branchName, string message);
+        Task<Reference> CreateBranchAsync(GitRepo gitRepo, string branchName, string sha);
+
+        Task<Reference> UpdateBranchAsync(GitRepo gitRepo, string branchName, string sha);
+
+        Task<Commit?> CreateCommitAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string message, string? branchName = null);
 
         Task<bool> CreatePullRequestAsync(GitRepo gitRepo, string branchName, string message);
     }
