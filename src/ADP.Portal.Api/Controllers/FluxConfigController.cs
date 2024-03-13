@@ -25,15 +25,20 @@ namespace ADP.Portal.Api.Controllers
             this.fluxServicesGitRepoConfig = fluxServicesGitRepoConfig;
         }
 
-        [HttpPost("generateteamconfig/{teamName}/{serviceName?}", Name = "GenerateTeamConfig")]
-        public async Task<ActionResult> GenerateTeamConfigAsync(string teamName, string? serviceName)
+        [HttpPost("generate/{teamName}/{serviceName?}", Name = "Generate")]
+        public async Task<ActionResult> GenerateAsync(string teamName, string? serviceName)
         {
             var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
 
             var fluxServicesRepo = fluxServicesGitRepoConfig.Value.Adapt<GitRepo>();
 
             logger.LogInformation("Sync Flux Services for the Team:{TeamName}", teamName);
-            await gitOpsFluxTeamConfigService.GenerateFluxTeamConfig(teamRepo, fluxServicesRepo, teamName, serviceName);
+            var result = await gitOpsFluxTeamConfigService.GenerateFluxTeamConfig(teamRepo, fluxServicesRepo, teamName, serviceName);
+
+            if (!result.IsConfigExists)
+            {
+                return BadRequest($"Flux generator config not for the team:{teamName}");
+            }
 
             return Ok();
         }

@@ -2,6 +2,7 @@
 using ADP.Portal.Core.Git.Infrastructure;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
+using Octokit;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -11,7 +12,7 @@ namespace ADP.Portal.Core.Git.Services
     {
         private readonly IGitOpsConfigRepository gitOpsConfigRepository;
         private readonly ILogger<GitOpsFluxTeamConfigService> logger;
-        
+
 
         public GitOpsFluxTeamConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsFluxTeamConfigService> logger)
         {
@@ -19,34 +20,57 @@ namespace ADP.Portal.Core.Git.Services
             this.logger = logger;
         }
 
-        public async Task GenerateFluxTeamConfig(GitRepo gitRepo, GitRepo gitRepoFluxServices, string teamName, string? serviceName = null)
+        public async Task<GenerateFluxConfigResult> GenerateFluxTeamConfig(GitRepo gitRepo, GitRepo gitRepoFluxServices, string teamName, string? serviceName = null)
         {
-            var teamConfig = await gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>($"flux/services/{teamName}.yaml", gitRepo);
+            var result = new GenerateFluxConfigResult();
 
-            // Read all the Templates
+            logger.LogInformation("Reading flux team config for the team:'{TeamName}'.", teamName);
+            var teamConfig = await GetFluxTeamConfigAsync(gitRepo, teamName);
+
+            if (teamConfig == null)
+            {
+                logger.LogWarning("Flux team config not found for the team:'{TeamName}'.", teamName);
+                result.IsConfigExists = false;
+                return result;
+            }
+
             logger.LogInformation("Reading flux templates");
             var templates = await gitOpsConfigRepository.GetAllFilesAsync(gitRepo, "flux/templates");
 
-            // Process templates with tokens
             logger.LogInformation("Processing templates");
             var generatedFiles = ProcessTemplates(templates, teamConfig, serviceName);
 
-            // Push files to Flux Repository
-            var branchName = $"refs/heads/features/{teamName}" + (string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}");
-            logger.LogInformation("Commit generated flux file to the branch:'{BranchName}'.", branchName);
-
-            var message = $"Flux manifest for team({teamName}) and service({(string.IsNullOrEmpty(serviceName) ? "All" : serviceName)})";
-            var commitFiles = await gitOpsConfigRepository.CommitFilesToBranchAsync(gitRepoFluxServices, generatedFiles, branchName, message);
-
-            if (commitFiles)
+            if (generatedFiles.Count > 0)
             {
-                logger.LogInformation("Creating pull request for the branch:'{BranchName}'.", branchName);
-                await gitOpsConfigRepository.CreatePullRequestAsync(gitRepoFluxServices, branchName, message);
+                var branchName = $"refs/heads/features/{teamName}" + (string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}");
+                
+                logger.LogInformation("Commit generated flux file to the branch:'{BranchName}'.", branchName);
+                var message = $"Flux manifest for team({teamName}) and service({(string.IsNullOrEmpty(serviceName) ? "All" : serviceName)})";
+                var commitFiles = await gitOpsConfigRepository.CommitFilesToBranchAsync(gitRepoFluxServices, generatedFiles, branchName, message);
+
+                if (commitFiles)
+                {
+                    logger.LogInformation("Creating pull request for the branch:'{BranchName}'.", branchName);
+                    await gitOpsConfigRepository.CreatePullRequestAsync(gitRepoFluxServices, branchName, message);
+                }
             }
-            
+
+            return result;
         }
 
-        private static Dictionary<string, Dictionary<object, object>> ProcessTemplates(Dictionary<string, Dictionary<object, object>> files, FluxTeamConfig? fluxTeamConfig, string? serviceName = null)
+        private async Task<FluxTeamConfig?> GetFluxTeamConfigAsync(GitRepo gitRepo, string teamName)
+        {
+            try
+            {
+                return await gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>($"flux/services/{teamName}.yaml", gitRepo);
+            }
+            catch (NotFoundException)
+            {
+                return default;
+            }
+        }
+
+        private static Dictionary<string, Dictionary<object, object>> ProcessTemplates(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> files, FluxTeamConfig? fluxTeamConfig, string? serviceName = null)
         {
             var finalFiles = new Dictionary<string, Dictionary<object, object>>();
 
@@ -63,12 +87,12 @@ namespace ADP.Portal.Core.Git.Services
             return finalFiles;
         }
 
-        private static Dictionary<string, Dictionary<object, object>> CreateServices(Dictionary<string, Dictionary<object, object>> templates, FluxTeamConfig? teamConfig, IEnumerable<FluxService> services)
+        private static Dictionary<string, Dictionary<object, object>> CreateServices(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> templates, FluxTeamConfig? teamConfig, IEnumerable<FluxService> services)
         {
             var finalFiles = new Dictionary<string, Dictionary<object, object>>();
 
             var programme = teamConfig?.ServiceCode[..3];
-            
+
             // Collect all non-service files
             templates.Where(x => !x.Key.StartsWith(FluxConstants.SERVICE_FOLDER) &&
                              !x.Key.StartsWith(FluxConstants.ENVIRONMENT_FOLDER)).ForEach(file =>
