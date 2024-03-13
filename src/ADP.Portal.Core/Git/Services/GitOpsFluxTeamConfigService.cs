@@ -100,7 +100,7 @@ namespace ADP.Portal.Core.Git.Services
                         serviceFiles.AddRange(CreateEnvironmentFiles([template], teamConfig, [service]));
                     }
                 }
-                //UpdateServiceDependencies();
+                //UpdateServiceDependencies(serviceFiles, service, teamConfig);
 
                 service.ConfigVariables.Add(new FluxConfig { Key = "SERVICE_NAME", Value = service.Name });
                 service.ConfigVariables.ForEach(serviceFiles.ReplaceToken);
@@ -162,6 +162,22 @@ namespace ADP.Portal.Core.Git.Services
             return finalFiles;
         }
 
+        private static void UpdateServiceDependencies(Dictionary<string, Dictionary<object, object>> serviceFiles, FluxService service, FluxTeamConfig? teamConfig)
+        {
+            service.ConfigVariables.Add(new FluxConfig { Key = "DEPENDS_ON", Value = IsBackendServiceWithDatabase(service) ? "pre-deploy" : "infra" });
+            if (service.Type.Equals(FluxServiceType.Backend))
+            {
+                foreach (var file in serviceFiles)
+                {
+                    if (file.Key.EndsWith("/patch.yaml"))
+                    {
+                        ((Dictionary<object, object>)((Dictionary<object, object>)file.Value["spec"])["values"]).Remove("labels");
+                        ((Dictionary<object, object>)((Dictionary<object, object>)file.Value["spec"])["values"]).Remove("ingress");
+                    }
+                }
+            }
+        }
+
         private static void ApplyTeamTokens(FluxTeamConfig? teamConfig, Dictionary<string, Dictionary<object, object>> files)
         {
             var programme = teamConfig?.ServiceCode[..3];
@@ -171,7 +187,6 @@ namespace ADP.Portal.Core.Git.Services
 
             teamConfig?.ConfigVariables.ForEach(files.ReplaceToken);
         }
-
     }
 
     public static partial class Extensions
@@ -190,14 +205,19 @@ namespace ADP.Portal.Core.Git.Services
         {
             foreach (var key in instance.Keys)
             {
-                if (instance[key] is Dictionary<object, object> value)
-                {
-                    value.ReplaceToken(config);
-                }
-                else
-                {
-                    instance[key] = instance[key].ToString()?.Replace(string.Format(TOKEN_FORMAT, config.Key), config.Value) ?? instance[key];
-                }
+                if (instance[key] is Dictionary<object, object> dictValue) { dictValue.ReplaceToken(config); }
+                else if (instance[key] is List<object> listValue) { listValue.ReplaceToken(config); }
+                else { instance[key] = instance[key].ToString()?.Replace(string.Format(TOKEN_FORMAT, config.Key), config.Value) ?? instance[key]; }
+            }
+        }
+
+        public static void ReplaceToken(this List<object> instance, FluxConfig config)
+        {
+            for (int key = 0; key < instance.Count; key++)
+            {
+                if (instance[key] is Dictionary<object, object> value) { value.ReplaceToken(config); }
+                else if (instance[key] is List<object> listValue) { listValue.ReplaceToken(config); }
+                else { instance[key] = instance[key].ToString()?.Replace(string.Format(TOKEN_FORMAT, config.Key), config.Value) ?? instance[key]; }
             }
         }
 
