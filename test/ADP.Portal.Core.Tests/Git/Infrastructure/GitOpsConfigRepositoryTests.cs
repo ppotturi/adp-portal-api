@@ -4,6 +4,7 @@ using NSubstitute;
 using NUnit.Framework;
 using Octokit;
 using System.Text;
+using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Tests.Git.Infrastructure
 {
@@ -12,12 +13,15 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
     {
         private readonly IGitHubClient gitHubClientMock;
         private readonly GitOpsConfigRepository repository;
-
+        private readonly IDeserializer deserializerMock;
+        private readonly ISerializer serializerMock;
 
         public GitOpsConfigRepositoryTests()
         {
             gitHubClientMock = Substitute.For<IGitHubClient>();
-            repository = new GitOpsConfigRepository(gitHubClientMock);
+            deserializerMock= Substitute.For<IDeserializer>();
+            serializerMock = Substitute.For<ISerializer>();
+            repository = new GitOpsConfigRepository(gitHubClientMock, deserializerMock, serializerMock);
         }
 
         [Test]

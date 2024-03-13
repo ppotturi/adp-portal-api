@@ -11,12 +11,12 @@ namespace ADP.Portal.Core.Git.Services
     {
         private readonly IGitOpsConfigRepository gitOpsConfigRepository;
         private readonly ILogger<GitOpsFluxTeamConfigService> logger;
+        
 
         public GitOpsFluxTeamConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsFluxTeamConfigService> logger)
         {
             this.gitOpsConfigRepository = gitOpsConfigRepository;
             this.logger = logger;
-
         }
 
         public async Task GenerateFluxTeamConfig(GitRepo gitRepo, GitRepo gitRepoFluxServices, string teamName, string? serviceName = null)
@@ -32,12 +32,18 @@ namespace ADP.Portal.Core.Git.Services
             var generatedFiles = ProcessTemplates(templates, teamConfig, serviceName);
 
             // Push files to Flux Repository
-            var branchName = $"features/{teamName}" + (string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}");
+            var branchName = $"refs/heads/features/{teamName}" + (string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}");
             logger.LogInformation("Commit generated flux file to the branch:'{BranchName}'.", branchName);
-            await gitOpsConfigRepository.CommitGeneratedFilesToBranchAsync(gitRepoFluxServices, generatedFiles, branchName);
 
-            // Create a PR
+            var message = $"Flux manifest for team({teamName}) and service({(string.IsNullOrEmpty(serviceName) ? "All" : serviceName)})";
+            var commitFiles = await gitOpsConfigRepository.CommitFilesToBranchAsync(gitRepoFluxServices, generatedFiles, branchName, message);
 
+            if (commitFiles)
+            {
+                logger.LogInformation("Creating pull request for the branch:'{BranchName}'.", branchName);
+                await gitOpsConfigRepository.CreatePullRequestAsync(gitRepoFluxServices, branchName, message);
+            }
+            
         }
 
         private static Dictionary<string, Dictionary<object, object>> ProcessTemplates(Dictionary<string, Dictionary<object, object>> files, FluxTeamConfig? fluxTeamConfig, string? serviceName = null)
@@ -96,8 +102,8 @@ namespace ADP.Portal.Core.Git.Services
                 }
                 //UpdateServiceDependencies();
 
-                service.Tokens.Add(new FluxConfig { Key = "SERVICE_NAME", Value = service.Name });
-                service.Tokens.ForEach(serviceFiles.ReplaceToken);
+                service.ConfigVariables.Add(new FluxConfig { Key = "SERVICE_NAME", Value = service.Name });
+                service.ConfigVariables.ForEach(serviceFiles.ReplaceToken);
                 finalFiles.AddRange(serviceFiles);
             }
 
@@ -119,7 +125,7 @@ namespace ADP.Portal.Core.Git.Services
 
         private static bool IsBackendServiceWithDatabase(FluxService service)
         {
-            return service.Type.Equals(FluxServiceType.Frontend) || !service.Tokens.Exists(token => token.Key.Equals(FluxConstants.POSTGRES_DB));
+            return service.Type.Equals(FluxServiceType.Frontend) || !service.ConfigVariables.Exists(token => token.Key.Equals(FluxConstants.POSTGRES_DB));
         }
 
         private static Dictionary<string, Dictionary<object, object>> CreateEnvironmentFiles(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> templates, FluxTeamConfig? teamConfig, IEnumerable<FluxService> services)
@@ -159,11 +165,11 @@ namespace ADP.Portal.Core.Git.Services
         private static void ApplyTeamTokens(FluxTeamConfig? teamConfig, Dictionary<string, Dictionary<object, object>> files)
         {
             var programme = teamConfig?.ServiceCode[..3];
-            teamConfig?.Tokens.Add(new FluxConfig { Key = "PROGRAMME_NAME", Value = programme ?? string.Empty });
-            teamConfig?.Tokens.Add(new FluxConfig { Key = "TEAM_NAME", Value = teamConfig?.ServiceCode ?? string.Empty });
-            teamConfig?.Tokens.Add(new FluxConfig { Key = "SERVICE_CODE", Value = teamConfig?.ServiceCode ?? string.Empty });
+            teamConfig?.ConfigVariables.Add(new FluxConfig { Key = "PROGRAMME_NAME", Value = programme ?? string.Empty });
+            teamConfig?.ConfigVariables.Add(new FluxConfig { Key = "TEAM_NAME", Value = teamConfig?.ServiceCode ?? string.Empty });
+            teamConfig?.ConfigVariables.Add(new FluxConfig { Key = "SERVICE_CODE", Value = teamConfig?.ServiceCode ?? string.Empty });
 
-            teamConfig?.Tokens.ForEach(files.ReplaceToken);
+            teamConfig?.ConfigVariables.ForEach(files.ReplaceToken);
         }
 
     }

@@ -1,21 +1,21 @@
 ﻿using ADP.Portal.Core.Git.Entities;
-using Microsoft.Azure.Pipelines.WebApi;
 using Microsoft.VisualStudio.Services.Common;
-using Newtonsoft.Json;
 using Octokit;
-using System.Text;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Core.Git.Infrastructure
 {
     public class GitOpsConfigRepository : IGitOpsConfigRepository
     {
         private readonly IGitHubClient gitHubClient;
+        private readonly IDeserializer deserializer;
+        private readonly ISerializer serializer;
 
-        public GitOpsConfigRepository(IGitHubClient gitHubClient)
+        public GitOpsConfigRepository(IGitHubClient gitHubClient, IDeserializer deserializer, ISerializer serializer)
         {
             this.gitHubClient = gitHubClient;
+            this.deserializer = deserializer;
+            this.serializer = serializer;
         }
 
         public async Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo)
@@ -26,92 +26,111 @@ namespace ADP.Portal.Core.Git.Infrastructure
                 return (T)Convert.ChangeType(file[0].Content, typeof(T));
             }
 
-            var deserializer = new DeserializerBuilder()
-            .WithNamingConvention(CamelCaseNamingConvention.Instance)
-            .Build();
-
             var result = deserializer.Deserialize<T>(file[0].Content);
             return result;
         }
 
-        public async Task<Dictionary<string, Dictionary<object, object>>> GetAllFilesAsync(GitRepo gitRepo, string path)
+        public async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesAsync(GitRepo gitRepo, string path)
         {
             return await GetAllFilesContentsAsync(gitRepo, path);
         }
 
-        public async Task<bool> CommitGeneratedFilesToBranchAsync(GitRepo gitRepoFluxServices, Dictionary<string, Dictionary<object, object>> generatedFiles, string branchName)
+        public async Task<bool> CommitFilesToBranchAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string branchName, string message)
         {
-            // create a branch
-            var mainRef = await gitHubClient.Git.Reference.Get(gitRepoFluxServices.Organisation, gitRepoFluxServices.Name, gitRepoFluxServices.BranchName);
-            var newBranch = new NewReference(branchName, mainRef.Object.Sha);
-            await gitHubClient.Git.Reference.Create(gitRepoFluxServices.Organisation, gitRepoFluxServices.Name, newBranch);
+            var mainBranch = $"heads/{gitRepo.BranchName}";
 
-            //Commit changes
+            var repository = await gitHubClient.Repository
+                .Get(gitRepo.Organisation, gitRepo.Name);
 
+            var mainRef = await gitHubClient.Git.Reference
+                .Get(repository.Owner.Login, repository.Name, mainBranch);
 
-            //await CreateTree(gitHubClient, generatedFiles.Values);
+            var mainLatestCommit = await gitHubClient.Git.Commit
+                .Get(repository.Owner.Login, repository.Name, mainRef.Object.Sha);
 
+            var featureBranchTree = await CreateTree(gitHubClient, repository, generatedFiles, mainLatestCommit.Sha);
 
-            //var featureBranchTree = await gitHubClient.Git.CreateTree(repository, new Dictionary<string, string> { { "README.md", "I am overwriting this blob with something new\nand a second line too" } });
-            return true;
+            var featureBranchCommit = await CreateCommit(gitHubClient, repository, message, featureBranchTree.Sha, mainRef.Object.Sha);
+
+            var result = await gitHubClient.Git.Reference
+                 .Create(repository.Owner.Login, repository.Name, new NewReference(branchName, featureBranchCommit.Sha));
+
+            return result != null;
         }
 
-        private async Task<Dictionary<string, Dictionary<object, object>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
+        public async Task<bool> CreatePullRequestAsync(GitRepo gitRepo, string branchName, string message)
         {
-            var repositoryItems = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, path, gitRepo.BranchName);
-            var deserializer = new DeserializerBuilder()
-                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                    .Build();
+            var repository = await gitHubClient.Repository
+                .Get(gitRepo.Organisation, gitRepo.Name);
 
-            var files = new Dictionary<string, Dictionary<object, object>>();
-            foreach (var item in repositoryItems)
-            {
-                if (item.Type.Equals(ContentType.Dir))
-                {
-                    files.AddRange(await GetAllFilesContentsAsync(gitRepo, item.Path));
-                }
-                else if (item.Type.Equals(ContentType.File))
+            var pullRequest = new NewPullRequest(message, branchName, gitRepo.BranchName);
+            var createdPullRequest = await gitHubClient.PullRequest
+                .Create(repository.Owner.Login, repository.Name, pullRequest);
+
+            return createdPullRequest != null;
+        }
+
+        private async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
+        {
+            var repositoryItems = await gitHubClient.Repository.Content
+                .GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, path, gitRepo.BranchName);
+
+            var fileTasks = repositoryItems
+                .Where(item => item.Type == ContentType.File)
+                .Select(async item =>
                 {
                     var file = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, item.Path, gitRepo.BranchName);
-
                     var result = deserializer.Deserialize<Dictionary<object, object>>(file[0].Content);
-                    files.Add(item.Path, result);
-                }
-            }
-            return files;
+                    var list = new List<KeyValuePair<string, Dictionary<object, object>>>() { (new KeyValuePair<string, Dictionary<object, object>>(item.Path, result)) };
+                    return list.AsEnumerable();
+                });
+
+            var dirTasks = repositoryItems
+                .Where(item => item.Type == ContentType.Dir)
+                .Select(async item =>
+                {
+                    return await GetAllFilesContentsAsync(gitRepo, item.Path);
+                });
+
+            var allTasks = fileTasks.Concat(dirTasks);
+            var allResults = await Task.WhenAll(allTasks);
+
+            return allResults.SelectMany(x => x);
         }
 
-
-        private async Task<TreeResponse> CreateTree(IGitHubClient client, GitRepo gitRepoFluxServices, IEnumerable<KeyValuePair<string, string>> treeContents)
+        private async Task<TreeResponse> CreateTree(IGitHubClient client, Repository repository, Dictionary<string, Dictionary<object, object>> treeContents, string parentSha)
         {
-            var collection = new List<NewTreeItem>();
+            var newTree = new NewTree() { BaseTree = parentSha };
 
-            foreach (var c in treeContents)
+            var tasks = treeContents.Select(async treeContent =>
             {
                 var baselineBlob = new NewBlob
                 {
-                    Content = c.Value,
+                    Content = serializer.Serialize(treeContent.Value),
                     Encoding = EncodingType.Utf8
                 };
 
-                var baselineBlobResult = await client.Git.Blob.Create(gitRepoFluxServices.Organisation, gitRepoFluxServices.Name, baselineBlob);
+                var baselineBlobResult = await client.Git.Blob.Create(repository.Owner.Login, repository.Name, baselineBlob);
 
-                collection.Add(new NewTreeItem
+                return new NewTreeItem
                 {
                     Type = TreeType.Blob,
                     Mode = Octokit.FileMode.File,
-                    Path = c.Key,
+                    Path = treeContent.Key,
                     Sha = baselineBlobResult.Sha
-                });
-            }
+                };
+            });
 
-            var newTree = new NewTree();
-            foreach (var item in collection)
-            {
-                newTree.Tree.Add(item);
-            }
+            newTree.Tree.AddRange(await Task.WhenAll(tasks));
 
-            return await client.Git.Tree.Create(gitRepoFluxServices.Organisation, gitRepoFluxServices.Name, newTree);
+            return await client.Git.Tree.Create(repository.Owner.Login, repository.Name, newTree);
         }
+
+        private async Task<Commit> CreateCommit(IGitHubClient client, Repository repository, string message, string sha, string parent)
+        {
+            var newCommit = new NewCommit(message, sha, parent);
+            return await client.Git.Commit.Create(repository.Owner.Login, repository.Name, newCommit);
+        }
+
     }
 }

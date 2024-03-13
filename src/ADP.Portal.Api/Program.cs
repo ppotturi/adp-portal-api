@@ -16,6 +16,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.OpenApi.Models;
 using Octokit;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Api
 {
@@ -92,7 +94,14 @@ namespace ADP.Portal.Api
             builder.Services.AddScoped<IGitOpsConfigRepository, GitOpsConfigRepository>();
             builder.Services.AddScoped<IGitOpsGroupsConfigService, GitOpsGroupsConfigService>();
             builder.Services.AddScoped<IGitOpsFluxTeamConfigService, GitOpsFluxTeamConfigService>();
-
+            builder.Services.AddSingleton(provider =>
+            {
+                return new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            });
+            builder.Services.AddSingleton(provider =>
+            {
+                return new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            });
             builder.Services.EntitiesConfigure();
 
             builder.Services.AddControllers();
