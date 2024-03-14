@@ -32,10 +32,10 @@ namespace ADP.Portal.Core.Git.Services
 
             var groups = await GetGroupsConfigAsync(tenantName, teamName, groupType, gitRepo);
 
-            if (groups == null)
+            if (groups.Count == 0)
             {
                 result.IsConfigExists = false;
-                result.Errors.Add($"Groups config not found for the team({teamName}) in the tenant({tenantName}");
+                result.Errors.Add($"Groups config not found for the team:{teamName} in the tenant:{tenantName}");
                 return result;
             }
 
@@ -68,7 +68,7 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private async Task<List<Entities.Group>?> GetGroupsConfigAsync(string tenantName, string teamName, GroupType? groupType, GitRepo gitRepo)
+        private async Task<List<Entities.Group>> GetGroupsConfigAsync(string tenantName, string teamName, GroupType? groupType, GitRepo gitRepo)
         {
             try
             {
