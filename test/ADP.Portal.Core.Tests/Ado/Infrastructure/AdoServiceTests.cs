@@ -217,6 +217,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
             var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var expectedLogs = new List<string>() { $"Getting environments for project '{ onBoardProject.Name }'", $"Environment '{adoEnvironments[0].Name}' already exists" };
 
             // Act
             await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
@@ -225,7 +226,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             loggerMock.Received(2).Log(
                 Arg.Is<LogLevel>(l => l == LogLevel.Information),
                 Arg.Any<EventId>(),
-                Arg.Is<object>(v => v.ToString() == $"Environment '{adoEnvironments[0].Name}' already exists"),
+                Arg.Is<object>(v => ContainMessage(expectedLogs, v.ToString())),
                 Arg.Any<Exception>(),
                 Arg.Any<Func<object, Exception?, string>>());
         }
