@@ -14,14 +14,16 @@ namespace ADP.Portal.Api.Controllers
         private readonly IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService;
         private readonly ILogger<FluxConfigController> logger;
         private readonly IOptions<TeamGitRepoConfig> teamGitRepoConfig;
+        public readonly IOptions<AzureAdConfig> azureAdConfig;
         private readonly IOptions<FluxServicesGitRepoConfig> fluxServicesGitRepoConfig;
 
         public FluxConfigController(IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService, ILogger<FluxConfigController> logger,
-        IOptions<TeamGitRepoConfig> teamGitRepoConfig, IOptions<FluxServicesGitRepoConfig> fluxServicesGitRepoConfig)
+            IOptions<TeamGitRepoConfig> teamGitRepoConfig, IOptions<AzureAdConfig> azureAdConfig, IOptions<FluxServicesGitRepoConfig> fluxServicesGitRepoConfig)
         {
             this.gitOpsFluxTeamConfigService = gitOpsFluxTeamConfigService;
             this.logger = logger;
             this.teamGitRepoConfig = teamGitRepoConfig;
+            this.azureAdConfig = azureAdConfig;
             this.fluxServicesGitRepoConfig = fluxServicesGitRepoConfig;
         }
 
@@ -31,9 +33,10 @@ namespace ADP.Portal.Api.Controllers
             var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
 
             var fluxServicesRepo = fluxServicesGitRepoConfig.Value.Adapt<GitRepo>();
+            var tenantName = azureAdConfig.Value.TenantName;
 
             logger.LogInformation("Sync Flux Services for the Team:{TeamName}", teamName);
-            var result = await gitOpsFluxTeamConfigService.GenerateFluxTeamConfig(teamRepo, fluxServicesRepo, teamName, serviceName);
+            var result = await gitOpsFluxTeamConfigService.GenerateFluxTeamConfig(teamRepo, fluxServicesRepo, tenantName, teamName, serviceName);
 
             if (result.Errors.Count > 0)
             {
