@@ -1,10 +1,14 @@
 ﻿using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
+using AutoFixture;
+using Mapster;
 using NSubstitute;
 using NUnit.Framework;
 using Octokit;
+using System.Reflection;
 using System.Text;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Core.Tests.Git.Infrastructure
 {
@@ -13,15 +17,16 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
     {
         private readonly IGitHubClient gitHubClientMock;
         private readonly GitOpsConfigRepository repository;
-        private readonly IDeserializer deserializerMock;
-        private readonly ISerializer serializerMock;
+        private readonly IDeserializer deserializer;
+        private readonly ISerializer serializer;
+        
 
         public GitOpsConfigRepositoryTests()
         {
             gitHubClientMock = Substitute.For<IGitHubClient>();
-            deserializerMock= Substitute.For<IDeserializer>();
-            serializerMock = Substitute.For<ISerializer>();
-            repository = new GitOpsConfigRepository(gitHubClientMock, deserializerMock, serializerMock);
+            serializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            repository = new GitOpsConfigRepository(gitHubClientMock, deserializer, serializer);
         }
 
         [Test]
@@ -50,7 +55,7 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
             var yamlContent = "property:\n - name: \"test\"";
             var contentFile = CreateRepositoryContent(yamlContent);
             gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "fileName", gitRepo.BranchName)
-                .Returns(new List<RepositoryContent> { contentFile });
+                .Returns([contentFile]);
 
             var result = await repository.GetConfigAsync<TestType>("fileName", gitRepo);
 
