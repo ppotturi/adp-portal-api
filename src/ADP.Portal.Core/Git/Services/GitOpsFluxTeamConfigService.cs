@@ -1,4 +1,5 @@
 ﻿using ADP.Portal.Core.Git.Entities;
+using ADP.Portal.Core.Git.Extensions;
 using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Helpers;
 using Microsoft.Extensions.Logging;

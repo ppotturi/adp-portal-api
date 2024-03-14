@@ -2,7 +2,7 @@
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace ADP.Portal.Core.Helpers
+namespace ADP.Portal.Core.Git.Extensions
 {
     public static partial class DictionaryExtensions
     {
