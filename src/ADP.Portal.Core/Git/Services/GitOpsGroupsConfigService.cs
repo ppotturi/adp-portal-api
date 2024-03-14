@@ -154,12 +154,8 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private async Task SyncGroupTypeMembersAsync(GroupSyncResult result, Entities.Group group, string? groupId, bool isNewGroup)
+        private async Task SyncGroupTypeMembersAsync(GroupSyncResult result, Entities.Group group, string groupId, bool isNewGroup)
         {
-            if (groupId == null)
-            {
-                return;
-            }
 
             var existingMembers = isNewGroup ? [] : await groupService.GetGroupTypeGroupMembersAsync(groupId);
 
@@ -191,12 +187,8 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private async Task SyncMembershipsAsync(GroupSyncResult result, Entities.Group group, string? groupId, bool IsNewGroup)
+        private async Task SyncMembershipsAsync(GroupSyncResult result, Entities.Group group, string groupId, bool IsNewGroup)
         {
-            if (groupId == null)
-            {
-                return;
-            }
 
             var existingMemberShips = IsNewGroup ? [] : await groupService.GetGroupMemberShipsAsync(groupId);
 
