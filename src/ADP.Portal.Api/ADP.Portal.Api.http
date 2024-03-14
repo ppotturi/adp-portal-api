@@ -8,6 +8,6 @@ PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
 
 ###
 
-POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generateteamconfig/ffc-demo
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo
 
 ###
