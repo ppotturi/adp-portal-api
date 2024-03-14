@@ -157,7 +157,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return default;
         }
 
-        private async Task<Commit> CreateCommit(IGitHubClient client, Repository repository, string message, string sha, string parent)
+        private static async Task<Commit> CreateCommit(IGitHubClient client, Repository repository, string message, string sha, string parent)
         {
             var newCommit = new NewCommit(message, sha, parent);
             return await client.Git.Commit.Create(repository.Owner.Login, repository.Name, newCommit);
