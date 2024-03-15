@@ -2,7 +2,7 @@
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace ADP.Portal.Core.Helpers
+namespace ADP.Portal.Core.Git.Extensions
 {
     public static partial class DictionaryExtensions
     {
@@ -22,7 +22,9 @@ namespace ADP.Portal.Core.Helpers
             {
                 if (instance[key] is Dictionary<object, object> dictValue) { dictValue.ReplaceToken(config); }
                 else if (instance[key] is List<object> listValue) { listValue.ReplaceToken(config); }
-                else { instance[key] = instance[key].ToString()?.Replace(string.Format(TOKEN_FORMAT, config.Key), config.Value) ?? instance[key]; }
+                else { 
+                    instance[key] = instance[key].ToString()?.Replace(string.Format(TOKEN_FORMAT, config.Key), config.Value) ?? instance[key]; 
+                }
             }
         }
 

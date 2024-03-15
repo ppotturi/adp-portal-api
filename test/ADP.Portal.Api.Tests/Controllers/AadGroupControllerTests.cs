@@ -63,6 +63,31 @@ namespace ADP.Portal.Api.Tests.Controllers
             Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
         }
 
+
+        [TestCase("UserGroup")]
+        [TestCase("AccessGroup")]
+        [TestCase("OpenVpnGroup")]
+        public async Task SyncGroupsAsync_ConfigNotFound_ReturnsBadRequest(string groupType)
+        {
+            // Arrange
+            var groupSyncresult = new GroupSyncResult() { Errors = ["Config not found"], IsConfigExists = false };
+            gitOpsConfigServiceMock.SyncGroupsAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<GroupType?>(), Arg.Any<GitRepo>())
+                .Returns(groupSyncresult);
+
+            adpTeamGitRepoConfigMock.Value.Returns(fixture.Create<TeamGitRepoConfig>());
+            azureAdConfigMock.Value.Returns(fixture.Create<AzureAdConfig>());
+
+            // Act
+            var result = await controller.SyncGroupsAsync("teamName", groupType);
+
+            // Assert
+            var resultObject = (BadRequestObjectResult) result;
+            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+            var errors = resultObject.Value as List<string>;
+            Assert.That(errors?.FirstOrDefault(), Is.EqualTo("Config not found"));
+            
+        }
+
         [TestCase("UserGroup")]
         [TestCase("AccessGroup")]
         [TestCase("OpenVpnGroup")]

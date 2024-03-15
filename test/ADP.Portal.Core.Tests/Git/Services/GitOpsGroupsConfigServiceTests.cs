@@ -35,20 +35,41 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
 
         [Test]
-        public async Task SyncGroupsAsync_GroupsConfigIsNull_ReturnsEmptyResult()
+        public async Task SyncGroupsAsync_GroupsConfigIsNull_ReturnsErrorResult()
         {
             // Arrange
             GroupsRoot? groupsRoot = null;
             gitOpsConfigRepositoryMock.GetConfigAsync<GroupsRoot>(Arg.Any<string>(), Arg.Any<GitRepo>())
                 .Returns(groupsRoot);
 
+            // Act
+            var result = await gitOpsConfigService.SyncGroupsAsync("tenantName", "teamName", "ownerId", GroupType.AccessGroup, gitRepo);
+
+            // Assert
+            Assert.That(result.Errors, Is.Not.Empty);
+            if (result.Errors.Count > 0)
+            {
+                Assert.That(result.Errors[0], Is.EqualTo("Groups config not found for the team:teamName in the tenant:tenantName"));
+            }
+        }
+
+        [Test]
+        public async Task SyncGroupsAsync_GroupsConfigIs_NotFound_ReturnsErrorResult()
+        {
+            // Arrange
+            gitOpsConfigRepositoryMock.GetConfigAsync<GroupsRoot>(Arg.Any<string>(), Arg.Any<GitRepo>())
+                .Throws(new NotFoundException("Not found",HttpStatusCode.NotFound));
 
 
             // Act
             var result = await gitOpsConfigService.SyncGroupsAsync("tenantName", "teamName", "ownerId", GroupType.AccessGroup, gitRepo);
 
             // Assert
-            Assert.That(result.Errors, Is.Empty);
+            Assert.That(result.Errors, Is.Not.Empty);
+            if(result.Errors.Count > 0)
+            {
+                Assert.That(result.Errors[0], Is.EqualTo("Groups config not found for the team:teamName in the tenant:tenantName"));
+            }
         }
 
 
