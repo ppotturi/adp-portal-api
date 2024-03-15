@@ -36,7 +36,7 @@ namespace ADP.Portal.Api.Controllers
             var tenantName = azureAdConfig.Value.TenantName;
 
             logger.LogInformation("Sync Flux Services for the Team:{TeamName}", teamName);
-            var result = await gitOpsFluxTeamConfigService.GenerateFluxTeamConfig(teamRepo, fluxServicesRepo, tenantName, teamName, serviceName);
+            var result = await gitOpsFluxTeamConfigService.GenerateFluxTeamConfigAsync(teamRepo, fluxServicesRepo, tenantName, teamName, serviceName);
 
             if (result.Errors.Count > 0)
             {
