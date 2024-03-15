@@ -33,7 +33,7 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
         {
             // Arrange
             var innerDictionaryMock = Substitute.For<Dictionary<object, object>>();
-            instanceDictionary.Add("dictionary_key1", innerDictionaryMock);
+            instanceDictionary.Add("dictionary_key1", new Dictionary<object, object> { { "child_key1", innerDictionaryMock } });
 
             // Act
             instanceDictionary.ReplaceToken(config);
@@ -61,6 +61,48 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
         }
 
         [Test]
+        public void ReplaceToken_DictionaryInstance_StringValue_Test()
+        {
+            // Arrange
+            var originalValue = "__key1__";
+            var expectedValue = "value1";
+
+            var dictionaryObject = new Dictionary<object, object>
+            {
+                { "key", originalValue }
+            };
+
+            instanceDictionary.Add("dictionary_key1", dictionaryObject);
+
+            // Act
+            instanceDictionary.ReplaceToken(config);
+
+            // Assert
+            Assert.That(dictionaryObject["key"], Is.EqualTo(expectedValue));
+        }
+
+        [Test]
+        public void ReplaceToken_DictionaryInstance_EmptyStringValue_Test()
+        {
+            // Arrange
+            var originalValue = "";
+            var expectedValue = "";
+
+            var dictionaryObject = new Dictionary<object, object>
+            {
+                { "key", originalValue }
+            };
+
+            instanceDictionary.Add("dictionary_key1", dictionaryObject);
+
+            // Act
+            instanceDictionary.ReplaceToken(config);
+
+            // Assert
+            Assert.That(dictionaryObject["key"], Is.EqualTo(expectedValue));
+        }
+
+        [Test]
         public void ReplaceToken_DictionaryInstance_ListValue_ListValue_Test()
         {
             // Arrange
@@ -85,27 +127,6 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             {
                 Assert.That(((List<object>)list1object)[0], Is.EqualTo(expectedReplaceValue));
             }
-        }
-
-        [Test]
-        public void ReplaceToken_DictionaryInstance_StringValue_Test()
-        {
-            // Arrange
-            var originalValue = "__key1__";
-            var expectedValue = "value1";
-
-            var dictionaryObject = new Dictionary<object, object>
-            {
-                { "key", originalValue }
-            };
-
-            instanceDictionary.Add("dictionary_key1", dictionaryObject);
-
-            // Act
-            instanceDictionary.ReplaceToken(config);
-
-            // Assert
-            Assert.That(dictionaryObject["key"], Is.EqualTo(expectedValue));
         }
 
         [Test]
@@ -153,7 +174,6 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
         public void ReplaceToken_ListInstance_Value_Test()
         {
             // Arrange
-
             var expectedReplaceValue = "list_object_value1";
             var listMock = Substitute.For<List<object>>();
             listMock.Add("list_object___key1__");
@@ -165,8 +185,23 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             // Assert
             listMock.Received().ReplaceToken(config);
             Assert.That(listMock[0], Is.EqualTo(expectedReplaceValue));
-
         }
 
+        [Test]
+        public void ReplaceToken_ListInstance_EmptyValue_Test()
+        {
+            // Arrange
+            string expectedReplaceValue = null;
+            var listMock = Substitute.For<List<object>>();
+            listMock.Add(null);
+            instanceList.Add(listMock);
+
+            // Act
+            instanceList.ReplaceToken(config);
+
+            // Assert
+            listMock.Received().ReplaceToken(config);
+            Assert.That(listMock[0], Is.EqualTo(expectedReplaceValue));
+        }
     }
 }
