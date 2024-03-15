@@ -187,12 +187,12 @@ namespace ADP.Portal.Core.Git.Services
             {
                 foreach (var template in templates)
                 {
-                    service.Environments.Where(env => tenantConfig != null ? tenantConfig.Environments.Exists(x => x.Name.Equals(env.Name)) : true)
-                        .ForEach(env =>
+                    service.Environments.Where(env => tenantConfig == null || tenantConfig.Environments.Exists(x => x.Name.Equals(env.Name)))
+                        .ForEach(environment =>
                     {
                         var key = template.Key.Replace(FluxConstants.PROGRAMME_FOLDER, programme)
                             .Replace(FluxConstants.TEAM_KEY, teamConfig?.ServiceCode)
-                            .Replace(FluxConstants.ENV_KEY, $"{env.Name[..3]}/0{env.Name[3..]}")
+                            .Replace(FluxConstants.ENV_KEY, $"{environment.Name[..3]}/0{environment.Name[3..]}")
                             .Replace(FluxConstants.SERVICE_KEY, service.Name);
 
                         if (template.Key.Equals(FluxConstants.TEAM_ENV_KUSTOMIZATION_FILE, StringComparison.InvariantCultureIgnoreCase) &&
@@ -209,16 +209,16 @@ namespace ADP.Portal.Core.Git.Services
                             }
                             var tokens = new List<FluxConfig>
                             {
-                                new() { Key = FluxConstants.TEMPLATE_VAR_ENVIRONMENT, Value = env.Name[..3]},
-                                new() { Key = FluxConstants.TEMPLATE_VAR_ENV_INSTANCE, Value = env.Name[3..]}
+                                new() { Key = FluxConstants.TEMPLATE_VAR_ENVIRONMENT, Value = environment.Name[..3]},
+                                new() { Key = FluxConstants.TEMPLATE_VAR_ENV_INSTANCE, Value = environment.Name[3..]}
                             };
-                            tokens.Union(env.ConfigVariables).ForEach(newFile.ReplaceToken);
+                            var tenantConfigVariables = tenantConfig?.Environments.First(x => x.Name.Equals(environment.Name)).ConfigVariables ?? [];
+                            tokens.Union(environment.ConfigVariables).Union(tenantConfigVariables).ForEach(newFile.ReplaceToken);
                             finalFiles.Add(key, newFile);
                         }
                     });
                 }
             }
-
             return finalFiles;
         }
 

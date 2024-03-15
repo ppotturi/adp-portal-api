@@ -225,18 +225,5 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             // Assert
             Assert.That(actual.Count, Is.EqualTo(0));
         }
-
-        //[Test]
-        //public void DeepCopy_DictionaryInstance_NullValue_Test()
-        //{
-        //    // Arrange
-        //    instanceDictionary.Add("key1", null);
-
-        //    // Act
-        //    var actual = copyInstanceDictionary["key1"].DeepCopy();
-
-        //    // Assert
-        //    Assert.That(actual.Count, Is.EqualTo(0));
-        //}
     }
 }
