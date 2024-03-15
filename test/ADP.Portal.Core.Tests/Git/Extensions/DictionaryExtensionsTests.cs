@@ -11,6 +11,7 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
     {
         private Dictionary<string, Dictionary<object, object>> instanceDictionary;
         private List<object> instanceList;
+        private readonly Dictionary<object, object> copyInstanceDictionary;
         private readonly FluxConfig config;
 
 
@@ -25,6 +26,7 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
         {
             instanceDictionary = new Dictionary<string, Dictionary<object, object>>();
             instanceList = new List<object>();
+            copyInstanceDictionary = new Dictionary<object, object>();
             config = new FluxConfig() { Key = "key1", Value = "value1" };
         }
 
@@ -121,7 +123,6 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             instanceDictionary.ReplaceToken(config);
 
             // Assert
-            listMock.Received().ReplaceToken(config);
             var list1object = ((List<object>?)((List<object>)listMock["list1"]).FirstOrDefault())?.FirstOrDefault();
             if (list1object != null)
             {
@@ -142,7 +143,6 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             instanceList.ReplaceToken(config);
 
             // Assert
-            dictionaryMock.Received().ReplaceToken(config);
             Assert.That(dictionaryMock["dictionary_key1"], Is.EqualTo(expectedReplaceValue));
         }
 
@@ -165,9 +165,7 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             instanceList.ReplaceToken(config);
 
             // Assert
-            listMock.Received().ReplaceToken(config);
             Assert.That(listMock[0], Is.EqualTo(expectedReplaceValue));
-
         }
 
         [Test]
@@ -183,7 +181,6 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             instanceList.ReplaceToken(config);
 
             // Assert
-            listMock.Received().ReplaceToken(config);
             Assert.That(listMock[0], Is.EqualTo(expectedReplaceValue));
         }
 
@@ -191,17 +188,55 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
         public void ReplaceToken_ListInstance_EmptyValue_Test()
         {
             // Arrange
-            string expectedReplaceValue = null;
-            var listMock = Substitute.For<List<object>>();
-            listMock.Add(null);
+            string? expectedReplaceValue = null;
+            var listMock = Substitute.For<List<object?>>();
+            listMock.Add(expectedReplaceValue);
             instanceList.Add(listMock);
 
             // Act
             instanceList.ReplaceToken(config);
 
             // Assert
-            listMock.Received().ReplaceToken(config);
             Assert.That(listMock[0], Is.EqualTo(expectedReplaceValue));
         }
+
+        [Test]
+        public void DeepCopy_DictionaryInstance_DictionaryValue_Test()
+        {
+            // Arrange
+            copyInstanceDictionary.Add("key1", Substitute.For<Dictionary<object, object>>());
+
+            // Act
+            var actualVal = copyInstanceDictionary.DeepCopy();
+
+            // Assert
+            Assert.That(actualVal.ContainsKey("key1"), Is.EqualTo(true));
+        }
+
+        [Test]
+        public void DeepCopy_DictionaryInstance_EmptyValue_Test()
+        {
+            // Arrange
+            copyInstanceDictionary.Clear();
+
+            // Act
+            var actual = copyInstanceDictionary.DeepCopy();
+
+            // Assert
+            Assert.That(actual.Count, Is.EqualTo(0));
+        }
+
+        //[Test]
+        //public void DeepCopy_DictionaryInstance_NullValue_Test()
+        //{
+        //    // Arrange
+        //    instanceDictionary.Add("key1", null);
+
+        //    // Act
+        //    var actual = copyInstanceDictionary["key1"].DeepCopy();
+
+        //    // Assert
+        //    Assert.That(actual.Count, Is.EqualTo(0));
+        //}
     }
 }

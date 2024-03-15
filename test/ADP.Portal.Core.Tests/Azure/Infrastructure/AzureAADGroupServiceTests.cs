@@ -1,5 +1,4 @@
 ﻿using ADP.Portal.Core.Azure.Infrastructure;
-using AutoFixture;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
 using Microsoft.Kiota.Abstractions;
@@ -16,14 +15,11 @@ namespace ADP.Portal.Core.Tests.Azure.Infrastructure
 
         private readonly GraphServiceClient graphServiceClientMock;
 
-        private readonly Fixture fixture;
-
         public AzureAadGroupServiceTests()
         {
             var requestAdapter = Substitute.For<IRequestAdapter>();
             graphServiceClientMock = new GraphServiceClient(requestAdapter);
             azureAadGroupService = new AzureAadGroupService(graphServiceClientMock);
-            fixture = new Fixture();
         }
 
         [Test]

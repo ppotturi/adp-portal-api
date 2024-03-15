@@ -129,7 +129,7 @@ namespace ADP.Portal.Core.Git.Services
 
             // Create team environments
             var envTemplates = templates.Where(x => x.Key.Contains(FluxConstants.TEAM_ENV_FOLDER));
-            finalFiles.AddRange(CreateEnvironmentFiles(envTemplates, tenantConfig, teamConfig, services));
+            finalFiles.AddRange(CreateEnvironmentFiles(envTemplates, tenantConfig, teamConfig, teamConfig?.Services ?? services));
 
             // Create files for each service
             var serviceTemplates = templates.Where(x => x.Key.StartsWith(FluxConstants.SERVICE_FOLDER)).ToList();

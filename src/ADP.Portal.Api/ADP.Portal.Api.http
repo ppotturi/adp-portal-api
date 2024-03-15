@@ -8,6 +8,9 @@ PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
 
 ###
 
+# Generate Team templates
 POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo
 
+# Generate Specific service templates
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo/ffc-demo-claim-service
 ###
