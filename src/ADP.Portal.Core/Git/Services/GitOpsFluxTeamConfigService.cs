@@ -20,7 +20,7 @@ namespace ADP.Portal.Core.Git.Services
             this.logger = logger;
         }
 
-        public async Task<GenerateFluxConfigResult> GenerateFluxTeamConfig(GitRepo gitRepo, GitRepo gitRepoFluxServices, string tenantName, string teamName, string? serviceName = null)
+        public async Task<GenerateFluxConfigResult> GenerateFluxTeamConfigAsync(GitRepo gitRepo, GitRepo gitRepoFluxServices, string tenantName, string teamName, string? serviceName = null)
         {
             var result = new GenerateFluxConfigResult();
 
@@ -28,7 +28,7 @@ namespace ADP.Portal.Core.Git.Services
             var teamConfig = await GetFluxConfigAsync<FluxTeamConfig>(gitRepo, teamName: teamName);
             var tenantConfig = await GetFluxConfigAsync<FluxTenant>(gitRepo, tenantName: tenantName);
 
-            if (teamConfig == null)
+            if (teamConfig == null || tenantConfig == null)
             {
                 logger.LogWarning("Flux team config not found for the team:'{TeamName}'.", teamName);
                 result.IsConfigExists = false;
@@ -82,7 +82,7 @@ namespace ADP.Portal.Core.Git.Services
         {
             try
             {
-                var path = string.IsNullOrEmpty(tenantName) ? 
+                var path = string.IsNullOrEmpty(tenantName) ?
                     string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName) :
                     string.Format(FluxConstants.GIT_REPO_TENANT_CONFIG_PATH, tenantName);
 
@@ -112,7 +112,7 @@ namespace ADP.Portal.Core.Git.Services
             return finalFiles;
         }
 
-        private static Dictionary<string, Dictionary<object, object>> CreateServices(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> templates, 
+        private static Dictionary<string, Dictionary<object, object>> CreateServices(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> templates,
             FluxTenant? tenantConfig, FluxTeamConfig? teamConfig, IEnumerable<FluxService> services)
         {
             var finalFiles = new Dictionary<string, Dictionary<object, object>>();
