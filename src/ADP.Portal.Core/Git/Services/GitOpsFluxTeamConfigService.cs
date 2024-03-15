@@ -71,7 +71,7 @@ namespace ADP.Portal.Core.Git.Services
                 else
                 {
                     logger.LogInformation("No changes found in the flux files for the team:'{TeamName}' and service:{ServiceDisplay}.", teamName, serviceDisplay);
-                    result.Errors.Add($"No changes found in the flux files for the team:'{teamName}' and service:{serviceDisplay} .");
+                    result.Errors.Add($"No changes found in the flux files for the team:'{teamName}' and service:{serviceDisplay}.");
                 }
             }
 
