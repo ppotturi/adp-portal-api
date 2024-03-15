@@ -2,95 +2,170 @@
 using ADP.Portal.Core.Git.Extensions;
 using NSubstitute;
 using NUnit.Framework;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ADP.Portal.Core.Tests.Git.Extensions
 {
-    
+
     [TestFixture]
     public class DictionaryExtensionsTests
     {
-        private readonly Dictionary<string, Dictionary<object, object>> instance;
+        private Dictionary<string, Dictionary<object, object>> instanceDictionary;
+        private List<object> instanceList;
         private readonly FluxConfig config;
-      
+
+
+        [SetUp]
+        public void Setup()
+        {
+            instanceDictionary = new Dictionary<string, Dictionary<object, object>>();
+            instanceList = new List<object>();
+        }
 
         public DictionaryExtensionsTests()
         {
-            instance = new Dictionary<string, Dictionary<object, object>>();
+            instanceDictionary = new Dictionary<string, Dictionary<object, object>>();
+            instanceList = new List<object>();
             config = new FluxConfig() { Key = "key1", Value = "value1" };
         }
 
         [Test]
-        public void ReplaceToken_DictionaryType_DictionaryValue_Test()
+        public void ReplaceToken_DictionaryInstance_DictionaryValue_Test()
         {
             // Arrange
-            var innerDictionary = Substitute.For<Dictionary<object, object>>();
-            instance.Add("key1", innerDictionary);
+            var innerDictionaryMock = Substitute.For<Dictionary<object, object>>();
+            instanceDictionary.Add("dictionary_key1", innerDictionaryMock);
 
             // Act
-            instance.ReplaceToken(config);
+            instanceDictionary.ReplaceToken(config);
 
             // Assert
-            innerDictionary.Received().ReplaceToken(config);
+            innerDictionaryMock.Received().ReplaceToken(config);
         }
 
         [Test]
-        public void ReplaceToken_DictionaryType_ListValue_Test()
+        public void ReplaceToken_DictionaryInstance_ListValue_Test()
         {
             // Arrange
-            var listValue = Substitute.For<Dictionary<object,object>>();
-            listValue.Add("ley1", new List<object>());
-            instance.Add("key2", listValue);
-
-            // Act
-            instance.ReplaceToken(config);
-
-            // Assert
-            listValue.Received().ReplaceToken(config);
-        }
-
-        [Test]
-        public void ReplaceToken_DictionaryType_ListValue_DictionaryType_Test()
-        {
-            // Arrange
-            var listValue = Substitute.For<Dictionary<object, object>>();
-            var listDictonary = new Dictionary<object, object>
+            var listMock = Substitute.For<List<object>>();
+            var dictionaryObject = new Dictionary<object, object>
             {
-                { "list_dictonary1", "list_dictonary_value" }
+                { "List_key1", listMock }
             };
-            listValue.Add("list1", new List<object>() { listDictonary } );
-            instance.Add("key2", listValue);
+            instanceDictionary.Add("dictionary_key1", dictionaryObject);
 
             // Act
-            instance.ReplaceToken(config);
+            instanceDictionary.ReplaceToken(config);
 
             // Assert
-            listValue.Received().ReplaceToken(config);
+            listMock.Received().ReplaceToken(config);
         }
 
         [Test]
-        public void ReplaceToken_DictionaryType_StringValue_Test()
+        public void ReplaceToken_DictionaryInstance_ListValue_ListValue_Test()
+        {
+            // Arrange
+
+            var expectedReplaceValue = "list_object_value1";
+            var listMock = Substitute.For<Dictionary<object, object>>();
+            var listObject = new List<object>
+            {
+                new List<object>() { "list_object___key1__" }
+            };
+
+            listMock.Add("list1", new List<object>() { listObject });
+            instanceDictionary.Add("dictionary_key1", listMock);
+
+            // Act
+            instanceDictionary.ReplaceToken(config);
+
+            // Assert
+            listMock.Received().ReplaceToken(config);
+            var list1object = ((List<object>?)((List<object>)listMock["list1"]).FirstOrDefault())?.FirstOrDefault();
+            if (list1object != null)
+            {
+                Assert.That(((List<object>)list1object)[0], Is.EqualTo(expectedReplaceValue));
+            }
+        }
+
+        [Test]
+        public void ReplaceToken_DictionaryInstance_StringValue_Test()
         {
             // Arrange
             var originalValue = "__key1__";
             var expectedValue = "value1";
 
-            var template = new Dictionary<object, object>
+            var dictionaryObject = new Dictionary<object, object>
             {
                 { "key", originalValue }
             };
 
-            instance.Add("key3", template);
+            instanceDictionary.Add("dictionary_key1", dictionaryObject);
 
             // Act
-            instance.ReplaceToken(config);
+            instanceDictionary.ReplaceToken(config);
 
             // Assert
-            Assert.That(expectedValue, Is.EqualTo(template["key"]));
+            Assert.That(dictionaryObject["key"], Is.EqualTo(expectedValue));
+        }
+
+        [Test]
+        public void ReplaceToken_ListInstance_DictionaryValue_Test()
+        {
+            // Arrange
+            var expectedReplaceValue = "dictionary_object_value1";
+            var dictionaryMock = Substitute.For<Dictionary<object, object>>();
+            dictionaryMock.Add("dictionary_key1", "dictionary_object___key1__");
+            instanceList.Add(dictionaryMock);
+
+            // Act
+            instanceList.ReplaceToken(config);
+
+            // Assert
+            dictionaryMock.Received().ReplaceToken(config);
+            Assert.That(dictionaryMock["dictionary_key1"], Is.EqualTo(expectedReplaceValue));
+        }
+
+        [Test]
+        public void ReplaceToken_ListInstance_ListValue_Test()
+        {
+            // Arrange
+            var expectedReplaceValue = "list_object_value1";
+            var listMock = Substitute.For<List<object>>();
+            listMock.Add("list_object___key1__");
+
+            var listObect = new List<object>
+            {
+                listMock
+            };
+
+            instanceList.Add(listObect);
+
+            // Act
+            instanceList.ReplaceToken(config);
+
+            // Assert
+            listMock.Received().ReplaceToken(config);
+            Assert.That(listMock[0], Is.EqualTo(expectedReplaceValue));
+
+        }
+
+        [Test]
+        public void ReplaceToken_ListInstance_Value_Test()
+        {
+            // Arrange
+
+            var expectedReplaceValue = "list_object_value1";
+            var listMock = Substitute.For<List<object>>();
+            listMock.Add("list_object___key1__");
+            instanceList.Add(listMock);
+
+            // Act
+            instanceList.ReplaceToken(config);
+
+            // Assert
+            listMock.Received().ReplaceToken(config);
+            Assert.That(listMock[0], Is.EqualTo(expectedReplaceValue));
+
         }
 
     }
