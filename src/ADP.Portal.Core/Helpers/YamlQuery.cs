@@ -2,11 +2,11 @@
 {
     public class YamlQuery
     {
-        private readonly object yamlDictionary;
+        private readonly object? yamlDictionary;
         private string? key = null;
         private object? current = null;
 
-        public YamlQuery(object yamlDictionary)
+        public YamlQuery(object? yamlDictionary)
         {
             this.yamlDictionary = yamlDictionary;
         }
@@ -44,7 +44,7 @@
             return ((List<object>)current).Cast<T>().ToList();
         }
 
-        private List<T> Query<T>(object instance, string? key, string? prop, string? fromKey = null)
+        private List<T> Query<T>(object? instance, string? key, string? prop, string? fromKey = null)
         {
             var result = new List<T>();
             if (instance == null)
@@ -56,16 +56,9 @@
 
                 foreach (var item in collection)
                 {
-                    if (item.Key as string == key)
+                    if (item.Key as string == key && prop == null)
                     {
-                        if (prop == null)
-                        {
-                            result.Add((T)item.Value);
-                        }
-                        else
-                        {
-                            result.AddRange(Query<T>(item.Value, key, prop, item.Key as string));
-                        }
+                        result.Add((T)item.Value);
                     }
                     else if (fromKey == key && item.Key as string == prop)
                     {
@@ -90,8 +83,7 @@
 
         private void Remove<T>(object instance, string? key)
         {
-            if (instance == null || string.IsNullOrEmpty(key))
-                return;
+            if (string.IsNullOrEmpty(key)) return;
 
             if (typeof(IDictionary<object, object>).IsAssignableFrom(instance.GetType()))
             {
