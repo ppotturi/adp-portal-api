@@ -49,9 +49,8 @@
             var result = new List<T>();
             if (instance == null)
                 return result;
-            if (typeof(IDictionary<object, object>).IsAssignableFrom(instance.GetType()))
+            if (instance is IDictionary<object, object> dictionary)
             {
-                var dictionary = (IDictionary<object, object>)instance;
                 var collection = dictionary.Cast<KeyValuePair<object, object>>();
 
                 foreach (var item in collection)
@@ -70,9 +69,8 @@
                     }
                 }
             }
-            else if (typeof(IEnumerable<object>).IsAssignableFrom(instance.GetType()))
+            else if (instance is IEnumerable<object> collection)
             {
-                var collection = (IEnumerable<object>)instance;
                 foreach (var item in collection)
                 {
                     result.AddRange(Query<T>(item, key, prop, key));
@@ -85,14 +83,12 @@
         {
             if (string.IsNullOrEmpty(key)) return;
 
-            if (typeof(IDictionary<object, object>).IsAssignableFrom(instance.GetType()))
+            if (instance is IDictionary<object, object> dictionary)
             {
-                var dictionary = (IDictionary<object, object>)instance;
                 dictionary.Remove(key);
             }
-            else if (typeof(IEnumerable<object>).IsAssignableFrom(instance.GetType()))
+            else if (instance is IEnumerable<object> collection)
             {
-                var collection = (IEnumerable<object>)instance;
                 foreach (var item in collection)
                 {
                     Remove<T>(item, key);

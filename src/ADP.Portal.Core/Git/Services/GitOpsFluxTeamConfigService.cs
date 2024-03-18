@@ -180,7 +180,7 @@ namespace ADP.Portal.Core.Git.Services
                                 new() { Key = FluxConstants.TEMPLATE_VAR_ENVIRONMENT, Value = environment.Name[..3]},
                                 new() { Key = FluxConstants.TEMPLATE_VAR_ENV_INSTANCE, Value = environment.Name[3..]}
                             };
-                            var tenantConfigVariables = tenantConfig.Environments.First(x => x.Name.Equals(environment.Name)).ConfigVariables;
+                            var tenantConfigVariables = tenantConfig.Environments.First(x => x.Name.Equals(environment.Name)).ConfigVariables ?? [];
                             tokens.Union(environment.ConfigVariables).Union(tenantConfigVariables).ForEach(newFile.ReplaceToken);
                             finalFiles.Add(key, newFile);
                         }

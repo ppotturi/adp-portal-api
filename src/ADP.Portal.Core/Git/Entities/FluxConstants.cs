@@ -1,6 +1,6 @@
 ﻿namespace ADP.Portal.Core.Git.Entities
 {
-    public class FluxConstants
+    public static class FluxConstants
     {
         public const string GIT_REPO_TEMPLATE_PATH = "flux/templates";
         public const string GIT_REPO_TENANT_CONFIG_PATH = "flux/{0}-config.yaml";
