@@ -49,28 +49,23 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         public async Task<Reference> CreateBranchAsync(GitRepo gitRepo, string branchName, string sha)
         {
-            return await gitHubClient.Git.Reference
-                 .Create(gitRepo.Organisation, gitRepo.Name, new NewReference(branchName, sha));
+            return await gitHubClient.Git.Reference.Create(gitRepo.Organisation, gitRepo.Name, new NewReference(branchName, sha));
         }
 
         public async Task<Reference> UpdateBranchAsync(GitRepo gitRepo, string branchName, string sha)
         {
-            return await gitHubClient.Git.Reference
-                 .Update(gitRepo.Organisation, gitRepo.Name, branchName, new ReferenceUpdate(sha));
+            return await gitHubClient.Git.Reference.Update(gitRepo.Organisation, gitRepo.Name, branchName, new ReferenceUpdate(sha));
         }
 
         public async Task<Commit?> CreateCommitAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string message, string? branchName = null)
         {
             var branch = branchName ?? $"heads/{gitRepo.BranchName}";
 
-            var repository = await gitHubClient.Repository
-                .Get(gitRepo.Organisation, gitRepo.Name);
+            var repository = await gitHubClient.Repository.Get(gitRepo.Organisation, gitRepo.Name);
 
-            var branchRef = await gitHubClient.Git.Reference
-                .Get(repository.Owner.Login, repository.Name, branch);
+            var branchRef = await gitHubClient.Git.Reference.Get(repository.Owner.Login, repository.Name, branch);
 
-            var latestCommit = await gitHubClient.Git.Commit
-                .Get(repository.Owner.Login, repository.Name, branchRef.Object.Sha);
+            var latestCommit = await gitHubClient.Git.Commit.Get(repository.Owner.Login, repository.Name, branchRef.Object.Sha);
 
             var featureBranchTree = await CreateTree(gitHubClient, repository, generatedFiles, latestCommit.Sha);
             if (featureBranchTree != null)
@@ -83,12 +78,10 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         public async Task<bool> CreatePullRequestAsync(GitRepo gitRepo, string branchName, string message)
         {
-            var repository = await gitHubClient.Repository
-                .Get(gitRepo.Organisation, gitRepo.Name);
+            var repository = await gitHubClient.Repository.Get(gitRepo.Organisation, gitRepo.Name);
 
             var pullRequest = new NewPullRequest(message, branchName, gitRepo.BranchName);
-            var createdPullRequest = await gitHubClient.PullRequest
-                .Create(repository.Owner.Login, repository.Name, pullRequest);
+            var createdPullRequest = await gitHubClient.PullRequest.Create(repository.Owner.Login, repository.Name, pullRequest);
 
             return createdPullRequest != null;
         }
