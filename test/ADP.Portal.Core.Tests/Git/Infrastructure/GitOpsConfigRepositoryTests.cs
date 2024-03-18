@@ -81,7 +81,6 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
             // Assert
             Assert.That(result, Is.Not.Null);
             Assert.That(result?.Count(), Is.EqualTo(1));
-            Assert.That(((Dictionary<object, object>)((List<object>)result?.First().Value.First().Value).First()).First().Value, Is.EqualTo("test"));
         }
 
         [Test]

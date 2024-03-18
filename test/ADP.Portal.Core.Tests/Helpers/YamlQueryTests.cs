@@ -1,5 +1,4 @@
 ﻿using ADP.Portal.Core.Helpers;
-using Microsoft.VisualStudio.Services.TestManagement.TestPlanning.WebApi;
 using NUnit.Framework;
 using YamlDotNet.Serialization;
 
