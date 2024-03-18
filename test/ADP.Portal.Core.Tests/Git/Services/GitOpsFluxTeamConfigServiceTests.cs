@@ -178,7 +178,6 @@ namespace ADP.Portal.Core.Tests.Git.Services
         {
             // Arrange
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
-            fluxTeamConfig.Services = null;
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
             gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fixture.Build<FluxTenant>().Create());

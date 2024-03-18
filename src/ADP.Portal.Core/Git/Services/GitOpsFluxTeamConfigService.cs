@@ -67,14 +67,15 @@ namespace ADP.Portal.Core.Git.Services
         {
             var finalFiles = new Dictionary<string, Dictionary<object, object>>();
 
-            var services = (serviceName != null ? fluxTeamConfig.Services.Where(x => x.Name.Equals(serviceName)) : fluxTeamConfig.Services) ?? [];
+            var services = serviceName != null ? fluxTeamConfig.Services.Where(x => x.Name.Equals(serviceName)) : fluxTeamConfig.Services;
             if (services.Any())
             {
                 // Create service files
                 finalFiles = CreateServices(files, tenantConfig, fluxTeamConfig, services);
 
                 // Replace tokens
-                ApplyTeamTokens(fluxTeamConfig, tenantConfig, finalFiles);
+                CreateTeamVariables(fluxTeamConfig);
+                fluxTeamConfig.ConfigVariables.Union(tenantConfig.ConfigVariables).ForEach(finalFiles.ReplaceToken);
             }
 
             return finalFiles;
@@ -213,15 +214,13 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private static void ApplyTeamTokens(FluxTeamConfig teamConfig, FluxTenant fluxTenant, Dictionary<string, Dictionary<object, object>> files)
+        private static void CreateTeamVariables(FluxTeamConfig teamConfig)
         {
             var programme = teamConfig.ServiceCode[..3];
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_PROGRAMME_NAME, Value = programme ?? string.Empty });
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_TEAM_NAME, Value = teamConfig.ServiceCode ?? string.Empty });
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_SERVICE_CODE, Value = teamConfig.ServiceCode ?? string.Empty });
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_VERSION, Value = FluxConstants.TEMPLATE_VAR_DEFAULT_VERSION });
-
-            teamConfig.ConfigVariables.Union(fluxTenant.ConfigVariables).ForEach(files.ReplaceToken);
         }
 
         private async Task PushFilesToFluxRepository(GitRepo gitRepoFluxServices, string teamName, string? serviceName, Dictionary<string, Dictionary<object, object>> generatedFiles, GenerateFluxConfigResult result)
