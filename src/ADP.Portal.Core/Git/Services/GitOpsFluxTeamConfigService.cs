@@ -111,7 +111,7 @@ namespace ADP.Portal.Core.Git.Services
                     if (!template.Key.Contains(FluxConstants.ENV_KEY))
                     {
                         var key = template.Key.Replace(FluxConstants.PROGRAMME_FOLDER, programme).Replace(FluxConstants.TEAM_KEY, teamConfig.ServiceCode).Replace(FluxConstants.SERVICE_KEY, service.Name);
-                        serviceFiles.Add(key, template.Value);
+                        serviceFiles.Add(key, template.Value.DeepCopy());
                     }
                     else
                     {
@@ -133,7 +133,7 @@ namespace ADP.Portal.Core.Git.Services
             return serviceTemplates.Where(filter =>
             {
                 var matched = true;
-                if (IsBackendServiceWithDatabase(service))
+                if (!CheckServiceConfigurationForDatabaseName(service))
                 {
                     matched = !filter.Key.StartsWith(FluxConstants.SERVICE_PRE_DEPLOY_FOLDER) && !filter.Key.StartsWith(FluxConstants.PRE_DEPLOY_KUSTOMIZE_FILE);
                 }
@@ -141,9 +141,9 @@ namespace ADP.Portal.Core.Git.Services
             });
         }
 
-        private static bool IsBackendServiceWithDatabase(FluxService service)
+        private static bool CheckServiceConfigurationForDatabaseName(FluxService service)
         {
-            return service.Type.Equals(FluxServiceType.Frontend) || !service.ConfigVariables.Exists(token => token.Key.Equals(FluxConstants.POSTGRES_DB_KEY));
+            return service.ConfigVariables.Exists(token => token.Key.Equals(FluxConstants.POSTGRES_DB_KEY));
         }
 
         private static Dictionary<string, Dictionary<object, object>> CreateEnvironmentFiles(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> templates, FluxTenant tenantConfig, FluxTeamConfig teamConfig, IEnumerable<FluxService> services)
@@ -192,7 +192,7 @@ namespace ADP.Portal.Core.Git.Services
 
         private static void UpdateServiceDependencies(Dictionary<string, Dictionary<object, object>> serviceFiles, FluxService service, FluxTeamConfig teamConfig)
         {
-            service.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_DEPENDS_ON, Value = IsBackendServiceWithDatabase(service) ? FluxConstants.PREDEPLOY_KEY : FluxConstants.INFRA_KEY });
+            service.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_DEPENDS_ON, Value = CheckServiceConfigurationForDatabaseName(service) ? FluxConstants.PREDEPLOY_KEY : FluxConstants.INFRA_KEY });
             if (service.Type.Equals(FluxServiceType.Backend))
             {
                 foreach (var file in serviceFiles)
