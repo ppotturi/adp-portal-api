@@ -1,5 +1,6 @@
 ﻿using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Infrastructure;
+using ADP.Portal.Core.Ado.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
 
@@ -29,23 +30,22 @@ namespace ADP.Portal.Core.Ado.Services
             }
         }
 
-        public async Task OnBoardAsync(string adpProjectName, AdoProject onboardProject)
+        public async Task<OnboardProjectResult> OnBoardAsync(string adpProjectName, AdoProject onboardProject)
         {
+            var onBoardResult = new OnboardProjectResult();
 
-            logger.LogInformation("Share service endpoints to the project '{ProjectName}'", onboardProject.ProjectReference.Name);   
-            await adoService.ShareServiceEndpointsAsync(adpProjectName, onboardProject.ServiceConnections, onboardProject.ProjectReference);
+            onBoardResult.ServiceConnectionIds = await adoService.ShareServiceEndpointsAsync(adpProjectName, onboardProject.ServiceConnections, onboardProject.ProjectReference);
 
-            logger.LogInformation("Add environments to the project '{ProjectName}'", onboardProject.ProjectReference.Name);
-            await adoService.AddEnvironmentsAsync(onboardProject.Environments, onboardProject.ProjectReference);
+            onBoardResult.EnvironmentIds = await adoService.AddEnvironmentsAsync(onboardProject.Environments, onboardProject.ProjectReference);
 
-            logger.LogInformation("Share agent pools to the project '{ProjectName}'", onboardProject.ProjectReference.Name);    
-            await adoService.ShareAgentPoolsAsync(adpProjectName, onboardProject.AgentPools, onboardProject.ProjectReference);
+            onBoardResult.AgentQueueIds = await adoService.ShareAgentPoolsAsync(adpProjectName, onboardProject.AgentPools, onboardProject.ProjectReference);
 
             if (onboardProject.VariableGroups != null)
             {
-                logger.LogInformation("Add or update variable groups to the project '{ProjectName}'", onboardProject.ProjectReference.Name);
-                await adoService.AddOrUpdateVariableGroupsAsync(onboardProject.VariableGroups, onboardProject.ProjectReference);
+                onBoardResult.VariableGroupIds = await adoService.AddOrUpdateVariableGroupsAsync(onboardProject.VariableGroups, onboardProject.ProjectReference);
             }
+
+            return onBoardResult;
         }
     }
 }

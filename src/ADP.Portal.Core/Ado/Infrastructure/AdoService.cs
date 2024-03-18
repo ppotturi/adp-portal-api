@@ -30,13 +30,14 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             return project;
         }
 
-        public async Task ShareServiceEndpointsAsync(string adpProjectName, List<string> serviceConnections, TeamProjectReference onBoardProject)
+        public async Task<IEnumerable<Guid>> ShareServiceEndpointsAsync(string adpProjectName, List<string> serviceConnections, TeamProjectReference onBoardProject)
         {
             var serviceEndpointClient = await vssConnection.GetClientAsync<ServiceEndpointHttpClient>();
 
             logger.LogInformation("Getting service endpoints for project '{AdpProjectName}'", adpProjectName);
 
             var endpoints = await serviceEndpointClient.GetServiceEndpointsAsync(adpProjectName);
+            var serviceEndpointIds = new List<Guid>();
 
             foreach (var serviceConnection in serviceConnections)
             {
@@ -59,29 +60,35 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     {
                         logger.LogInformation("Service endpoint '{ServiceConnection}' already shared with project '{Name}'", serviceConnection, onBoardProject.Name);
                     }
+
+                    serviceEndpointIds.Add(endpoint.Id);
                 }
                 else
                 {
                     logger.LogWarning("Service endpoint '{ServiceConnection}' not found", serviceConnection);
                 }
             }
+
+            return serviceEndpointIds;
         }
 
-        public async Task AddEnvironmentsAsync(List<AdoEnvironment> adoEnvironments, TeamProjectReference onBoardProject)
+        public async Task<IEnumerable<int>> AddEnvironmentsAsync(List<AdoEnvironment> adoEnvironments, TeamProjectReference onBoardProject)
         {
             var taskAgentClient = await vssConnection.GetClientAsync<TaskAgentHttpClient>();
 
             logger.LogInformation("Getting environments for project '{Name}'", onBoardProject.Name);
 
             var environments = await taskAgentClient.GetEnvironmentsAsync(onBoardProject.Id);
+            var environmentIds = new List<int>();
 
             foreach (var environment in adoEnvironments)
             {
-                var IsEnvironmentExists = environments.Exists(e => e.Name.Equals(environment.Name, StringComparison.OrdinalIgnoreCase));
-
-                if (IsEnvironmentExists)
+                var existingEnvironment = environments.SingleOrDefault(e => e.Name.Equals(environment.Name, StringComparison.OrdinalIgnoreCase));
+                
+                if (existingEnvironment != null)
                 {
-                    logger.LogInformation("Environment '{Name}' already exists", environment.Name);
+                    environmentIds.Add(existingEnvironment.Id);
+                    logger.LogInformation("Environment {Name} already exists", environment.Name);
                     continue;
                 }
 
@@ -89,38 +96,44 @@ namespace ADP.Portal.Core.Ado.Infrastructure
 
                 var environmentParameter = environment.Adapt<EnvironmentCreateParameter>();
 
-                await taskAgentClient.AddEnvironmentAsync(onBoardProject.Id, environmentParameter);
+                var createdEnvironment = await taskAgentClient.AddEnvironmentAsync(onBoardProject.Id, environmentParameter);
+                environmentIds.Add(createdEnvironment.Id);
 
                 logger.LogInformation("Environment '{Name}' created", environment.Name);
             }
+
+            return environmentIds;
         }
 
-        public async Task ShareAgentPoolsAsync(string adpPrjectName, List<string> adoAgentPoolsToShare, TeamProjectReference onBoardProject)
+        public async Task<IEnumerable<int>> ShareAgentPoolsAsync(string adpProjectName, List<string> adoAgentPoolsToShare, TeamProjectReference onBoardProject)
         {
             var taskAgentClient = await vssConnection.GetClientAsync<TaskAgentHttpClient>();
 
             logger.LogInformation("Getting agent pools for project '{Name}'", onBoardProject.Name);
 
-            var adpAgentQueues = await taskAgentClient.GetAgentQueuesAsync(adpPrjectName, string.Empty);
+            var adpAgentQueues = await taskAgentClient.GetAgentQueuesAsync(adpProjectName, string.Empty);
 
             var agentPools = await taskAgentClient.GetAgentQueuesAsync(onBoardProject.Id);
+            var agentQueueIds = new List<int>();
 
             foreach (var agentPool in adoAgentPoolsToShare)
             {
                 var adpAgentQueue = adpAgentQueues.Find(a => a.Name.Equals(agentPool, StringComparison.OrdinalIgnoreCase));
                 if (adpAgentQueue != null)
                 {
-                    var IsAgentPoolExists = agentPools.Exists(e => e.Name.Equals(agentPool, StringComparison.OrdinalIgnoreCase));
+                    var existingAgentQueue = agentPools.SingleOrDefault(e => e.Name.Equals(agentPool, StringComparison.OrdinalIgnoreCase));
 
-                    if (IsAgentPoolExists)
+                    if (existingAgentQueue != null)
                     {
-                        logger.LogInformation("Agent pool '{AgentPool}' already exists in the '{Name}' project", agentPool, onBoardProject.Name);
+                        logger.LogInformation("Agent pool {AgentPool} already exists in the {Name} project", agentPool, onBoardProject.Name);
+                        agentQueueIds.Add(existingAgentQueue.Id);
                         continue;
                     }
 
                     logger.LogInformation("Adding agent pool '{AgentPool}' to the {Name} project", agentPool, onBoardProject.Name);
 
-                    await taskAgentClient.AddAgentQueueAsync(onBoardProject.Id, adpAgentQueue);
+                    var agentQueue = await taskAgentClient.AddAgentQueueAsync(onBoardProject.Id, adpAgentQueue);
+                    agentQueueIds.Add(agentQueue.Id);
 
                     logger.LogInformation("Agent pool '{AgentPool}' created", agentPool);
                 }
@@ -129,15 +142,18 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     logger.LogWarning("Agent pool '{AgentPool}' not found in the adp project.", agentPool);
                 }
             }
+
+            return agentQueueIds;
         }
 
-        public async Task AddOrUpdateVariableGroupsAsync(List<AdoVariableGroup> adoVariableGroups, TeamProjectReference onBoardProject)
+        public async Task<IEnumerable<int>> AddOrUpdateVariableGroupsAsync(List<AdoVariableGroup> adoVariableGroups, TeamProjectReference onBoardProject)
         {
             var taskAgentClient = await vssConnection.GetClientAsync<TaskAgentHttpClient>();
 
             logger.LogInformation("Getting variable groups for project '{Name}'", onBoardProject.Name);
 
             var variableGroups = await taskAgentClient.GetVariableGroupsAsync(onBoardProject.Id);
+            var variableGroupIds = new List<int>();
 
             foreach (var variableGroup in adoVariableGroups)
             {
@@ -148,15 +164,19 @@ namespace ADP.Portal.Core.Ado.Infrastructure
 
                 if (existingVariableGroup == null)
                 {
-                    logger.LogInformation("Creating variable group '{Name}'", variableGroup.Name);
-                    await taskAgentClient.AddVariableGroupAsync(variableGroupParameters);
+                    logger.LogInformation("Creating variable group {Name}", variableGroup.Name);
+                    var newVariableGroup = await taskAgentClient.AddVariableGroupAsync(variableGroupParameters);
+                    variableGroupIds.Add(newVariableGroup.Id);
                 }
                 else
                 {
                     logger.LogInformation("Updating variable group '{Name}'", variableGroup.Name);
                     await taskAgentClient.UpdateVariableGroupAsync(existingVariableGroup.Id, variableGroupParameters);
+                    variableGroupIds.Add(existingVariableGroup.Id);
                 }
             }
+
+            return variableGroupIds;
         }
     }
 }

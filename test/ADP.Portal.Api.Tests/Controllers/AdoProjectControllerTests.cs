@@ -1,6 +1,7 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Controllers;
 using ADP.Portal.Api.Models;
+using ADP.Portal.Core.Ado.Dtos;
 using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Services;
 using AutoFixture;
@@ -112,19 +113,19 @@ namespace ADP.Portal.Api.Tests.Controllers
             var project = fixture.Build<TeamProjectReference>().Create();
             var adpAdoProjectConfig = fixture.Build<AdpAdoProjectConfig>().Create();
             serviceMock.GetProjectAsync(projectName).Returns(project);
-            serviceMock.OnBoardAsync(projectName, Arg.Any<AdoProject>()).Returns(Task.CompletedTask);
+            serviceMock.OnBoardAsync(projectName, Arg.Any<AdoProject>()).Returns(new OnboardProjectResult());
             configMock.Value.Returns(adpAdoProjectConfig);
 
             // Act
             var result = await controller.OnBoardAsync(projectName, onBoardRequest);
-            var noContentResult = result as NoContentResult;
+            var okObjectResult = result as OkObjectResult;
 
             // Assert
-            Assert.That(noContentResult, Is.Not.Null);
+            Assert.That(okObjectResult, Is.Not.Null);
             await serviceMock.Received().OnBoardAsync(Arg.Any<string>(), Arg.Any<AdoProject>());
-            if (noContentResult != null)
+            if (okObjectResult != null)
             {
-                Assert.That(noContentResult.StatusCode, Is.EqualTo(204));
+                Assert.That(okObjectResult.StatusCode, Is.EqualTo(200));
             }
         }
     }

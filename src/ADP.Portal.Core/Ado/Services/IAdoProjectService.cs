@@ -1,4 +1,5 @@
-﻿using ADP.Portal.Core.Ado.Entities;
+﻿using ADP.Portal.Core.Ado.Dtos;
+using ADP.Portal.Core.Ado.Entities;
 using Microsoft.TeamFoundation.Core.WebApi;
 
 namespace ADP.Portal.Core.Ado.Services
@@ -7,7 +8,6 @@ namespace ADP.Portal.Core.Ado.Services
     {
         public Task<TeamProjectReference?> GetProjectAsync(string projectName);
 
-        public Task OnBoardAsync(string adpProjectName, AdoProject onboardProject);
-
+        public Task<OnboardProjectResult> OnBoardAsync(string adpProjectName, AdoProject onboardProject);
     }
 }
