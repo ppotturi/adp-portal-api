@@ -97,7 +97,7 @@ namespace ADP.Portal.Core.Git.Services
 
             // Create team environments
             var envTemplates = templates.Where(x => x.Key.Contains(FluxConstants.TEAM_ENV_FOLDER));
-            finalFiles.AddRange(CreateEnvironmentFiles(envTemplates, tenantConfig, teamConfig, teamConfig.Services ?? services));
+            finalFiles.AddRange(CreateEnvironmentFiles(envTemplates, tenantConfig, teamConfig, teamConfig.Services));
 
             // Create files for each service
             var serviceTemplates = templates.Where(x => x.Key.StartsWith(FluxConstants.SERVICE_FOLDER)).ToList();
@@ -180,7 +180,7 @@ namespace ADP.Portal.Core.Git.Services
                                 new() { Key = FluxConstants.TEMPLATE_VAR_ENVIRONMENT, Value = environment.Name[..3]},
                                 new() { Key = FluxConstants.TEMPLATE_VAR_ENV_INSTANCE, Value = environment.Name[3..]}
                             };
-                            var tenantConfigVariables = tenantConfig.Environments.First(x => x.Name.Equals(environment.Name)).ConfigVariables ?? [];
+                            var tenantConfigVariables = tenantConfig.Environments.First(x => x.Name.Equals(environment.Name)).ConfigVariables;
                             tokens.Union(environment.ConfigVariables).Union(tenantConfigVariables).ForEach(newFile.ReplaceToken);
                             finalFiles.Add(key, newFile);
                         }
@@ -221,7 +221,7 @@ namespace ADP.Portal.Core.Git.Services
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_SERVICE_CODE, Value = teamConfig.ServiceCode ?? string.Empty });
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_VERSION, Value = FluxConstants.TEMPLATE_VAR_DEFAULT_VERSION });
 
-            teamConfig.ConfigVariables.Union(fluxTenant.ConfigVariables ?? []).ForEach(files.ReplaceToken);
+            teamConfig.ConfigVariables.Union(fluxTenant.ConfigVariables).ForEach(files.ReplaceToken);
         }
 
         private async Task PushFilesToFluxRepository(GitRepo gitRepoFluxServices, string teamName, string? serviceName, Dictionary<string, Dictionary<object, object>> generatedFiles, GenerateFluxConfigResult result)
