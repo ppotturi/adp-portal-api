@@ -86,13 +86,11 @@ namespace ADP.Portal.Core.Git.Services
         {
             var finalFiles = new Dictionary<string, Dictionary<object, object>>();
 
-            var programme = teamConfig.ServiceCode[..3];
-
             // Collect all non-service files
             templates.Where(x => !x.Key.StartsWith(FluxConstants.SERVICE_FOLDER) &&
                              !x.Key.StartsWith(FluxConstants.TEAM_ENV_FOLDER)).ForEach(file =>
             {
-                var key = file.Key.Replace(FluxConstants.PROGRAMME_FOLDER, programme).Replace(FluxConstants.TEAM_KEY, teamConfig.ServiceCode);
+                var key = file.Key.Replace(FluxConstants.PROGRAMME_FOLDER, teamConfig.ProgrammeName).Replace(FluxConstants.TEAM_KEY, teamConfig.TeamName);
                 finalFiles.Add(key, file.Value);
             });
 
@@ -111,7 +109,7 @@ namespace ADP.Portal.Core.Git.Services
                 {
                     if (!template.Key.Contains(FluxConstants.ENV_KEY))
                     {
-                        var key = template.Key.Replace(FluxConstants.PROGRAMME_FOLDER, programme).Replace(FluxConstants.TEAM_KEY, teamConfig.ServiceCode).Replace(FluxConstants.SERVICE_KEY, service.Name);
+                        var key = template.Key.Replace(FluxConstants.PROGRAMME_FOLDER, teamConfig.ProgrammeName).Replace(FluxConstants.TEAM_KEY, teamConfig.TeamName).Replace(FluxConstants.SERVICE_KEY, service.Name);
                         serviceFiles.Add(key, template.Value.DeepCopy());
                     }
                     else
@@ -150,8 +148,7 @@ namespace ADP.Portal.Core.Git.Services
         private static Dictionary<string, Dictionary<object, object>> CreateEnvironmentFiles(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> templates, FluxTenant tenantConfig, FluxTeamConfig teamConfig, IEnumerable<FluxService> services)
         {
             var finalFiles = new Dictionary<string, Dictionary<object, object>>();
-            var programme = teamConfig.ServiceCode[..3];
-
+            
             foreach (var service in services)
             {
                 foreach (var template in templates)
@@ -159,8 +156,8 @@ namespace ADP.Portal.Core.Git.Services
                     service.Environments.Where(env => tenantConfig.Environments.Exists(x => x.Name.Equals(env.Name)))
                         .ForEach(environment =>
                     {
-                        var key = template.Key.Replace(FluxConstants.PROGRAMME_FOLDER, programme)
-                            .Replace(FluxConstants.TEAM_KEY, teamConfig.ServiceCode)
+                        var key = template.Key.Replace(FluxConstants.PROGRAMME_FOLDER, teamConfig.ProgrammeName)
+                            .Replace(FluxConstants.TEAM_KEY, teamConfig.TeamName)
                             .Replace(FluxConstants.ENV_KEY, $"{environment.Name[..3]}/0{environment.Name[3..]}")
                             .Replace(FluxConstants.SERVICE_KEY, service.Name);
 
@@ -200,7 +197,7 @@ namespace ADP.Portal.Core.Git.Services
                 {
                     service.Environments.ForEach(env =>
                     {
-                        var filePattern = string.Format(FluxConstants.TEAM_SERVICE_ENV_PATCH_FILE, teamConfig.ServiceCode[..3], teamConfig.ServiceCode, service.Name, $"{env.Name[..3]}/0{env.Name[3..]}");
+                        var filePattern = string.Format(FluxConstants.TEAM_SERVICE_ENV_PATCH_FILE, teamConfig.ProgrammeName, teamConfig.TeamName, service.Name, $"{env.Name[..3]}/0{env.Name[3..]}");
                         if (file.Key.Equals(filePattern))
                         {
                             new YamlQuery(file.Value)
@@ -216,9 +213,8 @@ namespace ADP.Portal.Core.Git.Services
 
         private static void CreateTeamVariables(FluxTeamConfig teamConfig)
         {
-            var programme = teamConfig.ServiceCode[..3];
-            teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_PROGRAMME_NAME, Value = programme ?? string.Empty });
-            teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_TEAM_NAME, Value = teamConfig.ServiceCode ?? string.Empty });
+            teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_PROGRAMME_NAME, Value = teamConfig.ProgrammeName ?? string.Empty });
+            teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_TEAM_NAME, Value = teamConfig.TeamName ?? string.Empty });
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_SERVICE_CODE, Value = teamConfig.ServiceCode ?? string.Empty });
             teamConfig.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_VERSION, Value = FluxConstants.TEMPLATE_VAR_DEFAULT_VERSION });
         }

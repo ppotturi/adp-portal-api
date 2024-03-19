@@ -231,7 +231,6 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
             // Assert
             Assert.That(result, Is.Not.Null);
-            //await gitOpsConfigRepository.Received().CreateCommitAsync(Arg.Any<GitRepo>(), Arg.)
             await gitOpsConfigRepository.Received().CreateBranchAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
             await gitOpsConfigRepository.Received().CreatePullRequestAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
         }
