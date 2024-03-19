@@ -71,7 +71,7 @@ properties:
           - name: TeamGitRepo__Organisation
             value: "defra-adp-sandpit"
           - name: FluxServicesGitRepo__Name
-            value: "adp-team-onboard"
+            value: "adp-flux-services"
           - name: FluxServicesGitRepo__BranchName
             value: "main"
           - name: FluxServicesGitRepo__Organisation
