@@ -3,6 +3,6 @@
     public enum ConfigType
     {
         GroupsMembers,
-        OpenVpnMembers
+        FluxServices
     }
 }

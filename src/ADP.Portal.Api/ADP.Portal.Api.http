@@ -1,0 +1,15 @@
+﻿@ADP.Portal.Api_HostAddress = https://localhost:7280
+
+GET {{ADP.Portal.Api_HostAddress}}/api/adoproject/string
+
+###
+PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
+
+###
+# Generate Team templates
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo
+
+
+###
+# Generate Specific service templates
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo/ffc-demo-claim-service

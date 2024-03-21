@@ -6,7 +6,7 @@ namespace ADP.Portal.Core.Git.Entities
     {
         public required string DisplayName { get; set; }
 
-        public GroupType? Type { get; set; }
+        public GroupType Type { get; set; }
 
         public string? Description { get; set; }
 

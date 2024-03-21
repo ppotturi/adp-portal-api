@@ -2,6 +2,7 @@
 using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Mapster;
 using ADP.Portal.Api.Providers;
+using ADP.Portal.Api.Swagger;
 using ADP.Portal.Api.Wrappers;
 using ADP.Portal.Core.Ado.Infrastructure;
 using ADP.Portal.Core.Ado.Services;
@@ -13,7 +14,10 @@ using ADP.Portal.Core.Git.Services;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
+using Microsoft.OpenApi.Models;
 using Octokit;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Api
 {
@@ -51,7 +55,9 @@ namespace ADP.Portal.Api
             builder.Services.Configure<AdoConfig>(builder.Configuration.GetSection("Ado"));
             builder.Services.Configure<AdpAdoProjectConfig>(builder.Configuration.GetSection("AdpAdoProject"));
             builder.Services.Configure<AzureAdConfig>(builder.Configuration.GetSection("AzureAd"));
-            builder.Services.Configure<AdpTeamGitRepoConfig>(builder.Configuration.GetSection("AdpTeamGitRepo"));
+            builder.Services.Configure<GitHubAppAuthConfig>(builder.Configuration.GetSection("GitHubAppAuth"));
+            builder.Services.Configure<TeamGitRepoConfig>(builder.Configuration.GetSection("TeamGitRepo"));
+            builder.Services.Configure<FluxServicesGitRepoConfig>(builder.Configuration.GetSection("FluxServicesGitRepo"));
             builder.Services.AddScoped<IAzureCredential>(provider =>
             {
                 return new DefaultAzureCredentialWrapper();
@@ -81,32 +87,44 @@ namespace ADP.Portal.Api
 
             builder.Services.AddScoped<IGitHubClient>(provider =>
             {
-                var repoConfig = provider.GetRequiredService<IOptions<AdpTeamGitRepoConfig>>().Value;
-                return GetGitHubClient(repoConfig);
+                var gitHubAppAuth = provider.GetRequiredService<IOptions<GitHubAppAuthConfig>>().Value;
+                return GetGitHubClient(gitHubAppAuth);
             });
 
             builder.Services.AddScoped<IGitOpsConfigRepository, GitOpsConfigRepository>();
-            builder.Services.AddScoped<IGitOpsConfigService, GitOpsConfigService>();
-
+            builder.Services.AddScoped<IGitOpsGroupsConfigService, GitOpsGroupsConfigService>();
+            builder.Services.AddScoped<IGitOpsFluxTeamConfigService, GitOpsFluxTeamConfigService>();
+            builder.Services.AddSingleton(provider =>
+            {
+                return new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            });
+            builder.Services.AddSingleton(provider =>
+            {
+                return new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            });
             builder.Services.EntitiesConfigure();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo { Title = "Adp.Portal.Api", Version = "v1" });
+                c.OperationFilter<OptionalPathParameterOperationFilter>();
+            });
         }
 
-        private static GitHubClient GetGitHubClient(AdpTeamGitRepoConfig repoConfig)
+        private static GitHubClient GetGitHubClient(GitHubAppAuthConfig gitHubAppAuth)
         {
-            var gitHubAppName = repoConfig.Auth.AppName.Replace(" ", "");
+            var gitHubAppName = gitHubAppAuth.AppName.Replace(" ", "");
 
             var appClient = new GitHubClient(new ProductHeaderValue(gitHubAppName))
             {
-                Credentials = new Credentials(JwtTokenHelper.CreateEncodedJwtToken(repoConfig.Auth.PrivateKeyBase64, repoConfig.Auth.AppId), AuthenticationType.Bearer)
+                Credentials = new Credentials(JwtTokenHelper.CreateEncodedJwtToken(gitHubAppAuth.PrivateKeyBase64, gitHubAppAuth.AppId), AuthenticationType.Bearer)
             };
 
             var installations = appClient.GitHubApps.GetAllInstallationsForCurrent().Result;
 
-            var instationId = installations.First(i => i.Account.Login.Equals(repoConfig.Organisation, StringComparison.CurrentCultureIgnoreCase)).Id;
+            var instationId = installations.First(i => i.Account.Login.Equals(gitHubAppAuth.Owner, StringComparison.CurrentCultureIgnoreCase)).Id;
 
             var response = appClient.GitHubApps.CreateInstallationToken(instationId).Result;
 
@@ -115,6 +133,5 @@ namespace ADP.Portal.Api
                 Credentials = new Credentials(response.Token)
             };
         }
-
     }
 }

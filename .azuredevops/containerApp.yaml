@@ -43,7 +43,7 @@ properties:
         name: {{imageRepoName}}
         env:
           - name: ASPNETCORE_ENVIRONMENT
-            value: "Development"
+            value: "Production"
           - name: Logging__LogLevel__Default
             value: "Information"
           - name: Logging__LogLevel__Microsoft.AspNetCore
@@ -64,17 +64,25 @@ properties:
             secretRef: sp-client-secret             
           - name: AzureAd__SpObjectId
             secretRef: sp-object-id 
-          - name: AdpTeamGitRepo__RepoName
+          - name: TeamGitRepo__Name
             value: "adp-team-onboard"
-          - name: AdpTeamGitRepo__BranchName
+          - name: TeamGitRepo__BranchName
             value: "main"
-          - name: AdpTeamGitRepo__Organisation
+          - name: TeamGitRepo__Organisation
             value: "defra-adp-sandpit"
-          - name: AdpTeamGitRepo__Auth__AppName
+          - name: FluxServicesGitRepo__Name
+            value: "adp-flux-services"
+          - name: FluxServicesGitRepo__BranchName
+            value: "main"
+          - name: FluxServicesGitRepo__Organisation
+            value: "defra-adp-sandpit"
+          - name: GitHubAppAuth__Owner
+            value: "defra-adp-sandpit"
+          - name: GitHubAppAuth__AppName
             value: "ADP Portal API"
-          - name: AdpTeamGitRepo__Auth__AppId
+          - name: GitHubAppAuth__AppId
             secretRef: github-app-id
-          - name: AdpTeamGitRepo__Auth__PrivateKeyBase64
+          - name: GitHubAppAuth__PrivateKeyBase64
             secretRef: github-privatekey-base64
         resources:
           cpu: 0.5

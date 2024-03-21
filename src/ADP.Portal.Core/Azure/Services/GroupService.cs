@@ -4,7 +4,6 @@ using Mapster;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.ODataErrors;
-using System.Diagnostics.CodeAnalysis;
 
 namespace ADP.Portal.Core.Azure.Services
 {
@@ -83,7 +82,7 @@ namespace ADP.Portal.Core.Azure.Services
         }
         public async Task<List<AadGroupMember>> GetUserTypeGroupMembersAsync(string groupId)
         {
-            var result =   await azureAADGroupService.GetGroupMembersAsync<User>(groupId);
+            var result = await azureAADGroupService.GetGroupMembersAsync<User>(groupId);
             if (result != null)
             {
                 logger.LogInformation("Retrieved user type group members({Count}) from group({GroupId}))", result.Count, groupId);

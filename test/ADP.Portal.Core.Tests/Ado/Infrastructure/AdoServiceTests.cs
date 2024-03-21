@@ -215,7 +215,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             var adpProjectId = Guid.NewGuid();
             var serviceEndpoints = new List<ServiceEndpoint>
             {
-                new() 
+                new()
                 {
                     Name = "TestServiceConnection1",
                     Id = Guid.NewGuid(),
@@ -517,7 +517,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             var adoVariableGroup = new AdoVariableGroup("TestVariableGroup", adoVariables, "TestVariableGroup Description");
             var adoVariableGroups = new List<AdoVariableGroup> { adoVariableGroup };
             var variableGroups = new List<DistributedTask.VariableGroup> { new DistributedTask.VariableGroup { Name = "TestVariableGroup", Id = 1 } };
-            
+
             taskAgentClientMock.GetVariableGroupsAsync(onBoardProject.Id, null, null, null, null, null, null, Arg.Any<CancellationToken>()).Returns(variableGroups);
 
             vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())
@@ -546,7 +546,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             // Arrange - ...and given the variable groups have already been added to the project...
             var existingVariableGroup = new DistributedTask.VariableGroup { Name = "TestVariableGroup", Id = 1 };
 
-            taskAgentClientMock.GetVariableGroupsAsync(onBoardProject.Id, null, null, null, null, null, null, Arg.Any<CancellationToken>()).Returns(new List<DistributedTask.VariableGroup> { existingVariableGroup});
+            taskAgentClientMock.GetVariableGroupsAsync(onBoardProject.Id, null, null, null, null, null, null, Arg.Any<CancellationToken>()).Returns(new List<DistributedTask.VariableGroup> { existingVariableGroup });
             taskAgentClientMock.UpdateVariableGroupAsync(existingVariableGroup.Id, Arg.Any<DistributedTask.VariableGroupParameters>()).Returns(existingVariableGroup);
 
             vssConnectionMock.GetClientAsync<DistributedTask.TaskAgentHttpClient>(Arg.Any<CancellationToken>())

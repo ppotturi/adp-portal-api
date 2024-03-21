@@ -1,109 +1,117 @@
-﻿using ADP.Portal.Core.Azure.Entities;
+﻿using System.Text.RegularExpressions;
+using ADP.Portal.Core.Azure.Entities;
 using ADP.Portal.Core.Azure.Services;
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using Mapster;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.Services.Common;
 using Octokit;
-using System.Text.RegularExpressions;
 
 namespace ADP.Portal.Core.Git.Services
 {
-    public partial class GitOpsConfigService : IGitOpsConfigService
+    public partial class GitOpsGroupsConfigService : IGitOpsGroupsConfigService
     {
         private readonly IGitOpsConfigRepository gitOpsConfigRepository;
-        private readonly ILogger<GitOpsConfigService> logger;
+        private readonly ILogger<GitOpsGroupsConfigService> logger;
         private readonly IGroupService groupService;
 
         [GeneratedRegex("(?<!^)([A-Z][a-z]|(?<=[a-z])[A-Z])")]
         private static partial Regex KebabCaseRegex();
 
-        public GitOpsConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsConfigService> logger, IGroupService groupService)
+        public GitOpsGroupsConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsGroupsConfigService> logger, IGroupService groupService)
         {
             this.gitOpsConfigRepository = gitOpsConfigRepository;
             this.logger = logger;
             this.groupService = groupService;
         }
 
-        public async Task<bool> IsConfigExistsAsync(string teamName, ConfigType configType, GitRepo gitRepo)
-        {
-            var fileName = GetFileName(teamName, configType);
-            try
-            {
-                var result = await gitOpsConfigRepository.GetConfigAsync<string>(fileName, gitRepo);
-                return !string.IsNullOrEmpty(result);
-            }
-            catch (NotFoundException)
-            {
-                return false;
-            }
-        }
-
-        public async Task<GroupSyncResult> SyncGroupsAsync(string teamName, string ownerId, ConfigType configType, GitRepo gitRepo)
+        public async Task<GroupSyncResult> SyncGroupsAsync(string tenantName, string teamName, string ownerId, GroupType? groupType, GitRepo gitRepo)
         {
             var result = new GroupSyncResult();
-            var fileName = GetFileName(teamName, configType);
 
-            logger.LogInformation("Getting config({ConfigType}) for the Team({TeamName})'", configType.ToString(), teamName);
+            var groups = await GetGroupsConfigAsync(tenantName, teamName, groupType, gitRepo);
 
-            var groupsConfig = await gitOpsConfigRepository.GetConfigAsync<GroupsRoot>(fileName, gitRepo);
-
-            if (groupsConfig != null)
+            if (groups.Count == 0)
             {
-                foreach (var group in groupsConfig.Groups)
-                {
-                    await ProcessGroupAsync(group, ownerId, configType, result);
-                }
+                result.IsConfigExists = false;
+                result.Errors.Add($"Groups config not found for the team:{teamName} in the tenant:{tenantName}");
+                return result;
             }
+
+            logger.LogInformation("Syncing groups for the team({TeamName})", teamName);
+            var tasks = groups.Select(group => ProcessGroupAsync(group, ownerId, result));
+            await Task.WhenAll(tasks);
 
             return result;
         }
 
-        private async Task ProcessGroupAsync(Entities.Group group, string ownerId, ConfigType configType, GroupSyncResult result)
+        private async Task ProcessGroupAsync(Entities.Group group, string ownerId, GroupSyncResult result)
         {
             logger.LogInformation("Getting groupId for the group({DisplayName})", group.DisplayName);
             var groupId = await groupService.GetGroupIdAsync(group.DisplayName);
 
-            if (string.IsNullOrEmpty(groupId) && (configType == ConfigType.GroupsMembers))
+            if (string.IsNullOrEmpty(groupId) && CanCreateGroup(group.Type))
             {
+                logger.LogInformation("Creating a new Group({DisplayName})", group.DisplayName);
                 groupId = await CreateNewGroupAsync(group, ownerId);
             }
 
             if (string.IsNullOrEmpty(groupId))
             {
-                result.Error.Add($"Group '{group.DisplayName}' does not exists.");
+                result.Errors.Add($"Group '{group.DisplayName}' does not exists.");
             }
             else
             {
-                await SyncGroupMembersAsync(group, groupId, configType, result);
+                logger.LogInformation("Syncing group members for the group({DisplayName})", group.DisplayName);
+                await SyncGroupMembersAsync(group, groupId, result);
+            }
+        }
+
+        private async Task<List<Entities.Group>> GetGroupsConfigAsync(string tenantName, string teamName, GroupType? groupType, GitRepo gitRepo)
+        {
+            try
+            {
+                var fileName = $"{tenantName}/{teamName}.yaml";
+
+                logger.LogInformation("Getting groups config for the team({TeamName})", teamName);
+                var result = await gitOpsConfigRepository.GetConfigAsync<GroupsRoot>(fileName, gitRepo);
+
+                return result?.Groups.Where(g => groupType == null || g.Type == groupType).ToList() ?? [];
+
+            }
+            catch (NotFoundException)
+            {
+                return [];
             }
         }
 
         private async Task<string?> CreateNewGroupAsync(Entities.Group group, string ownerId)
         {
             logger.LogInformation("Creating a new Group({DisplayName})", group.DisplayName);
+
             var aadGroup = group.Adapt<AadGroup>();
             aadGroup.OwnerId = ownerId;
 
             return await groupService.AddGroupAsync(aadGroup);
         }
 
-        private async Task SyncGroupMembersAsync(Entities.Group group, string groupId, ConfigType configType, GroupSyncResult result)
+        private async Task SyncGroupMembersAsync(Entities.Group group, string groupId, GroupSyncResult result)
         {
             logger.LogInformation("Syncing group members for the group({DisplayName})", group.DisplayName);
 
-            if (configType == ConfigType.OpenVpnMembers || group.Type == GroupType.UserGroup)
+            if (CanSyncUserTypeMembers(group.Type))
             {
                 await SyncUserTypeMembersAsync(result, group, groupId, false);
             }
 
-            if (group.Type == GroupType.UserGroup)
+            if (CanSyncMemberships(group.Type))
             {
                 logger.LogInformation("Syncing group memberships for the group({DisplayName})", group.DisplayName);
                 await SyncMembershipsAsync(result, group, groupId, false);
             }
 
-            if (group.Type == GroupType.AccessGroup)
+            if (CanSyncGroupTypeMembers(group.Type))
             {
                 await SyncGroupTypeMembersAsync(result, group, groupId, false);
             }
@@ -136,7 +144,7 @@ namespace ADP.Portal.Core.Git.Services
 
                     if (memberId == null)
                     {
-                        result.Error.Add($"User '{member}' not found.");
+                        result.Errors.Add($"User '{member}' not found for the group:{group.DisplayName}.");
                     }
                     else
                     {
@@ -146,12 +154,8 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private async Task SyncGroupTypeMembersAsync(GroupSyncResult result, Entities.Group group, string? groupId, bool isNewGroup)
+        private async Task SyncGroupTypeMembersAsync(GroupSyncResult result, Entities.Group group, string groupId, bool isNewGroup)
         {
-            if (groupId == null)
-            {
-                return;
-            }
 
             var existingMembers = isNewGroup ? [] : await groupService.GetGroupTypeGroupMembersAsync(groupId);
 
@@ -173,7 +177,7 @@ namespace ADP.Portal.Core.Git.Services
 
                     if (memberId == null)
                     {
-                        result.Error.Add($"Group '{member}' not found.");
+                        result.Errors.Add($"Group '{member}' not found.");
                     }
                     else
                     {
@@ -183,15 +187,10 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private async Task SyncMembershipsAsync(GroupSyncResult result, Entities.Group group, string? groupId, bool IsNewGroup)
+        private async Task SyncMembershipsAsync(GroupSyncResult result, Entities.Group group, string groupId, bool IsNewGroup)
         {
-            if (groupId == null)
-            {
-                return;
-            }
 
             var existingMemberShips = IsNewGroup ? [] : await groupService.GetGroupMemberShipsAsync(groupId);
-
 
             foreach (var memberShip in existingMemberShips)
             {
@@ -210,7 +209,7 @@ namespace ADP.Portal.Core.Git.Services
                     var groupMembershipId = await groupService.GetGroupIdAsync(groupMembership);
                     if (groupMembershipId == null)
                     {
-                        result.Error.Add($"Membership Group '{groupMembership}' not found.");
+                        result.Errors.Add($"Membership Group '{groupMembership}' not found for the group:{group.DisplayName}.");
                     }
                     else
                     {
@@ -220,13 +219,24 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private static string GetFileName(string teamName, ConfigType configType)
+        private static bool CanCreateGroup(GroupType groupType)
         {
-            return $"{teamName}/{ToKebabCase(configType.ToString())}.yaml";
+            return (groupType == GroupType.UserGroup || groupType == GroupType.AccessGroup);
         }
-        private static string ToKebabCase(string name)
+
+        private static bool CanSyncUserTypeMembers(GroupType groupType)
         {
-            return KebabCaseRegex().Replace(name, "-$1").ToLower();
+            return groupType == GroupType.OpenVpnGroup || groupType == GroupType.UserGroup;
+        }
+
+        private static bool CanSyncGroupTypeMembers(GroupType groupType)
+        {
+            return groupType == GroupType.AccessGroup;
+        }
+
+        private static bool CanSyncMemberships(GroupType groupType)
+        {
+            return groupType == GroupType.UserGroup;
         }
     }
 }

@@ -12,47 +12,47 @@ namespace ADP.Portal.Api.Controllers
     [ApiController]
     public class AadGroupController : ControllerBase
     {
-        private readonly IGitOpsConfigService gitOpsConfigService;
+        private readonly IGitOpsGroupsConfigService gitOpsConfigService;
         private readonly ILogger<AadGroupController> logger;
         public readonly IOptions<AzureAdConfig> azureAdConfig;
-        private readonly IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig;
+        private readonly IOptions<TeamGitRepoConfig> teamGitRepoConfig;
 
-        public AadGroupController(IGitOpsConfigService gitOpsConfigService, ILogger<AadGroupController> logger,
-            IOptions<AzureAdConfig> azureAdConfig, IOptions<AdpTeamGitRepoConfig> adpTeamGitRepoConfig)
+        public AadGroupController(IGitOpsGroupsConfigService gitOpsConfigService, ILogger<AadGroupController> logger,
+            IOptions<AzureAdConfig> azureAdConfig, IOptions<TeamGitRepoConfig> teamGitRepoConfig)
         {
             this.gitOpsConfigService = gitOpsConfigService;
             this.logger = logger;
             this.azureAdConfig = azureAdConfig;
-            this.adpTeamGitRepoConfig = adpTeamGitRepoConfig;
+            this.teamGitRepoConfig = teamGitRepoConfig;
         }
 
-        [HttpPut("sync/{teamName}/{syncConfigType}")]
-        public async Task<ActionResult> SyncGroupsAsync(string teamName, string syncConfigType)
+        [HttpPut("sync/{teamName}/{groupType?}")]
+        public async Task<ActionResult> SyncGroupsAsync(string teamName, string? groupType = null)
         {
-            if (!Enum.TryParse<SyncConfigType>(syncConfigType, true, out var syncConfigTypeEnum))
+            var isValidType = Enum.TryParse<SyncGroupType>(groupType, true, out var syncGroupTypeEnum);
+            if (groupType != null && !isValidType)
             {
-                logger.LogWarning("Invalid syncConfigType:{SyncConfigType}", syncConfigType);
-                return BadRequest("Invalid syncConfigType.");
+                logger.LogWarning("Invalid Group Type:{GroupType}", groupType);
+                return BadRequest("Invalid Group Type.");
             }
 
-            var configType = (ConfigType)syncConfigTypeEnum;
-            var teamRepo = adpTeamGitRepoConfig.Value.Adapt<GitRepo>();
-
-            logger.LogInformation("Check if config exists for team:{TeamName} and configType:{ConfigType}", teamName, configType);
-            var isConfigExists = await gitOpsConfigService.IsConfigExistsAsync(teamName, configType, teamRepo);
-            if (!isConfigExists)
-            {
-                logger.LogWarning("Config not found for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
-                return BadRequest($"Team '{teamName}' config not found.");
-            }
-
+            var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
+            var tenantName = azureAdConfig.Value.TenantName;
             var ownerId = azureAdConfig.Value.SpObjectId;
-            logger.LogInformation("Sync Groups for the Team:{TeamName} and configType:{ConfigType}", teamName, configType);
-            var result = await gitOpsConfigService.SyncGroupsAsync(teamName, ownerId, configType, teamRepo);
 
-            if (result.Error.Count > 0)
+            logger.LogInformation("Sync Groups for the Team:'{TeamName}' and Group Type:'{GroupType}'", teamName, groupType);
+            var result = await gitOpsConfigService.SyncGroupsAsync(tenantName, teamName, ownerId, groupType != null ? (GroupType?)syncGroupTypeEnum : null, teamRepo);
+
+            if (result.Errors.Count > 0)
             {
-                return Ok(result.Error);
+                if (!result.IsConfigExists)
+                {
+                    logger.LogWarning("Config not found for the Team:'{TeamName}'", teamName);
+                    return BadRequest(result.Errors);
+                }
+
+                logger.LogError("Error while syncing groups for the Team:'{TeamName}'", teamName);
+                return Ok(result.Errors);
             }
 
             return NoContent();

@@ -84,7 +84,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             foreach (var environment in adoEnvironments)
             {
                 var existingEnvironment = environments.SingleOrDefault(e => e.Name.Equals(environment.Name, StringComparison.OrdinalIgnoreCase));
-                
+
                 if (existingEnvironment != null)
                 {
                     environmentIds.Add(existingEnvironment.Id);

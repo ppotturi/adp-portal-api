@@ -11,7 +11,7 @@ namespace ADP.Portal.Api.Tests
     [TestFixture]
     public class ProgramTests
     {
-    
+
         [Test]
         public void TestConfigureApp()
         {

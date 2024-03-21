@@ -2,10 +2,7 @@
 {
     public class GroupSyncResult
     {
-        public GroupSyncResult()
-        {
-            Error = [];
-        }
-        public List<string> Error { get; set; }
+        public bool IsConfigExists { get; set; } = true;
+        public List<string> Errors { get; set; } = [];
     }
 }

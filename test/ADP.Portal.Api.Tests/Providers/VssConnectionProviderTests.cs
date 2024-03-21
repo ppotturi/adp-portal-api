@@ -5,7 +5,6 @@ using AutoFixture;
 using Azure.Core;
 using NSubstitute;
 using NUnit.Framework;
-using System.Threading.Tasks;
 
 namespace ADP.Portal.Api.Tests.Providers
 {
