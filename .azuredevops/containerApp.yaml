@@ -37,6 +37,9 @@ properties:
       - name: github-privatekey-base64
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/ADP-PORTAL-API-GITHUB-PRIVATE-KEY-BASE64
         identity: {{userAssignedIdentity}} 
+      - name: git-repo-org
+        keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/GIT-REPO-ORG
+        identity: {{userAssignedIdentity}}         
   template:
     containers:
       - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
@@ -69,15 +72,15 @@ properties:
           - name: TeamGitRepo__BranchName
             value: "main"
           - name: TeamGitRepo__Organisation
-            value: "defra-adp-sandpit"
+            secretRef: git-repo-org
           - name: FluxServicesGitRepo__Name
             value: "adp-flux-services"
           - name: FluxServicesGitRepo__BranchName
             value: "main"
           - name: FluxServicesGitRepo__Organisation
-            value: "defra-adp-sandpit"
+            secretRef: git-repo-org
           - name: GitHubAppAuth__Owner
-            value: "defra-adp-sandpit"
+            secretRef: git-repo-org
           - name: GitHubAppAuth__AppName
             value: "ADP Portal API"
           - name: GitHubAppAuth__AppId
