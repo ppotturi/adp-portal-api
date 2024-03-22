@@ -23,13 +23,13 @@ properties:
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/ADO-PAT
         identity: {{userAssignedIdentity}}
       - name: sp-client-id
-        keyVaultUrl: https://{{platformKeyVaultName}}.vault.azure.net/secrets/ADO-DefraGovUK-AAD-ADP-SSV3-ClientId
+        keyVaultUrl: https://{{platformKeyVaultName}}.vault.azure.net/secrets/{{sharedAppRegServicePrincipal}}-ClientId
         identity: {{userAssignedIdentity}}
       - name: sp-client-secret
-        keyVaultUrl: https://{{platformKeyVaultName}}.vault.azure.net/secrets/ADO-DefraGovUK-AAD-ADP-SSV3
+        keyVaultUrl: https://{{platformKeyVaultName}}.vault.azure.net/secrets/{{sharedAppRegServicePrincipal}}
         identity: {{userAssignedIdentity}}
       - name: sp-object-id
-        keyVaultUrl: https://{{platformKeyVaultName}}.vault.azure.net/secrets/ADO-DefraGovUK-AAD-ADP-SSV3-ObjectId
+        keyVaultUrl: https://{{platformKeyVaultName}}.vault.azure.net/secrets/{{sharedAppRegServicePrincipal}}-ObjectId
         identity: {{userAssignedIdentity}}       
       - name: github-app-id
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/ADP-PORTAL-API-GITHUB-APP-ID
