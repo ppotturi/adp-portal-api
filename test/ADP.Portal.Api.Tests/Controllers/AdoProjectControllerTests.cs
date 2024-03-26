@@ -1,6 +1,6 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Controllers;
-using ADP.Portal.Api.Models;
+using ADP.Portal.Api.Models.Ado;
 using ADP.Portal.Core.Ado.Dtos;
 using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Services;

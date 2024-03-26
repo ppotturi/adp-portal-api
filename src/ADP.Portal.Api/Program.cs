@@ -12,6 +12,7 @@ using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Git.Jwt;
 using ADP.Portal.Core.Git.Services;
 using Azure.Identity;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.OpenApi.Models;
@@ -110,6 +111,13 @@ namespace ADP.Portal.Api
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "Adp.Portal.Api", Version = "v1" });
                 c.OperationFilter<OptionalPathParameterOperationFilter>();
+            });
+            builder.Services.AddApiVersioning(config =>
+            {
+                config.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+                config.AssumeDefaultVersionWhenUnspecified = true;
+                config.ReportApiVersions = true;
+                config.ApiVersionReader = new HeaderApiVersionReader("api-version");
             });
         }
 

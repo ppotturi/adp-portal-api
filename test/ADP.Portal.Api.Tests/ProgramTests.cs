@@ -98,5 +98,21 @@ namespace ADP.Portal.Api.Tests
             // Assert
             Assert.That(result, Is.Not.Null);
         }
+
+        [Test]
+        public void TestApiVersioningConfiguration()
+        {
+            // Arrange
+            var builder = WebApplication.CreateBuilder();
+            Program.ConfigureApp(builder);
+
+            // Act
+            var app = builder.Build();
+            app.MapControllers();
+            var result = app.Services.GetService<IAzureCredential>();
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
     }
 }

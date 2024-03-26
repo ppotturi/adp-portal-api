@@ -5,6 +5,7 @@ using ADP.Portal.Core.Helpers;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
 using Octokit;
+using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Git.Services
 {
@@ -12,12 +13,55 @@ namespace ADP.Portal.Core.Git.Services
     {
         private readonly IGitOpsConfigRepository gitOpsConfigRepository;
         private readonly ILogger<GitOpsFluxTeamConfigService> logger;
+        private readonly ISerializer serializer;
 
-
-        public GitOpsFluxTeamConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsFluxTeamConfigService> logger)
+        public GitOpsFluxTeamConfigService(IGitOpsConfigRepository gitOpsConfigRepository, ILogger<GitOpsFluxTeamConfigService> logger, ISerializer serializer)
         {
             this.gitOpsConfigRepository = gitOpsConfigRepository;
             this.logger = logger;
+            this.serializer = serializer;
+        }
+
+        public async Task<T?> GetFluxConfigAsync<T>(GitRepo gitRepo, string? tenantName = null, string? teamName = null)
+        {
+            try
+            {
+                var path = string.IsNullOrEmpty(tenantName) ?
+                    string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName) :
+                    string.Format(FluxConstants.GIT_REPO_TENANT_CONFIG_PATH, tenantName);
+
+                return await gitOpsConfigRepository.GetConfigAsync<T>(path, gitRepo);
+            }
+            catch (NotFoundException)
+            {
+                return default;
+            }
+        }
+
+        public async Task<CreateFluxConfigResult> CreateFluxConfigAsync(GitRepo gitRepo, string teamName, FluxTeamConfig fluxTeamConfig)
+        {
+            var result = new CreateFluxConfigResult();
+            
+            await gitOpsConfigRepository.CreateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
+
+            return result;
+        }
+
+        public async Task<CreateFluxConfigResult> UpdateFluxConfigAsync(GitRepo gitRepo, string teamName, FluxTeamConfig fluxTeamConfig)
+        {
+            var result = new CreateFluxConfigResult();
+
+            var existingConfig = await GetFluxConfigAsync<FluxTeamConfig>(gitRepo, teamName: teamName);
+            if (existingConfig != null)
+            {
+                await gitOpsConfigRepository.UpdateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
+            }
+            else
+            {
+                result.IsConfigExists = false;
+            }
+
+            return result;
         }
 
         public async Task<GenerateFluxConfigResult> GenerateFluxTeamConfigAsync(GitRepo gitRepo, GitRepo gitRepoFluxServices, string tenantName, string teamName, string? serviceName = null)
@@ -44,22 +88,6 @@ namespace ADP.Portal.Core.Git.Services
             if (generatedFiles.Count > 0) await PushFilesToFluxRepository(gitRepoFluxServices, teamName, serviceName, generatedFiles, result);
 
             return result;
-        }
-
-        private async Task<T?> GetFluxConfigAsync<T>(GitRepo gitRepo, string? tenantName = null, string? teamName = null)
-        {
-            try
-            {
-                var path = string.IsNullOrEmpty(tenantName) ?
-                    string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName) :
-                    string.Format(FluxConstants.GIT_REPO_TENANT_CONFIG_PATH, tenantName);
-
-                return await gitOpsConfigRepository.GetConfigAsync<T>(path, gitRepo);
-            }
-            catch (NotFoundException)
-            {
-                return default;
-            }
         }
 
         private static Dictionary<string, Dictionary<object, object>> ProcessTemplates(IEnumerable<KeyValuePair<string, Dictionary<object, object>>> files,

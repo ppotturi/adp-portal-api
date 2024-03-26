@@ -1,4 +1,4 @@
-﻿namespace ADP.Portal.Api.Models
+﻿namespace ADP.Portal.Api.Models.Group
 {
     public enum SyncConfigType
     {

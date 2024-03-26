@@ -20,7 +20,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         public async Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo)
         {
-            var file = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, fileName, gitRepo.BranchName);
+            var file = await GetRepositoryFiles(gitRepo, fileName);
             if (typeof(T) == typeof(string))
             {
                 return (T)Convert.ChangeType(file[0].Content, typeof(T));
@@ -28,6 +28,22 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
             var result = deserializer.Deserialize<T>(file[0].Content);
             return result;
+        }
+
+        public async Task CreateConfigAsync(GitRepo gitRepo, string fileName, string content)
+        {
+            await gitHubClient.Repository.Content.CreateFile(gitRepo.Organisation, gitRepo.Name, fileName, new CreateFileRequest($"Create config file: {fileName}", content, gitRepo.BranchName));
+        }
+
+        public async Task UpdateConfigAsync(GitRepo gitRepo, string fileName, string content)
+        {
+            var existingFile = await GetRepositoryFiles(gitRepo, fileName);
+
+            if (existingFile?.Any() == true)
+            {
+                await gitHubClient.Repository.Content.UpdateFile(gitRepo.Organisation, gitRepo.Name, fileName,
+                    new UpdateFileRequest($"Update config file: {fileName}", content, existingFile[0].Sha, gitRepo.BranchName));
+            }
         }
 
         public async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesAsync(GitRepo gitRepo, string path)
@@ -88,14 +104,13 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         private async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
         {
-            var repositoryItems = await gitHubClient.Repository.Content
-                .GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, path, gitRepo.BranchName);
+            var repositoryItems = await GetRepositoryFiles(gitRepo, path);
 
             var fileTasks = repositoryItems
                 .Where(item => item.Type == ContentType.File)
                 .Select(async item =>
                 {
-                    var file = await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, item.Path, gitRepo.BranchName);
+                    var file = await GetRepositoryFiles(gitRepo, item.Path);
                     var result = deserializer.Deserialize<Dictionary<object, object>>(file[0].Content);
                     var list = new List<KeyValuePair<string, Dictionary<object, object>>>() { (new KeyValuePair<string, Dictionary<object, object>>(item.Path, result)) };
                     return list.AsEnumerable();
@@ -156,5 +171,10 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return await client.Git.Commit.Create(repository.Owner.Login, repository.Name, newCommit);
         }
 
+
+        private async Task<IReadOnlyList<RepositoryContent>> GetRepositoryFiles(GitRepo gitRepo, string filePathOrName)
+        {
+            return await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, filePathOrName, gitRepo.BranchName);
+        }
     }
 }

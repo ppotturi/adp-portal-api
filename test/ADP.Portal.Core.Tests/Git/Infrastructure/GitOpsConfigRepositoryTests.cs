@@ -250,6 +250,52 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
             await gitHubClientMock.PullRequest.Received().Create(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<NewPullRequest>());
         }
 
+        [Test]
+        public async Task CreateConfigAsync_Success_Test()
+        {
+            // Arrange
+            var yamlContent = "property:\n - name: \"test\"";
+            var gitRepo = new GitRepo("repo", "branch", "org");
+            
+            // Act
+            await repository.CreateConfigAsync(gitRepo, "test", yamlContent);
+
+            // Assert
+            await gitHubClientMock.Repository.Content.Received().CreateFile(gitRepo.Organisation, gitRepo.Name, "test", Arg.Any<CreateFileRequest>());
+        }
+
+        [Test]
+        public async Task UpdateConfigAsync_Skip_FileNotFound_Test()
+        {
+            // Arrange
+            var yamlContent = "property:\n - name: \"test\"";
+            var gitRepo = new GitRepo("repo", "branch", "org");
+
+            // Act
+            await repository.UpdateConfigAsync(gitRepo, "test", yamlContent);
+
+            // Assert
+            await gitHubClientMock.Repository.Content.DidNotReceive().UpdateFile(gitRepo.Organisation, gitRepo.Name, "test", Arg.Any<UpdateFileRequest>());
+        }
+
+        [Test]
+        public async Task UpdateConfigAsync_UpdateFile_Success_Test()
+        {
+            // Arrange
+            var yamlContent = "property:\n - name: \"test\"";
+            var gitRepo = new GitRepo("repo", "branch", "org");
+            var files = CreateRepositoryContent(yamlContent);
+
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "test", gitRepo.BranchName).Returns(new List<RepositoryContent>() { files });
+
+            // Act
+            await repository.UpdateConfigAsync(gitRepo, "test", yamlContent);
+
+            // Assert
+            await gitHubClientMock.Repository.Content.Received().GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "test", gitRepo.BranchName);
+            await gitHubClientMock.Repository.Content.Received().UpdateFile(gitRepo.Organisation, gitRepo.Name, "test", Arg.Any<UpdateFileRequest>());
+        }
+
         private static RepositoryContent CreateRepositoryContent(string content)
         {
             var contentBytes = Encoding.UTF8.GetBytes(content);

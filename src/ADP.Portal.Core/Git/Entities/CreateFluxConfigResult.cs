@@ -1,6 +1,6 @@
 ﻿namespace ADP.Portal.Core.Git.Entities
 {
-    public class GenerateFluxConfigResult
+    public class CreateFluxConfigResult
     {
         public bool IsConfigExists { get; set; } = true;
 

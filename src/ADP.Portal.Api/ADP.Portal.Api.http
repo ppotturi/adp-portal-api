@@ -1,15 +1,71 @@
 ﻿@ADP.Portal.Api_HostAddress = https://localhost:7280
 
+# ADO Controller
 GET {{ADP.Portal.Api_HostAddress}}/api/adoproject/string
 
+# AD Group Controller
 ###
 PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
 
+# Flux Config Controller
 ###
-# Generate Team templates
-POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo
-
+@serviceName = ffc-demo-claim-service
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo/{{serviceName}}
 
 ###
-# Generate Specific service templates
-POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo/ffc-demo-claim-service
+GET {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/get/ffc-demo
+
+###
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/create/ffc-find
+Content-Type: application/json
+Api-Version: 1.0
+
+{
+  "ProgrammeName": "ffc",
+  "ServiceCode": "ffc-find",
+  "Services": [
+    {
+      "Name": "ffc-find-web",
+      "IsFrontend": false,
+      "Environments": [
+        "snd1",
+        "snd2",
+        "snd3"
+      ],
+      "ConfigVariables": {
+        "INGRESS_ENDPOINT": "ffc-find-web"
+      }
+    }
+  ],
+  "ConfigVariables": {
+    "TEAM_CPU_QUOTA": "2000"
+  }
+}
+
+###
+PUT {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/update/ffc-find
+Content-Type: application/json
+
+{
+  "ProgrammeName": "ffc",
+  "ServiceCode": "ffc-find",
+  "Services": [
+    {
+      "Name": "ffc-find-web",
+      "IsFrontend": true,
+      "Environments": [
+        "snd1",
+        "snd2",
+        "snd3"
+      ],
+      "ConfigVariables": {
+        "INGRESS_ENDPOINT": "ffc-find-web"
+      }
+    }
+  ],
+  "ConfigVariables": {
+    "TEAM_CPU_QUOTA": "2000"
+  }
+}
+
+###

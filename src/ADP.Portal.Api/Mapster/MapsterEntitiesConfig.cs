@@ -1,9 +1,10 @@
-﻿using ADP.Portal.Core.Ado.Entities;
+﻿using System.Reflection;
+using ADP.Portal.Api.Models.Flux;
+using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Azure.Entities;
 using Mapster;
 using Microsoft.Graph.Models;
 using Microsoft.TeamFoundation.DistributedTask.WebApi;
-using System.Reflection;
 
 namespace ADP.Portal.Api.Mapster
 {
@@ -31,6 +32,9 @@ namespace ADP.Portal.Api.Mapster
                     }
                   });
 
+            TypeAdapterConfig<FluxService, Core.Git.Entities.FluxService>.NewConfig()
+                .Map(dest => dest.Environments, opt => opt.Environments.Select(x => new Core.Git.Entities.FluxEnvironment { Name = x }))
+                .Map(dest => dest.Type, opt => opt.IsFrontend ? Core.Git.Entities.FluxServiceType.Frontend : Core.Git.Entities.FluxServiceType.Backend);
         }
     }
 }

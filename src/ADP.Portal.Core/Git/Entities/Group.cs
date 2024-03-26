@@ -1,6 +1,4 @@
-﻿
-
-namespace ADP.Portal.Core.Git.Entities
+﻿namespace ADP.Portal.Core.Git.Entities
 {
     public class Group()
     {
