@@ -32,13 +32,12 @@ namespace ADP.Portal.Core.Ado.Services
 
         public async Task<OnboardProjectResult> OnBoardAsync(string adpProjectName, AdoProject onboardProject)
         {
-            var onBoardResult = new OnboardProjectResult();
-
-            onBoardResult.ServiceConnectionIds = await adoService.ShareServiceEndpointsAsync(adpProjectName, onboardProject.ServiceConnections, onboardProject.ProjectReference);
-
-            onBoardResult.EnvironmentIds = await adoService.AddEnvironmentsAsync(onboardProject.Environments, onboardProject.ProjectReference);
-
-            onBoardResult.AgentQueueIds = await adoService.ShareAgentPoolsAsync(adpProjectName, onboardProject.AgentPools, onboardProject.ProjectReference);
+            var onBoardResult = new OnboardProjectResult
+            {
+                ServiceConnectionIds = await adoService.ShareServiceEndpointsAsync(adpProjectName, onboardProject.ServiceConnections, onboardProject.ProjectReference),
+                EnvironmentIds = await adoService.AddEnvironmentsAsync(onboardProject.Environments, onboardProject.ProjectReference),
+                AgentQueueIds = await adoService.ShareAgentPoolsAsync(adpProjectName, onboardProject.AgentPools, onboardProject.ProjectReference)
+            };
 
             if (onboardProject.VariableGroups != null)
             {

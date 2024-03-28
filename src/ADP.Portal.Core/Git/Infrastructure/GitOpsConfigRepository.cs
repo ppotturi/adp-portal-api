@@ -30,20 +30,23 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return result;
         }
 
-        public async Task CreateConfigAsync(GitRepo gitRepo, string fileName, string content)
+        public async Task<string> CreateConfigAsync(GitRepo gitRepo, string fileName, string content)
         {
-            await gitHubClient.Repository.Content.CreateFile(gitRepo.Organisation, gitRepo.Name, fileName, new CreateFileRequest($"Create config file: {fileName}", content, gitRepo.BranchName));
+            var response = await gitHubClient.Repository.Content.CreateFile(gitRepo.Organisation, gitRepo.Name, fileName, new CreateFileRequest($"Create config file: {fileName}", content, gitRepo.BranchName));
+            return response.Commit.Sha;
         }
 
-        public async Task UpdateConfigAsync(GitRepo gitRepo, string fileName, string content)
+        public async Task<string> UpdateConfigAsync(GitRepo gitRepo, string fileName, string content)
         {
             var existingFile = await GetRepositoryFiles(gitRepo, fileName);
 
-            if (existingFile?.Any() == true)
+            if (existingFile.Any())
             {
-                await gitHubClient.Repository.Content.UpdateFile(gitRepo.Organisation, gitRepo.Name, fileName,
+                var response = await gitHubClient.Repository.Content.UpdateFile(gitRepo.Organisation, gitRepo.Name, fileName,
                     new UpdateFileRequest($"Update config file: {fileName}", content, existingFile[0].Sha, gitRepo.BranchName));
+                return response.Commit.Sha;
             }
+            return string.Empty;
         }
 
         public async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesAsync(GitRepo gitRepo, string path)

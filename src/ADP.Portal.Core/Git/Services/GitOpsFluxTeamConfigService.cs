@@ -26,9 +26,17 @@ namespace ADP.Portal.Core.Git.Services
         {
             try
             {
-                var path = string.IsNullOrEmpty(tenantName) ?
-                    string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName) :
-                    string.Format(FluxConstants.GIT_REPO_TENANT_CONFIG_PATH, tenantName);
+                var path = string.Empty;
+                if (string.IsNullOrEmpty(tenantName))
+                {
+                    logger.LogInformation("Reading flux team config for the team:'{TeamName}'.", teamName);
+                    path = string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName);
+                }
+                else
+                {
+                    logger.LogInformation("Reading flux team config for the tenant:'{TenantName}'.", tenantName);
+                    path = string.Format(FluxConstants.GIT_REPO_TENANT_CONFIG_PATH, tenantName);
+                }
 
                 return await gitOpsConfigRepository.GetConfigAsync<T>(path, gitRepo);
             }
@@ -38,23 +46,33 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        public async Task<CreateFluxConfigResult> CreateFluxConfigAsync(GitRepo gitRepo, string teamName, FluxTeamConfig fluxTeamConfig)
+        public async Task<FluxConfigResult> CreateFluxConfigAsync(GitRepo gitRepo, string teamName, FluxTeamConfig fluxTeamConfig)
         {
-            var result = new CreateFluxConfigResult();
-            
-            await gitOpsConfigRepository.CreateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
+            var result = new FluxConfigResult();
+
+            logger.LogInformation("Creating flux team config for the team:'{TeamName}'.", teamName);
+            var response = await gitOpsConfigRepository.CreateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
+            if (string.IsNullOrEmpty(response))
+            {
+                result.Errors.Add($"Failed to save the config for the team: {teamName}");
+            }
 
             return result;
         }
 
-        public async Task<CreateFluxConfigResult> UpdateFluxConfigAsync(GitRepo gitRepo, string teamName, FluxTeamConfig fluxTeamConfig)
+        public async Task<FluxConfigResult> UpdateFluxConfigAsync(GitRepo gitRepo, string teamName, FluxTeamConfig fluxTeamConfig)
         {
-            var result = new CreateFluxConfigResult();
+            var result = new FluxConfigResult();
 
             var existingConfig = await GetFluxConfigAsync<FluxTeamConfig>(gitRepo, teamName: teamName);
             if (existingConfig != null)
             {
-                await gitOpsConfigRepository.UpdateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
+                logger.LogInformation("Updating flux team config for the team:'{TeamName}'.", teamName);
+                var response = await gitOpsConfigRepository.UpdateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
+                if (string.IsNullOrEmpty(response))
+                {
+                    result.Errors.Add($"Failed to save the config for the team: {teamName}");
+                }
             }
             else
             {
@@ -68,7 +86,6 @@ namespace ADP.Portal.Core.Git.Services
         {
             var result = new GenerateFluxConfigResult();
 
-            logger.LogInformation("Reading flux team config for the team:'{TeamName}'.", teamName);
             var teamConfig = await GetFluxConfigAsync<FluxTeamConfig>(gitRepo, teamName: teamName);
             var tenantConfig = await GetFluxConfigAsync<FluxTenant>(gitRepo, tenantName: tenantName);
 

@@ -102,11 +102,10 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             var adpProjectName = "TestProject";
             var onboardProject = new AdoProject(Substitute.For<TeamProjectReference>(),
                 Substitute.For<List<string>>(), Substitute.For<List<string>>(), Substitute.For<List<AdoEnvironment>>(), Substitute.For<List<AdoVariableGroup>>()
-                );
-
-            onboardProject.VariableGroups = fixture.Build<AdoVariableGroup>()
-                                                   .CreateMany(2)
-                                                   .ToList();
+                )
+            {
+                VariableGroups = fixture.Build<AdoVariableGroup>().CreateMany(2).ToList()
+            };
 
             adoServiceMock.AddEnvironmentsAsync(Arg.Any<List<AdoEnvironment>>(), onboardProject.ProjectReference).Returns(environmentIds);
             adoServiceMock.ShareServiceEndpointsAsync(adpProjectName, Arg.Any<List<string>>(), onboardProject.ProjectReference).Returns(serviceConnectionIds);

@@ -25,6 +25,11 @@ namespace ADP.Portal.Api.Controllers
             this.adoProjectService = adoProjectService;
         }
 
+        /// <summary>
+        /// Reads details about the project from ADO organisation.
+        /// </summary>
+        /// <param name="projectName">Required: Name of the project</param>
+        /// <returns></returns>
         [HttpGet("{projectName}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -40,6 +45,12 @@ namespace ADP.Portal.Api.Controllers
             return Ok(project);
         }
 
+        /// <summary>
+        /// Onboards a ADO project with Environments, Agent Pool and service Connections required for ADP Platform deployments.
+        /// </summary>
+        /// <param name="projectName">Required: Name of the project</param>
+        /// <param name="onBoardRequest">Required: Details about environments, pools, connections & variable groups</param>
+        /// <returns></returns>
         [HttpPatch("{projectName}/onboard")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OnboardProjectResult))]
         public async Task<ActionResult> OnBoardAsync(string projectName, [FromBody] OnBoardAdoProjectRequest onBoardRequest)

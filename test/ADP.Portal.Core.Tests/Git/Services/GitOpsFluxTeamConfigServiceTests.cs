@@ -116,7 +116,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             // Assert
             Assert.That(result, Is.Not.Null);
             Assert.That(result.IsConfigExists, Is.True);
-            Assert.That(result.Errors.Count,Is.EqualTo(0));
+            Assert.That(result.Errors.Count, Is.EqualTo(0));
         }
 
         [Test]
@@ -182,7 +182,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
             gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fixture.Build<FluxTenant>().Create());
-            
+
             // Act
             var result = await service.GenerateFluxTeamConfigAsync(fixture.Build<GitRepo>().Create(), fixture.Build<GitRepo>().Create(), "tenant1", "team1");
 
@@ -345,8 +345,8 @@ namespace ADP.Portal.Core.Tests.Git.Services
             var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).CreateMany(2).ToList();
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
 
-            gitOpsConfigRepository.CreateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns(Task.CompletedTask);
-            
+            gitOpsConfigRepository.CreateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns("sha");
+
             // Act
             var result = await service.CreateFluxConfigAsync(gitRepo, teamName, fluxTeamConfig);
 
@@ -357,7 +357,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task CreateFluxConfigAsync_ShouldUpdate_ExistingFile()
+        public async Task CreateFluxConfigAsync_Create_NewFile_Failed()
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
@@ -366,8 +366,27 @@ namespace ADP.Portal.Core.Tests.Git.Services
             var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).CreateMany(2).ToList();
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
 
+            gitOpsConfigRepository.CreateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns(string.Empty);
+
+            // Act
+            var result = await service.CreateFluxConfigAsync(gitRepo, teamName, fluxTeamConfig);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.IsConfigExists, Is.True);
+            Assert.That(result.Errors.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task CreateFluxConfigAsync_ShouldUpdate_ExistingFile()
+        {
+            // Arrange
+            var gitRepo = fixture.Build<GitRepo>().Create();
+            string teamName = "team1";
+            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
+
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
-            gitOpsConfigRepository.UpdateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns(Task.CompletedTask);
+            gitOpsConfigRepository.UpdateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns("sha");
 
             // Act
             var result = await service.UpdateFluxConfigAsync(gitRepo, teamName, fluxTeamConfig);
@@ -379,20 +398,36 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task CreateFluxConfigAsync_WhenConfig_NotFound()
+        public async Task CreateFluxConfigAsync_Update_ExistingFile_Failed()
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             string teamName = "team1";
-            string serviceName = "service1";
-            var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).CreateMany(2).ToList();
-            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
+            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
 
-            gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(default(FluxTeamConfig));
-            gitOpsConfigRepository.UpdateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns(Task.CompletedTask);
+            gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
+            gitOpsConfigRepository.UpdateConfigAsync(gitRepo, string.Format(FluxConstants.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns(string.Empty);
 
             // Act
             var result = await service.UpdateFluxConfigAsync(gitRepo, teamName, fluxTeamConfig);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result.IsConfigExists, Is.True);
+            Assert.That(result.Errors.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task CreateFluxConfigAsync_WhenConfig_NotFound()
+        {
+            // Arrange
+            var gitRepo = fixture.Build<GitRepo>().Create();
+            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
+
+            gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(default(FluxTeamConfig));
+            
+            // Act
+            var result = await service.UpdateFluxConfigAsync(gitRepo, "team1", fluxTeamConfig);
 
             // Assert
             Assert.That(result, Is.Not.Null);

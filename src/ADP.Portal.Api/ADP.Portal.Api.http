@@ -5,6 +5,19 @@ GET {{ADP.Portal.Api_HostAddress}}/api/adoproject/string
 
 # AD Group Controller
 ###
+GET {{ADP.Portal.Api_HostAddress}}/api/aadgroup/get/ffc-demo
+
+###
+POST {{ADP.Portal.Api_HostAddress}}/api/aadgroup/create/ffc-demo
+Content-Type: application/json
+
+{
+	"members": [
+		"xxx@xxx.onmicrosoft.com"
+	]
+}
+
+###
 PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
 
 # Flux Config Controller
