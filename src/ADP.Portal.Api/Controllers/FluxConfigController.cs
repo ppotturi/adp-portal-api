@@ -36,14 +36,20 @@ namespace ADP.Portal.Api.Controllers
         /// <returns></returns>
         [HttpGet("get/{teamName}", Name = "Get")]
         [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetConfigAsync(string teamName)
         {
             var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
 
             logger.LogInformation("Reading Flux Config for the Team:'{TeamName}'", teamName);
             var result = await gitOpsFluxTeamConfigService.GetFluxConfigAsync<FluxTeamConfig>(teamRepo, teamName: teamName);
-            
-            return Ok(result);
+
+            if (result != null)
+            {
+                return Ok(result);
+            }
+
+            return NotFound();
         }
 
         /// <summary>

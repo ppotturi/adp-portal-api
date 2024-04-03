@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using NSubstitute.ReturnsExtensions;
 using NUnit.Framework;
 
 namespace ADP.Portal.Api.Tests.Controllers
@@ -248,6 +249,22 @@ namespace ADP.Portal.Api.Tests.Controllers
                 Assert.That(fluxTeamConfig, Is.Not.Null);
                 Assert.That(fluxTeamConfig?.Services.Count, Is.EqualTo(fluxTeam.Services.Count));
             }
+        }
+
+        [Test]
+        public async Task GetConfigAsync_Returns_NotFound_WhenFluxConfigNotFound()
+        {
+            // Arrange
+            teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
+            fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
+            gitOpsFluxTeamConfigServiceMock.GetFluxConfigAsync<FluxTeamConfig>(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>())
+                .ReturnsNull();
+
+            // Act
+            var result = await controller.GetConfigAsync("teamName");
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<NotFoundResult>());
         }
     }
 }
