@@ -2,6 +2,7 @@
 using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Mapster;
 using ADP.Portal.Api.Providers;
+using ADP.Portal.Api.Services;
 using ADP.Portal.Api.Swagger;
 using ADP.Portal.Api.Wrappers;
 using ADP.Portal.Core.Ado.Infrastructure;
@@ -71,8 +72,10 @@ namespace ADP.Portal.Api
                 var connection = await vssConnectionProvider.GetConnectionAsync();
                 return connection;
             });
+
+            builder.Services.AddScoped<IAdoRestAPIService, AdoRestAPIService>();
             builder.Services.AddScoped<IAdoProjectService, AdoProjectService>();
-            builder.Services.AddScoped<IAdoService, AdoService>();
+            builder.Services.AddScoped<IAdoService, AdoService>();      
             builder.Services.AddScoped<IGroupService, GroupService>();
             builder.Services.AddScoped<IAzureAadGroupService, AzureAadGroupService>();
             builder.Services.AddScoped(provider =>

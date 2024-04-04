@@ -10,11 +10,13 @@ namespace ADP.Portal.Core.Ado.Services
     {
         private readonly ILogger<AdoProjectService> logger;
         private readonly IAdoService adoService;
+        private readonly IAdoRestAPIService adoRestAPIService;
 
-        public AdoProjectService(IAdoService adoService, ILogger<AdoProjectService> logger)
+        public AdoProjectService(IAdoService adoService, ILogger<AdoProjectService> logger, IAdoRestAPIService adoRestAPIService)
         {
+            this.adoRestAPIService = adoRestAPIService;
             this.adoService = adoService;
-            this.logger = logger;
+            this.logger = logger;           
         }
 
         public async Task<TeamProjectReference?> GetProjectAsync(string projectName)
@@ -44,6 +46,14 @@ namespace ADP.Portal.Core.Ado.Services
             {
                 onBoardResult.VariableGroupIds = await adoService.AddOrUpdateVariableGroupsAsync(onboardProject.VariableGroups, onboardProject.ProjectReference);
             }
+
+            string projectAdminUserId = await adoRestAPIService.GetUserIdAsync(adpProjectName, "Project Administrators");
+            string contributorsId = await adoRestAPIService.GetUserIdAsync(adpProjectName, "Contributors");
+            string projectValidUserId = await adoRestAPIService.GetUserIdAsync(adpProjectName, "Project Valid Users");
+
+            await adoRestAPIService.postRoleAssignmentAsync(onboardProject.ProjectReference.Id.ToString(), onBoardResult.EnvironmentIds.ToList()[0].ToString(), "Administrator",projectAdminUserId);
+            await adoRestAPIService.postRoleAssignmentAsync(onboardProject.ProjectReference.Id.ToString(), onBoardResult.EnvironmentIds.ToList()[0].ToString(), "User", contributorsId);
+            await adoRestAPIService.postRoleAssignmentAsync(onboardProject.ProjectReference.Id.ToString(), onBoardResult.EnvironmentIds.ToList()[0].ToString(), "Reader", projectValidUserId);
 
             return onBoardResult;
         }
