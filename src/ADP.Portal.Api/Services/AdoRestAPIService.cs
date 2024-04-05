@@ -34,13 +34,10 @@ namespace ADP.Portal.Api.Services
             string userId = "";
             try
             {
-                var newOrgUrl = new StringHelper().ReplaceFirst(adoOrgUrl, "dev.azure.com", "vssps.dev.azure.com");
+                var newOrgUrl = adoOrgUrl.Replace("dev.azure.com", "vssps.dev.azure.com");
                 var uri = newOrgUrl + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
-                var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);
-                if (response != null && response.value != null)
-                {
-                    userId = response.value[0].id;                   
-                }
+                var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);       
+                userId = (response != null && response.value != null) ? response.value[0].id : "";                
                 logger.LogInformation(" '{UserId}' .", userId);
             }
             catch (Exception ex)
@@ -53,9 +50,8 @@ namespace ADP.Portal.Api.Services
         public async Task<bool> postRoleAssignmentAsync(string projectId, string envId, string roleName, string userId)
         {
             var uri = adoOrgUrl + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
-            var postsecurityRole = new AdoSecurityRole { roleName = roleName, userId = userId };
-            List<AdoSecurityRole> adoSecurityRoleList = new List<AdoSecurityRole>();
-            adoSecurityRoleList.Add(postsecurityRole);
+            List<AdoSecurityRole> adoSecurityRoleList = new ();
+            adoSecurityRoleList.Add(new AdoSecurityRole { roleName = roleName, userId = userId });
 
             var postRequest = new HttpRequestMessage(HttpMethod.Put, uri)
             {
