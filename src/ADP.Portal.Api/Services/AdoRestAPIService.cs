@@ -31,18 +31,17 @@ namespace ADP.Portal.Api.Services
 
         public async Task<string> GetUserIdAsync(string projectName, string userName)
         {
-            var userid = "";
-            var newOrgUrl = adoOrgUrl.Replace("dev.azure.com", "vssps.dev.azure.com");
-            var uri = newOrgUrl + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
-            try { 
+            var uri = adoOrgUrl.Replace("dev.azure.com", "vssps.dev.azure.com") + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
+            try
+            {
                 var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);
-                userid = (response != null && response.value != null) ? response.value[0].id : "";
+                return (response != null && response.value != null) ? response.value[0].id : "";
             }
             catch (Exception ex)
             {
                 logger.LogWarning(ex, "Exception {Message}", ex.Message);
             }
-            return userid;
+            return "";
         }
 
         public async Task<bool> postRoleAssignmentAsync(string projectId, string envId, string roleName, string userId)
