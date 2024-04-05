@@ -1,17 +1,11 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Services;
-using ADP.Portal.Core.Ado.Entities;
-using ADP.Portal.Core.Ado.Infrastructure;
-using ADP.Portal.Core.Ado.Services;
 using AutoFixture;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.TeamFoundation.Core.WebApi;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
-using Octokit;
 using System.Reflection;
 
 namespace ADP.Portal.Core.Tests.Ado.Services
@@ -43,8 +37,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         [Test]
         public void Constructor_WithValidParameters_SetsAdoRestAPIService()
         {
-            // Arrange
-            configurationMock.Value.Returns(fixture.Create<AdoConfig>());
+            
             // Act
             var restAPIService = new AdoRestAPIService(loggerMock, configurationMock);
 
