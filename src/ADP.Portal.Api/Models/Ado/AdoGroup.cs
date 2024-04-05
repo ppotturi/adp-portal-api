@@ -6,13 +6,13 @@ namespace ADP.Portal.Api.Models.Ado
 
     public class AdoGroup
     {
-        public string id { get; set; }
+        public required string id { get; set; }
 
-        public string providerDisplayName { get; set; }
+        public required string providerDisplayName { get; set; }
 
         // extra fields
         [JsonExtensionData]
-        private IDictionary<string, JToken> _extraStuff;
+        private IDictionary<string, JToken>? _extraStuff;
 
     }
 
@@ -20,7 +20,7 @@ namespace ADP.Portal.Api.Models.Ado
     {
         public int count { get; set; }
 
-        public List<AdoGroup> value { get; set; }
+        public List<AdoGroup>? value { get; set; }
 
     }
 

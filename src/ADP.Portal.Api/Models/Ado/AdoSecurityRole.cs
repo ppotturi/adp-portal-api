@@ -2,7 +2,7 @@
 {
     public class AdoSecurityRole
     {
-        public string roleName { get; set; }
-        public string userId { get; set; }
+        public required string roleName { get; set; }
+        public required string userId { get; set; }
     }
 }

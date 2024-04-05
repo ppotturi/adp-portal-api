@@ -14,11 +14,13 @@ namespace ADP.Portal.Core.Ado.Infrastructure
     {
         private readonly ILogger<AdoService> logger;
         private readonly IVssConnection vssConnection;
+        private readonly IAdoRestAPIService adoRestAPIService;
 
-        public AdoService(ILogger<AdoService> logger, Task<IVssConnection> vssConnection)
+        public AdoService(ILogger<AdoService> logger, Task<IVssConnection> vssConnection, IAdoRestAPIService adoRestAPIService)
         {
             this.logger = logger;
             this.vssConnection = vssConnection.Result;
+            this.adoRestAPIService = adoRestAPIService;
         }
 
         public async Task<TeamProject> GetTeamProjectAsync(string projectName)
@@ -100,6 +102,19 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                 environmentIds.Add(createdEnvironment.Id);
 
                 logger.LogInformation("Environment {Name} created", environment.Name);
+            }
+
+            //Assign permissions
+            string projectAdminUserId = await adoRestAPIService.GetUserIdAsync(onBoardProject.Name, "Project Administrators");
+            string contributorsId = await adoRestAPIService.GetUserIdAsync(onBoardProject.Name, "Contributors");
+            string projectValidUserId = await adoRestAPIService.GetUserIdAsync(onBoardProject.Name, "Project Valid Users");
+            string projectId = onBoardProject.Id.ToString();
+            foreach (var environmentId in environmentIds)
+            {
+                string envId = environmentId.ToString();
+                await adoRestAPIService.postRoleAssignmentAsync(projectId, envId, "Administrator", projectAdminUserId);
+                await adoRestAPIService.postRoleAssignmentAsync(projectId, envId, "User", contributorsId);
+                await adoRestAPIService.postRoleAssignmentAsync(projectId, envId, "Reader", projectValidUserId);
             }
 
             return environmentIds;

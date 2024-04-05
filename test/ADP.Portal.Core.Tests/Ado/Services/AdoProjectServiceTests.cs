@@ -15,11 +15,12 @@ namespace ADP.Portal.Core.Tests.Ado.Services
     {
         private readonly IAdoService adoServiceMock;
         private readonly ILogger<AdoProjectService> loggerMock;
-        private readonly AdoProjectService adoProjectService;
+        private readonly AdoProjectService adoProjectService;        
 
         public AdoProjectServiceTests()
         {
             adoServiceMock = Substitute.For<IAdoService>();
+
             loggerMock = Substitute.For<ILogger<AdoProjectService>>();
             adoProjectService = new AdoProjectService(adoServiceMock, loggerMock);
         }

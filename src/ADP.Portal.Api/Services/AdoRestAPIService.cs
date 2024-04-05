@@ -1,11 +1,9 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Models.Ado;
 using ADP.Portal.Core.Ado.Infrastructure;
+using ADP.Portal.Core.Helpers;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Text.Json;
 
 namespace ADP.Portal.Api.Services
 {
@@ -33,16 +31,6 @@ namespace ADP.Portal.Api.Services
                         string.Format("{0}:{1}", "", adoPatToken))));
         }
 
-        public static string ReplaceFirst(string str, string term, string replace)
-        {
-            int position = str.IndexOf(term);
-            if (position < 0)
-            {
-                return str;
-            }
-            str = str.Substring(0, position) + replace + str.Substring(position + term.Length);
-            return str;
-        }
 
 
         public async Task<string> GetUserIdAsync(string projectName, string userName)
@@ -50,39 +38,49 @@ namespace ADP.Portal.Api.Services
             string userId = "";
             try
             {
-                var newOrgUrl = ReplaceFirst(adoOrgUrl, "dev.azure.com", "vssps.dev.azure.com");
+                var newOrgUrl = new StringHelper().ReplaceFirst(adoOrgUrl, "dev.azure.com", "vssps.dev.azure.com");
                 var uri = newOrgUrl + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
                 var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);
-                if (response != null) {
+                if (response != null && response.value != null)
+                {
                     userId = response.value[0].id;
                     logger.LogInformation(" '{userId}' .", userId);
+                }
+                else
+                {
+                    logger.LogWarning(" '{userId} not found' .", userId);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                logger.LogError(ex.ToString());
             }
+
             return userId;
         }
 
-        public async Task postRoleAssignmentAsync(string projectId, string envId, string roleName, string userId)
+        public async Task<bool> postRoleAssignmentAsync(string projectId, string envId, string roleName, string userId)
         {
-            var uri = adoOrgUrl + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/"+ projectId + "_"+ envId+ "?api-version=7.1-preview.1";
+            var uri = adoOrgUrl + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
             var postsecurityRole = new AdoSecurityRole { roleName = roleName, userId = userId };
-             List<AdoSecurityRole> test = new List<AdoSecurityRole>();
-            test.Add(postsecurityRole);
+            List<AdoSecurityRole> adoSecurityRoleList = new List<AdoSecurityRole>();
+            adoSecurityRoleList.Add(postsecurityRole);
 
             var postRequest = new HttpRequestMessage(HttpMethod.Put, uri)
             {
-                Content = JsonContent.Create(test)
+                Content = JsonContent.Create(adoSecurityRoleList)
             };
-
-            var postResponse = await client.SendAsync(postRequest);
-
-
-            //var postResponse = await client.PostAsJsonAsync(uri, test);
-
-            postResponse.EnsureSuccessStatusCode();
+            try
+            {
+                var postResponse = await client.SendAsync(postRequest);
+                logger.LogInformation("Role {roleName} assigned to {userId} ", roleName, userId);
+                postResponse.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex.ToString());
+            }
+            return true;
         }
     }
 }
