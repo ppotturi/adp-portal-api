@@ -1,13 +1,14 @@
 ﻿using ADP.Portal.Api.Config;
+using ADP.Portal.Api.Models.Ado;
 using ADP.Portal.Api.Services;
 using AutoFixture;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
 using System.Reflection;
-
 namespace ADP.Portal.Core.Tests.Ado.Services
 {
     [TestFixture]
@@ -44,7 +45,19 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Assert
             Assert.That(restAPIService, Is.Not.Null);
         }
+        [Test]
+        public void Validate_AdoGroup_Model()
+        {
+            // Arrange
+            const string data = "{count : 1 , value : [ { id : '454353', providerDisplayName : 'testName', extra : 'testvalue' } ] } ";
+            // Act
 
+            JsonAdoGroupWrapper jsonAdoGroupWrapper = JsonConvert.DeserializeObject<JsonAdoGroupWrapper>(data);
+
+            // Assert
+            Assert.That(jsonAdoGroupWrapper, Is.Not.Null);
+        }
+        
         [Test]
         public async Task GetUserIdAsync_ReturnsUserId_WhenExists()
         {

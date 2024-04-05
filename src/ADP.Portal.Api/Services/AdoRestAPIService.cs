@@ -11,14 +11,12 @@ namespace ADP.Portal.Api.Services
     {
         private readonly ILogger<AdoRestApiService> logger;
         private readonly string adoOrgUrl;
-        private readonly string adoPatToken;
         private readonly HttpClient client;
 
         public AdoRestApiService(ILogger<AdoRestApiService> logger, IOptions<AdoConfig> configuration)
         {
             this.logger = logger;
             adoOrgUrl = configuration.Value.OrganizationUrl;
-            adoPatToken = configuration.Value.PatToken is null ? "" : configuration.Value.PatToken;
             client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
@@ -26,7 +24,7 @@ namespace ADP.Portal.Api.Services
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic",
                 Convert.ToBase64String(
                     System.Text.Encoding.ASCII.GetBytes(
-                        string.Format("{0}:{1}", "", adoPatToken))));
+                        string.Format("{0}:{1}", "", configuration.Value.PatToken))));
         }
 
 
@@ -42,11 +40,11 @@ namespace ADP.Portal.Api.Services
                 if (response != null && response.value != null)
                 {
                     userId = response.value[0].id;
-                    logger.LogInformation(" '{userId}' .", userId);
+                    logger.LogInformation(" '{UserId}' .", userId);
                 }
                 else
                 {
-                    logger.LogWarning(" '{userId} not found' .", userId);
+                    logger.LogWarning(" '{UserId} not found' .", userId);
                 }
             }
             catch (Exception ex)
@@ -71,7 +69,7 @@ namespace ADP.Portal.Api.Services
             try
             {
                 var postResponse = await client.SendAsync(postRequest);
-                logger.LogInformation("Role {roleName} assigned to {userId} ", roleName, userId);
+                logger.LogInformation("Role {RoleName} assigned to {UserId} ", roleName, userId);
                 postResponse.EnsureSuccessStatusCode();
             }
             catch (Exception ex)
