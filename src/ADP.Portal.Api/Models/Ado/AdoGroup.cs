@@ -12,7 +12,12 @@ namespace ADP.Portal.Api.Models.Ado
 
         // extra fields
         [JsonExtensionData]
-        public IDictionary<string, JToken>? _extraStuff;
+        private IDictionary<string, JToken>? _extraStuff;
+
+        public IDictionary<string, JToken>?  getStuff()
+        {
+            return _extraStuff;
+        }
 
     }
 
