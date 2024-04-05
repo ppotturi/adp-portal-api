@@ -21,7 +21,7 @@ namespace ADP.Portal.Api.Models.Ado
 
         public void setStuff()
         {
-            _extraStuff = new Dictionary<string, JToken>(); ;
+            _extraStuff = new Dictionary<string, JToken>();
         }
 
     }
