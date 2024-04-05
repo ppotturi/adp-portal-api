@@ -1,4 +1,5 @@
-﻿using ADP.Portal.Core.Azure.Entities;
+﻿using System.Net;
+using ADP.Portal.Core.Azure.Entities;
 using ADP.Portal.Core.Azure.Services;
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
@@ -10,7 +11,7 @@ using NSubstitute.ExceptionExtensions;
 using NSubstitute.ReceivedExtensions;
 using NUnit.Framework;
 using Octokit;
-using System.Net;
+using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Tests.Git.Services
 {
@@ -23,16 +24,16 @@ namespace ADP.Portal.Core.Tests.Git.Services
         private readonly IGroupService groupServiceMock;
         private readonly Fixture fixture;
         private readonly GitRepo gitRepo;
+
         public GitOpsGroupsConfigServiceTests()
         {
             gitOpsConfigRepositoryMock = Substitute.For<IGitOpsConfigRepository>();
             loggerMock = Substitute.For<ILogger<GitOpsGroupsConfigService>>();
             groupServiceMock = Substitute.For<IGroupService>();
-            gitOpsConfigService = new GitOpsGroupsConfigService(gitOpsConfigRepositoryMock, loggerMock, groupServiceMock);
+            gitOpsConfigService = new GitOpsGroupsConfigService(gitOpsConfigRepositoryMock, loggerMock, groupServiceMock, Substitute.For<ISerializer>());
             fixture = new Fixture();
             gitRepo = fixture.Build<GitRepo>().With(i => i.BranchName, "main").With(i => i.Organisation, "defra").With(i => i.Name, "test").Create();
         }
-
 
         [Test]
         public async Task SyncGroupsAsync_GroupsConfigIsNull_ReturnsErrorResult()
@@ -58,7 +59,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
         {
             // Arrange
             gitOpsConfigRepositoryMock.GetConfigAsync<GroupsRoot>(Arg.Any<string>(), Arg.Any<GitRepo>())
-                .Throws(new NotFoundException("Not found",HttpStatusCode.NotFound));
+                .Throws(new NotFoundException("Not found", HttpStatusCode.NotFound));
 
 
             // Act
@@ -66,12 +67,11 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
             // Assert
             Assert.That(result.Errors, Is.Not.Empty);
-            if(result.Errors.Count > 0)
+            if (result.Errors.Count > 0)
             {
                 Assert.That(result.Errors[0], Is.EqualTo("Groups config not found for the team:teamName in the tenant:tenantName"));
             }
         }
-
 
         [Test]
         public async Task SyncGroupsAsync_Returns_Success_WhenOpenVpn_Members_Synced()
@@ -312,7 +312,68 @@ namespace ADP.Portal.Core.Tests.Git.Services
             // Assert
             Assert.That(result.Errors, Is.Not.Empty);
 
-            Assert.That(result.Errors[0], Is.EqualTo($"Group '{groupsRoot.Groups[0].Members[0].ToString()}' not found."));
+            Assert.That(result.Errors[0], Is.EqualTo($"Group '{groupsRoot.Groups[0].Members[0]}' not found."));
+        }
+
+        [Test]
+        public async Task GetGroupsConfigAsync_Returns_Groups()
+        {
+            // Arrange
+            var groupsRoot = new GroupsRoot
+            {
+                Groups = [new Group { DisplayName = "group1", Type = GroupType.AccessGroup, Members = ["test-group"] }]
+            };
+
+            gitOpsConfigRepositoryMock.GetConfigAsync<GroupsRoot>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(groupsRoot);
+
+            // Act
+            var response = await gitOpsConfigService.GetGroupsConfigAsync("tenantName", "teamName", gitRepo);
+
+            // Assert
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task GetGroupsConfigAsync_NotFound_Returns_NoGroups()
+        {
+            // Arrange
+            gitOpsConfigRepositoryMock.GetConfigAsync<GroupsRoot>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(new GroupsRoot() { Groups = [] });
+
+            // Act
+            var response = await gitOpsConfigService.GetGroupsConfigAsync("tenantName", "teamName", gitRepo);
+
+            // Assert
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task CreateGroupsConfigAsync_ConfigCreated()
+        {
+            // Arrange
+            gitOpsConfigRepositoryMock.CreateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>()).Returns("sha");
+
+            // Act
+            var response = await gitOpsConfigService.CreateGroupsConfigAsync("defra", "teamName", gitRepo, fixture.Build<string>().CreateMany(2));
+
+            // Assert
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Errors.Count, Is.EqualTo(0));
+        }
+
+        [Test]
+        public async Task CreateGroupsConfigAsync_Returns_Error()
+        {
+            // Arrange
+            gitOpsConfigRepositoryMock.CreateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>()).Returns(string.Empty);
+
+            // Act
+            var response = await gitOpsConfigService.CreateGroupsConfigAsync("defradev", "teamName", gitRepo, fixture.Build<string>().CreateMany(2));
+
+            // Assert
+            Assert.That(response, Is.Not.Null);
+            Assert.That(response.Errors.Count, Is.EqualTo(1));
         }
     }
 }

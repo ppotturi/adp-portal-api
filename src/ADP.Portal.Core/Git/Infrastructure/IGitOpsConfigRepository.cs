@@ -7,9 +7,9 @@ namespace ADP.Portal.Core.Git.Infrastructure
     {
         Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo);
 
-        Task CreateConfigAsync(GitRepo gitRepo, string fileName, string content);
+        Task<string> CreateConfigAsync(GitRepo gitRepo, string fileName, string content);
 
-        Task UpdateConfigAsync(GitRepo gitRepo, string fileName, string content);
+        Task<string> UpdateConfigAsync(GitRepo gitRepo, string fileName, string content);
 
         Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesAsync(GitRepo gitRepo, string path);
 
