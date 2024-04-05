@@ -19,6 +19,11 @@ namespace ADP.Portal.Api.Models.Ado
             return _extraStuff;
         }
 
+        public void setStuff()
+        {
+            _extraStuff = new Dictionary<string, JToken>(); ;
+        }
+
     }
 
     public class JsonAdoGroupWrapper

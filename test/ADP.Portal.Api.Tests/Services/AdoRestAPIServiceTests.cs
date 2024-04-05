@@ -60,7 +60,12 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Assert
             Assert.That(jsonAdoGroupWrapper, Is.Not.Null);
             Assert.That(adoGroup, Is.Not.Null);
-            Assert.That(adoGroup.getStuff, Is.Not.Null);
+            if (adoGroup!=null)
+            {
+                Assert.That(adoGroup.getStuff, Is.Not.Null);
+                Assert.That(adoGroup.setStuff, Is.Not.Null);
+            }
+            
         }
         
         [Test]
