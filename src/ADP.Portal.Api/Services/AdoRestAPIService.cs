@@ -39,19 +39,14 @@ namespace ADP.Portal.Api.Services
                 var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);
                 if (response != null && response.value != null)
                 {
-                    userId = response.value[0].id;
-                    logger.LogInformation(" '{UserId}' .", userId);
+                    userId = response.value[0].id;                   
                 }
-                else
-                {
-                    logger.LogWarning(" '{UserId} not found' .", userId);
-                }
+                logger.LogInformation(" '{UserId}' .", userId);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Exception occurred: {Message}", ex.Message);
             }
-
             return userId;
         }
 
@@ -68,9 +63,9 @@ namespace ADP.Portal.Api.Services
             };
             try
             {
-                var postResponse = await client.SendAsync(postRequest);
-                logger.LogInformation("Role {RoleName} assigned to {UserId} ", roleName, userId);
+                var postResponse = await client.SendAsync(postRequest);                
                 postResponse.EnsureSuccessStatusCode();
+                logger.LogInformation("Role {RoleName} assigned to {UserId} ", roleName, userId);
             }
             catch (Exception ex)
             {
