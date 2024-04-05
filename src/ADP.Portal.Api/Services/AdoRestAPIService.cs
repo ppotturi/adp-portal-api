@@ -56,15 +56,9 @@ namespace ADP.Portal.Api.Services
             {
                 Content = JsonContent.Create(adoSecurityRoleList)
             };
-            try
-            {
-                var postResponse = await client.SendAsync(postRequest);              
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Exception occurred: {Message}", ex.Message);
-            }
-            return true;
+            var response=await client.SendAsync(postRequest);
+
+            return response.IsSuccessStatusCode ? true : false ;
         }
     }
 }

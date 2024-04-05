@@ -88,7 +88,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             var result=await adoRestApiService.postRoleAssignmentAsync(projectId, envId, roleName, userId);
 
             // Assert
-            Assert.That(result, Is.True);
+            Assert.That(result, Is.False);
         }
 
 
