@@ -58,8 +58,7 @@ namespace ADP.Portal.Api.Services
             };
             try
             {
-                var postResponse = await client.SendAsync(postRequest);                
-                postResponse.EnsureSuccessStatusCode();                
+                var postResponse = await client.SendAsync(postRequest);              
             }
             catch (Exception ex)
             {
