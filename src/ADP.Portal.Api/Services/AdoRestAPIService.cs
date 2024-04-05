@@ -38,7 +38,6 @@ namespace ADP.Portal.Api.Services
                 var uri = newOrgUrl + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
                 var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);       
                 userId = (response != null && response.value != null) ? response.value[0].id : "";                
-                logger.LogInformation(" '{UserId}' .", userId);
             }
             catch (Exception ex)
             {
@@ -60,8 +59,7 @@ namespace ADP.Portal.Api.Services
             try
             {
                 var postResponse = await client.SendAsync(postRequest);                
-                postResponse.EnsureSuccessStatusCode();
-                logger.LogInformation("Role {RoleName} assigned to {UserId} ", roleName, userId);
+                postResponse.EnsureSuccessStatusCode();                
             }
             catch (Exception ex)
             {
