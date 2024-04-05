@@ -30,7 +30,9 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             configurationMock = Substitute.For<IOptions<AdoConfig>>();            
             loggerMock = Substitute.For<ILogger<AdoRestApiService>>();                        
             fixture = new Fixture();
-            configurationMock.Value.Returns(fixture.Create<AdoConfig>());
+            var adoConfig = fixture.Create<AdoConfig>();
+            adoConfig.OrganizationUrl = "https://dev.azure.com/defragovuk/DEFRA-TRADE-PUBLIC/";            
+            configurationMock.Value.Returns(adoConfig);
             adoRestApiService = new AdoRestApiService(loggerMock, configurationMock);
 
         }
@@ -38,7 +40,8 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         [Test]
         public void Constructor_WithValidParameters_SetsAdoRestApiService()
         {
-            
+            // Arrange
+
             // Act
             var restAPIService = new AdoRestApiService(loggerMock, configurationMock);
 
