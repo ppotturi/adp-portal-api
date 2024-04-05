@@ -42,8 +42,7 @@ namespace ADP.Portal.Api.Services
         public async Task<bool> postRoleAssignmentAsync(string projectId, string envId, string roleName, string userId)
         {
             var uri = adoOrgUrl + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
-            List<AdoSecurityRole> adoSecurityRoleList = new();
-            adoSecurityRoleList.Add(new AdoSecurityRole { roleName = roleName, userId = userId });
+            List<AdoSecurityRole> adoSecurityRoleList = [new AdoSecurityRole { roleName = roleName, userId = userId }];
 
             var postRequest = new HttpRequestMessage(HttpMethod.Put, uri)
             {
