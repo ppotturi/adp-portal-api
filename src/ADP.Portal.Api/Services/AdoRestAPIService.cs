@@ -29,36 +29,29 @@ namespace ADP.Portal.Api.Services
 
 
 
-        public async Task<string> GetUserIdAsync(string projectName, string userName)
+        public async Task<string?> GetUserIdAsync(string projectName, string userName)
         {
-            string userId = "";
-            try
-            {
-                var newOrgUrl = adoOrgUrl.Replace("dev.azure.com", "vssps.dev.azure.com");
-                var uri = newOrgUrl + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
-                var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);       
-                userId = (response != null && response.value != null) ? response.value[0].id : "";                
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Exception occurred: {Message}", ex.Message);
-            }
-            return userId;
+
+            var newOrgUrl = adoOrgUrl.Replace("dev.azure.com", "vssps.dev.azure.com");
+            var uri = newOrgUrl + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
+            var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);
+
+            return (response != null && response.value != null) ? response.value[0].id : null; 
         }
 
         public async Task<bool> postRoleAssignmentAsync(string projectId, string envId, string roleName, string userId)
         {
             var uri = adoOrgUrl + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
-            List<AdoSecurityRole> adoSecurityRoleList = new ();
+            List<AdoSecurityRole> adoSecurityRoleList = new();
             adoSecurityRoleList.Add(new AdoSecurityRole { roleName = roleName, userId = userId });
 
             var postRequest = new HttpRequestMessage(HttpMethod.Put, uri)
             {
                 Content = JsonContent.Create(adoSecurityRoleList)
             };
-            var response=await client.SendAsync(postRequest);
+            var response = await client.SendAsync(postRequest);
 
-            return response.IsSuccessStatusCode ? true : false ;
+            return response.IsSuccessStatusCode;
         }
     }
 }

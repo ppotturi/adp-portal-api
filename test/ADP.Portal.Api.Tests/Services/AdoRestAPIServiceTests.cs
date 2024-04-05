@@ -72,7 +72,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             var userid = await adoRestApiService.GetUserIdAsync(projectName, userName);
 
             // Assert
-            Assert.That(userid, Is.EqualTo(""));
+            Assert.That(userid, Is.Null);
         }
         [Test]
         public async Task postRoleAssignmentAsync_ReturnsSuccess()
