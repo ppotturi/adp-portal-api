@@ -54,8 +54,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             const string data = "{count : 1 , value : [ { id : '454353', providerDisplayName : 'testName', extra : 'testvalue' } ] } ";
             // Act
-
-            JsonAdoGroupWrapper jsonAdoGroupWrapper = JsonConvert.DeserializeObject<JsonAdoGroupWrapper>(data);
+            var jsonAdoGroupWrapper = JsonConvert.DeserializeObject<JsonAdoGroupWrapper>(data);
 
             // Assert
             Assert.That(jsonAdoGroupWrapper, Is.Not.Null);
