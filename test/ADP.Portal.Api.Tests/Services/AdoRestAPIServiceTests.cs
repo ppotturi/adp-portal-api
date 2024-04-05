@@ -27,11 +27,11 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         }
         public AdoRestApiServiceTests()
         {
-            configurationMock = Substitute.For<IOptions<AdoConfig>>();            
-            loggerMock = Substitute.For<ILogger<AdoRestApiService>>();                        
+            configurationMock = Substitute.For<IOptions<AdoConfig>>();
+            loggerMock = Substitute.For<ILogger<AdoRestApiService>>();
             fixture = new Fixture();
             var adoConfig = fixture.Create<AdoConfig>();
-            adoConfig.OrganizationUrl = "https://dev.azure.com/defragovuk/DEFRA-TRADE-PUBLIC/";            
+            adoConfig.OrganizationUrl = "https://dev.azure.com/defragovuk/DEFRA-TRADE-PUBLIC/";
             configurationMock.Value.Returns(adoConfig);
             adoRestApiService = new AdoRestApiService(loggerMock, configurationMock);
 
@@ -55,16 +55,20 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             const string data = "{count : 1 , value : [ { id : '454353', providerDisplayName : 'testName', extra : 'testvalue' } ] } ";
             // Act
             var jsonAdoGroupWrapper = JsonConvert.DeserializeObject<JsonAdoGroupWrapper>(data);
-            var adoGroup = (jsonAdoGroupWrapper!= null && jsonAdoGroupWrapper.value !=null) ? jsonAdoGroupWrapper.value[0] : null;
+            var adoGroup = (jsonAdoGroupWrapper != null && jsonAdoGroupWrapper.value != null) ? jsonAdoGroupWrapper.value[0] : null;
 
             // Assert
             Assert.That(jsonAdoGroupWrapper, Is.Not.Null);
             Assert.That(adoGroup, Is.Not.Null);
-            Assert.That(adoGroup.getStuff, Is.Not.Null);
-            Assert.DoesNotThrow(adoGroup.setStuff);
-            
+            if (adoGroup != null)
+            {
+                Assert.That(adoGroup.getStuff, Is.Not.Null);
+                Assert.DoesNotThrow(adoGroup.setStuff);
+            }
+
+
         }
-        
+
         [Test]
         public async Task GetUserIdAsync_ReturnsUserId_WhenExists()
         {
@@ -90,7 +94,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             configurationMock.Value.Returns(fixture.Create<AdoConfig>());
 
             // Act
-            var result=await adoRestApiService.postRoleAssignmentAsync(projectId, envId, roleName, userId);
+            var result = await adoRestApiService.postRoleAssignmentAsync(projectId, envId, roleName, userId);
 
             // Assert
             Assert.That(result, Is.False);
