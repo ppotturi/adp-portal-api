@@ -7,18 +7,16 @@ using System.Net.Http.Headers;
 
 namespace ADP.Portal.Api.Services
 {
-    public class AdoRestAPIService : IAdoRestAPIService
+    public class AdoRestApiService : IAdoRestApiService
     {
-        private readonly ILogger<AdoRestAPIService> logger;
-        private readonly IOptions<AdoConfig> configuration;
+        private readonly ILogger<AdoRestApiService> logger;
         private readonly string adoOrgUrl;
         private readonly string adoPatToken;
         private readonly HttpClient client;
 
-        public AdoRestAPIService(ILogger<AdoRestAPIService> logger, IOptions<AdoConfig> configuration)
+        public AdoRestApiService(ILogger<AdoRestApiService> logger, IOptions<AdoConfig> configuration)
         {
             this.logger = logger;
-            this.configuration = configuration;
             adoOrgUrl = configuration.Value.OrganizationUrl;
             adoPatToken = configuration.Value.PatToken is null ? "" : configuration.Value.PatToken;
             client = new HttpClient();
@@ -53,7 +51,7 @@ namespace ADP.Portal.Api.Services
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.ToString());
+                logger.LogError(ex, "Exception occurred: {Message}", ex.Message);
             }
 
             return userId;
@@ -78,7 +76,7 @@ namespace ADP.Portal.Api.Services
             }
             catch (Exception ex)
             {
-                logger.LogError(ex.ToString());
+                logger.LogError(ex, "Exception occurred: {Message}", ex.Message);
             }
             return true;
         }

@@ -1,6 +1,6 @@
 ﻿namespace ADP.Portal.Core.Ado.Infrastructure
 {
-    public interface IAdoRestAPIService
+    public interface IAdoRestApiService
     {
         Task<String> GetUserIdAsync(string projectName, string userName);
 

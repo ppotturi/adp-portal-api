@@ -73,7 +73,7 @@ namespace ADP.Portal.Api
                 return connection;
             });
 
-            builder.Services.AddScoped<IAdoRestAPIService, AdoRestAPIService>();
+            builder.Services.AddScoped<IAdoRestApiService, AdoRestApiService>();
             builder.Services.AddScoped<IAdoProjectService, AdoProjectService>();
             builder.Services.AddScoped<IAdoService, AdoService>();      
             builder.Services.AddScoped<IGroupService, GroupService>();

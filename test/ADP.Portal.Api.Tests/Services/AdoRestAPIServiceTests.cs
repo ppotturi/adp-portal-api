@@ -11,12 +11,12 @@ using System.Reflection;
 namespace ADP.Portal.Core.Tests.Ado.Services
 {
     [TestFixture]
-    public class AdoRestAPIServiceTests
+    public class AdoRestApiServiceTests
     {
-        private readonly ILogger<AdoRestAPIService> loggerMock;
+        private readonly ILogger<AdoRestApiService> loggerMock;
         private readonly IOptions<AdoConfig> configurationMock;
 
-        private readonly AdoRestAPIService adoRestAPIService;
+        private readonly AdoRestApiService adoRestApiService;
         private readonly Fixture fixture;
         [SetUp]
         public void SetUp()
@@ -24,22 +24,22 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
 
         }
-        public AdoRestAPIServiceTests()
+        public AdoRestApiServiceTests()
         {
             configurationMock = Substitute.For<IOptions<AdoConfig>>();            
-            loggerMock = Substitute.For<ILogger<AdoRestAPIService>>();                        
+            loggerMock = Substitute.For<ILogger<AdoRestApiService>>();                        
             fixture = new Fixture();
             configurationMock.Value.Returns(fixture.Create<AdoConfig>());
-            adoRestAPIService = new AdoRestAPIService(loggerMock, configurationMock);
+            adoRestApiService = new AdoRestApiService(loggerMock, configurationMock);
 
         }
 
         [Test]
-        public void Constructor_WithValidParameters_SetsAdoRestAPIService()
+        public void Constructor_WithValidParameters_SetsAdoRestApiService()
         {
             
             // Act
-            var restAPIService = new AdoRestAPIService(loggerMock, configurationMock);
+            var restAPIService = new AdoRestApiService(loggerMock, configurationMock);
 
             // Assert
             Assert.That(restAPIService, Is.Not.Null);
@@ -54,7 +54,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             configurationMock.Value.Returns(fixture.Create<AdoConfig>());
 
             // Act
-            var userid = await adoRestAPIService.GetUserIdAsync(projectName, userName);
+            var userid = await adoRestApiService.GetUserIdAsync(projectName, userName);
 
             // Assert
             Assert.That(userid, Is.EqualTo(""));
@@ -70,7 +70,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             configurationMock.Value.Returns(fixture.Create<AdoConfig>());
 
             // Act
-            var result=await adoRestAPIService.postRoleAssignmentAsync(projectId, envId, roleName, userId);
+            var result=await adoRestApiService.postRoleAssignmentAsync(projectId, envId, roleName, userId);
 
             // Assert
             Assert.That(result, Is.True);
