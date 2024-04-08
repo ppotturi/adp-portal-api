@@ -1,7 +1,6 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Models.Ado;
 using ADP.Portal.Core.Ado.Infrastructure;
-using ADP.Portal.Core.Helpers;
 using Microsoft.Extensions.Options;
 using System.Net.Http.Headers;
 
@@ -13,11 +12,11 @@ namespace ADP.Portal.Api.Services
         private readonly string adoOrgUrl;
         private readonly HttpClient client;
 
-        public AdoRestApiService(ILogger<AdoRestApiService> logger, IOptions<AdoConfig> configuration)
+        public AdoRestApiService(ILogger<AdoRestApiService> logger, IOptions<AdoConfig> configuration, HttpClient client)
         {
             this.logger = logger;
             adoOrgUrl = configuration.Value.OrganizationUrl;
-            client = new HttpClient();
+            this.client = client;
             client.DefaultRequestHeaders.Accept.Add(
                     new MediaTypeWithQualityHeaderValue("application/json"));
 
