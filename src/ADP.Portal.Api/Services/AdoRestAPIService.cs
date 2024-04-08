@@ -35,7 +35,7 @@ namespace ADP.Portal.Api.Services
             try
             {
                 var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);
-                return (response != null && response.value != null) ? response.value[0].id : "";
+                return response?.value?.FirstOrDefault()?.id ?? "";
             }
             catch (Exception ex)
             {
