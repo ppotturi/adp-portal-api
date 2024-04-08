@@ -2,7 +2,6 @@
 using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Mapster;
 using ADP.Portal.Api.Providers;
-using ADP.Portal.Api.Services;
 using ADP.Portal.Api.Swagger;
 using ADP.Portal.Api.Wrappers;
 using ADP.Portal.Core.Ado.Infrastructure;
@@ -73,7 +72,7 @@ namespace ADP.Portal.Api
                 return connection;
             });
 
-            builder.Services.AddHttpClient<IAdoRestApiService, AdoRestApiService>();
+            builder.Services.AddScoped<IAdoRestApiService, AdoRestApiService>();
             builder.Services.AddScoped<IAdoProjectService, AdoProjectService>();
             builder.Services.AddScoped<IAdoService, AdoService>();      
             builder.Services.AddScoped<IGroupService, GroupService>();

@@ -4,6 +4,6 @@
     {
         Task<String> GetUserIdAsync(string projectName, string userName);
 
-        Task<bool> postRoleAssignmentAsync(string projectId, string envId, string roleName, string userId);
+        Task<bool> updateRoleAssignmentAsync(string projectId, string envId);
     }
 }

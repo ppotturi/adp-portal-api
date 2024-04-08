@@ -105,16 +105,11 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             }
 
             //Assign permissions
-            string projectAdminUserId = await adoRestApiService.GetUserIdAsync(onBoardProject.Name, "Project Administrators");
-            string contributorsId = await adoRestApiService.GetUserIdAsync(onBoardProject.Name, "Contributors");
-            string projectValidUserId = await adoRestApiService.GetUserIdAsync(onBoardProject.Name, "Project Valid Users");
             string projectId = onBoardProject.Id.ToString();
             foreach (var environmentId in environmentIds)
             {
                 string envId = environmentId.ToString();
-                await adoRestApiService.postRoleAssignmentAsync(projectId, envId, "Administrator", projectAdminUserId);
-                await adoRestApiService.postRoleAssignmentAsync(projectId, envId, "User", contributorsId);
-                await adoRestApiService.postRoleAssignmentAsync(projectId, envId, "Reader", projectValidUserId);
+                await adoRestApiService.updateRoleAssignmentAsync(projectId, envId);
             }
 
             return environmentIds;
