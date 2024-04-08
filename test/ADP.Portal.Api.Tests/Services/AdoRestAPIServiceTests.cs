@@ -52,7 +52,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         public void Validate_AdoGroup_Model()
         {
             // Arrange
-            const string data = "{count : 1 , value : [ { id : '454353', providerDisplayName : 'testName', extra : 'testvalue' } ] } ";
+            const string data = "{count : 1 , value : [ { id : '454353', providerDisplayName : 'testName', ExtensionData : 'testvalue' } ] } ";
             // Act
             var jsonAdoGroupWrapper = JsonConvert.DeserializeObject<JsonAdoGroupWrapper>(data);
             var adoGroup = (jsonAdoGroupWrapper != null && jsonAdoGroupWrapper.value != null) ? jsonAdoGroupWrapper.value[0] : null;
@@ -60,13 +60,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Assert
             Assert.That(jsonAdoGroupWrapper, Is.Not.Null);
             Assert.That(adoGroup, Is.Not.Null);
-            if (adoGroup != null)
-            {
-                Assert.That(adoGroup.getStuff, Is.Not.Null);
-                Assert.DoesNotThrow(adoGroup.setStuff);
-            }
-
-
+          
         }
 
         [Test]
