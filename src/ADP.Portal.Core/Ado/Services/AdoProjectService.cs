@@ -1,6 +1,6 @@
-﻿using ADP.Portal.Core.Ado.Entities;
+﻿using ADP.Portal.Core.Ado.Dtos;
+using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Infrastructure;
-using ADP.Portal.Core.Ado.Dtos;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
 

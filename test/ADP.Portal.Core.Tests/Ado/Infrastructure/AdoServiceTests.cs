@@ -23,6 +23,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
         private readonly IVssConnection vssConnectionMock;
         private readonly ServiceEndpointHttpClient serviceEndpointClientMock;
         private readonly DistributedTask.TaskAgentHttpClient taskAgentClientMock;
+        private readonly IAdoRestApiService adoRestApiServiceMock;
 
         [SetUp]
         public void SetUp()
@@ -39,6 +40,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
         public AdoServiceTests()
         {
             vssConnectionMock = Substitute.For<IVssConnection>();
+            adoRestApiServiceMock = Substitute.For<IAdoRestApiService>();
             serviceEndpointClientMock = Substitute.For<ServiceEndpointHttpClient>(new Uri("https://mock"), new VssCredentials());
             taskAgentClientMock = Substitute.For<DistributedTask.TaskAgentHttpClient>(new Uri("https://mock"), new VssCredentials());
         }
@@ -49,8 +51,9 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             // Arrange
             var logger = Substitute.For<ILogger<AdoService>>();
 
+
             // Act
-            var projectService = new AdoService(logger, Task.FromResult(vssConnectionMock));
+            var projectService = new AdoService(logger, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Assert
             Assert.That(projectService, Is.Not.Null);
@@ -65,7 +68,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             mockProjectClient.GetProject(Arg.Any<string>(), null, false, null).Returns(expectedProject);
             vssConnectionMock.GetClientAsync<ProjectHttpClient>(Arg.Any<CancellationToken>()).Returns(mockProjectClient);
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             var result = await adoService.GetTeamProjectAsync("TestProject");
@@ -83,7 +86,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             mockProjectClient.GetProject(Arg.Any<string>(), null, false, null)
                 .ThrowsAsync<ProjectDoesNotExistWithNameException>();
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             vssConnectionMock.GetClientAsync<ProjectHttpClient>(Arg.Any<CancellationToken>()).Returns(mockProjectClient);
@@ -121,7 +124,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(serviceEndpointClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.ShareServiceEndpointsAsync("TestProject", new List<string> { "TestServiceEndpoint" }, new TeamProjectReference { Id = Guid.NewGuid() });
@@ -153,7 +156,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(serviceEndpointClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.ShareServiceEndpointsAsync(adpProjectName, serviceConnections, onBoardProject);
@@ -189,7 +192,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                .Returns(serviceEndpointClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.ShareServiceEndpointsAsync(adpProjectName, serviceConnections, onBoardProject);
@@ -241,7 +244,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                .Returns(serviceEndpointClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act - ...when sharing service endpoints from onBoardProject to adpProjectName...
             var endpontIds = await adoService.ShareServiceEndpointsAsync(adpProjectName, serviceConnections, onBoardProject);
@@ -266,7 +269,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
@@ -294,7 +297,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
@@ -323,7 +326,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act - ...when we attempt to add environments to the project...
             var environmentIds = await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
@@ -349,7 +352,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act - ...when we attempt to add environments to the project...
             var environmentIds = await adoService.AddEnvironmentsAsync(adoEnvironments, onBoardProject);
@@ -375,7 +378,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.ShareAgentPoolsAsync(adpProjectName, adoAgentPoolsToShare, onBoardProject);
@@ -407,7 +410,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.ShareAgentPoolsAsync(adpProjectName, adoAgentPoolsToShare, onBoardProject);
@@ -435,7 +438,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act - ...when sharing agent pools from adpProject to onboardProject...
             var agentPoolIds = await adoService.ShareAgentPoolsAsync(adpProjectName, adoAgentPoolsToShare, onBoardProject);
@@ -470,7 +473,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act - ...when sharing agent pools from adpProject to onboardProject...
             var agentPoolIds = await adoService.ShareAgentPoolsAsync(adpProjectName, adoAgentPoolsToShare, onBoardProject);
@@ -498,7 +501,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.AddOrUpdateVariableGroupsAsync(adoVariableGroups, onBoardProject);
@@ -524,7 +527,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act
             await adoService.AddOrUpdateVariableGroupsAsync(adoVariableGroups, onBoardProject);
@@ -553,7 +556,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act - ...when we attempt to update the variable groups...
             var variableGroupIds = await adoService.AddOrUpdateVariableGroupsAsync(adoVariableGroups, onBoardProject);
@@ -582,7 +585,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .Returns(taskAgentClientMock);
 
             var loggerMock = Substitute.For<ILogger<AdoService>>();
-            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock));
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
 
             // Act - ...when we attempt to add the variable groups...
             var variableGroupIds = await adoService.AddOrUpdateVariableGroupsAsync(adoVariableGroups, onBoardProject);

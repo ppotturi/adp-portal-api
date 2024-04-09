@@ -1,4 +1,5 @@
-﻿using ADP.Portal.Core.Ado.Entities;
+﻿using ADP.Portal.Api.Models.Ado;
+using ADP.Portal.Core.Ado.Entities;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
@@ -14,11 +15,13 @@ namespace ADP.Portal.Core.Ado.Infrastructure
     {
         private readonly ILogger<AdoService> logger;
         private readonly IVssConnection vssConnection;
+        private readonly IAdoRestApiService adoRestApiService;
 
-        public AdoService(ILogger<AdoService> logger, Task<IVssConnection> vssConnection)
+        public AdoService(ILogger<AdoService> logger, Task<IVssConnection> vssConnection, IAdoRestApiService adoRestApiService)
         {
             this.logger = logger;
             this.vssConnection = vssConnection.Result;
+            this.adoRestApiService = adoRestApiService;
         }
 
         public async Task<TeamProject> GetTeamProjectAsync(string projectName)
@@ -100,6 +103,15 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                 environmentIds.Add(createdEnvironment.Id);
 
                 logger.LogInformation("Environment {Name} created", environment.Name);
+            }
+
+            //Assign permissions
+            string projectId = onBoardProject.Id.ToString();
+            foreach (var environmentId in environmentIds)
+            {
+                string envId = environmentId.ToString();
+                List<AdoSecurityRole> adoSecurityRoleList = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
+                await adoRestApiService.UpdateRoleAssignmentAsync(projectId, envId, adoSecurityRoleList);
             }
 
             return environmentIds;
