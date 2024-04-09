@@ -15,14 +15,14 @@ namespace ADP.Portal.Core.Ado.Infrastructure
         public AdoRestApiService(ILogger<AdoRestApiService> logger, Task<IVssConnection> vssConnection)
         {
             this.logger = logger;
-            this.vssConnection = vssConnection.Result;            
+            this.vssConnection = vssConnection.Result;
         }
 
         public async Task<List<AdoSecurityRole>> GetRoleAssignmentAsync(string projectId, string envId)
         {
             var adoRestHttpClient = vssConnection.GetClient<AdoRestHttpClient>();
-            var client = adoRestHttpClient.getHttpClient();
-            var uri = adoRestHttpClient.getOrganizationUrl() + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
+            var client = adoRestHttpClient.GetHttpClient();
+            var uri = adoRestHttpClient.BaseAddress + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
             List<AdoSecurityRole> adoSecurityRoleList = new();
 
             var roleDetails = await client.GetFromJsonAsync<JsonAdoSecurityRoleWrapper>(uri);
@@ -53,11 +53,11 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             return adoSecurityRoleList;
         }
 
-        public async Task<bool> updateRoleAssignmentAsync(string projectId, string envId, List<AdoSecurityRole> adoSecurityRoleList)
+        public async Task<bool> UpdateRoleAssignmentAsync(string projectId, string envId, List<AdoSecurityRole> adoSecurityRoleList)
         {
             var adoRestHttpClient = vssConnection.GetClient<AdoRestHttpClient>();
-            var client = adoRestHttpClient.getHttpClient();
-            var uri = adoRestHttpClient.getOrganizationUrl() + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
+            var client = adoRestHttpClient.GetHttpClient();
+            var uri = adoRestHttpClient.BaseAddress + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
             var postRequest = new HttpRequestMessage(HttpMethod.Put, uri)
             {
                 Content = JsonContent.Create(adoSecurityRoleList)

@@ -111,7 +111,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             {
                 string envId = environmentId.ToString();
                 List<AdoSecurityRole> adoSecurityRoleList = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
-                await adoRestApiService.updateRoleAssignmentAsync(projectId, envId, adoSecurityRoleList);
+                await adoRestApiService.UpdateRoleAssignmentAsync(projectId, envId, adoSecurityRoleList);
             }
 
             return environmentIds;

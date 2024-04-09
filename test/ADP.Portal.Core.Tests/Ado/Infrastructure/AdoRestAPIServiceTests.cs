@@ -10,7 +10,7 @@ using NUnit.Framework;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Reflection;
-namespace ADP.Portal.Core.Tests.Ado.Services
+namespace ADP.Portal.Core.Tests.Ado.Infrastructure
 {
 
     public class MockHttpMessageHandler : HttpMessageHandler
@@ -36,6 +36,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
     {
         private readonly ILogger<AdoRestApiService> loggerMock;
         private readonly IVssConnection vssConnectionMock;
+        private readonly AdoRestHttpClient adoRestHttpClientMock;
         private readonly MockHttpMessageHandler httpMessageHandlerMock;
         private readonly AdoRestApiService adoRestApiService;
         private readonly string organizationUrl;
@@ -49,25 +50,18 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         }
         public AdoRestApiServiceTests()
         {
-            vssConnectionMock = Substitute.For<IVssConnection>();
-            httpMessageHandlerMock = Substitute.ForPartsOf<MockHttpMessageHandler>();
-            loggerMock = Substitute.For<ILogger<AdoRestApiService>>();
             organizationUrl = "https://dev.azure.com/defragovuk";
-            adoRestApiService = new AdoRestApiService(loggerMock, organizationUrl, new HttpClient(httpMessageHandlerMock));
+            httpMessageHandlerMock = Substitute.ForPartsOf<MockHttpMessageHandler>();
+            vssConnectionMock = Substitute.For<IVssConnection>();
+            adoRestHttpClientMock = Substitute.For<AdoRestHttpClient>(new Uri(organizationUrl), new VssCredentials());
+            adoRestHttpClientMock.GetHttpClient().Returns(new HttpClient(httpMessageHandlerMock));
+            vssConnectionMock.GetClient<AdoRestHttpClient>().Returns(adoRestHttpClientMock);
+            loggerMock = Substitute.For<ILogger<AdoRestApiService>>();
+
+            adoRestApiService = new AdoRestApiService(loggerMock, Task.FromResult(vssConnectionMock));
 
         }
 
-        [Test]
-        public void Constructor_WithValidParameters_SetsAdoRestApiService()
-        {
-            // Arrange
-
-            // Act
-            var restAPIService = new AdoRestApiService(loggerMock, organizationUrl, new HttpClient(httpMessageHandlerMock));
-
-            // Assert
-            Assert.That(restAPIService, Is.Not.Null);
-        }
 
         [Test]
         public void Constructor_WithValidParameters_SetsVssConnection()
@@ -87,14 +81,13 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
 
             // Act
-            var restAPIService = new AdoRestHttpClient(new Uri(organizationUrl),  new VssCredentials());
+            var restAPIService = new AdoRestHttpClient(new Uri(organizationUrl), new VssCredentials());
             var restAPIService2 = new AdoRestHttpClient(new Uri(organizationUrl), new VssCredentials(), new VssHttpRequestSettings());
             var restAPIService3 = new AdoRestHttpClient(new Uri(organizationUrl), httpMessageHandlerMock, true);
-            
+
             // Assert
             Assert.That(restAPIService, Is.Not.Null);
-            Assert.That(restAPIService.getHttpClient(), Is.Not.Null);
-            Assert.That(restAPIService.getOrganizationUrl(), Is.Not.Null);
+            Assert.That(restAPIService.GetHttpClient(), Is.Not.Null);
             Assert.That(restAPIService2, Is.Not.Null);
             Assert.That(restAPIService3, Is.Not.Null);
         }
@@ -131,7 +124,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].roleName, Is.EqualTo("Administrator"));
             Assert.That(result[0].userId, Is.EqualTo("454353"));
-            
+
         }
 
         [Test]
@@ -186,7 +179,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             adoSecurityRoleList.Add(new AdoSecurityRole { roleName = "Reader", userId = "2" });
             adoSecurityRoleList.Add(new AdoSecurityRole { roleName = "User", userId = "3" });
             // Act
-            var result = await adoRestApiService.updateRoleAssignmentAsync(projectId, envId, adoSecurityRoleList);
+            var result = await adoRestApiService.UpdateRoleAssignmentAsync(projectId, envId, adoSecurityRoleList);
 
             // Assert
             Assert.That(result, Is.True);

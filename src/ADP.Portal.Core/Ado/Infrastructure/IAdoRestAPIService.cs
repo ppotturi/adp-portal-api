@@ -6,6 +6,6 @@ namespace ADP.Portal.Core.Ado.Infrastructure
     {
         Task<List<AdoSecurityRole>> GetRoleAssignmentAsync(string projectId, string envId);
 
-        Task<bool> updateRoleAssignmentAsync(string projectId, string envId, List<AdoSecurityRole> adoSecurityRoleList);
+        Task<bool> UpdateRoleAssignmentAsync(string projectId, string envId, List<AdoSecurityRole> adoSecurityRoleList);
     }
 }
