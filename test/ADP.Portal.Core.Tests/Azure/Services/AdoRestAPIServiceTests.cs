@@ -1,7 +1,9 @@
 ﻿using ADP.Portal.Api.Models.Ado;
+using ADP.Portal.Core.Ado.Client;
 using ADP.Portal.Core.Ado.Infrastructure;
 using Mapster;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualStudio.Services.Common;
 using Newtonsoft.Json;
 using NSubstitute;
 using NUnit.Framework;
@@ -33,6 +35,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
     public class AdoRestApiServiceTests
     {
         private readonly ILogger<AdoRestApiService> loggerMock;
+        private readonly IVssConnection vssConnectionMock;
         private readonly MockHttpMessageHandler httpMessageHandlerMock;
         private readonly AdoRestApiService adoRestApiService;
         private readonly string organizationUrl;
@@ -41,10 +44,12 @@ namespace ADP.Portal.Core.Tests.Ado.Services
         public void SetUp()
         {
             TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
+            vssConnectionMock.ClearReceivedCalls();
 
         }
         public AdoRestApiServiceTests()
         {
+            vssConnectionMock = Substitute.For<IVssConnection>();
             httpMessageHandlerMock = Substitute.ForPartsOf<MockHttpMessageHandler>();
             loggerMock = Substitute.For<ILogger<AdoRestApiService>>();
             organizationUrl = "https://dev.azure.com/defragovuk";
@@ -62,6 +67,32 @@ namespace ADP.Portal.Core.Tests.Ado.Services
 
             // Assert
             Assert.That(restAPIService, Is.Not.Null);
+        }
+
+        [Test]
+        public void Constructor_WithValidParameters_SetsVssConnection()
+        {
+            // Arrange
+
+            // Act
+            var restAPIService = new AdoRestApiService(loggerMock, Task.FromResult(vssConnectionMock));
+
+            // Assert
+            Assert.That(restAPIService, Is.Not.Null);
+        }
+
+        [Test]
+        public void AdoRestHttpClientConstructor_WithValidParameters()
+        {
+            // Arrange
+
+            // Act
+            var restAPIService = new AdoRestHttpClient(new Uri(organizationUrl),  new VssCredentials());
+            var restAPIService2 = new AdoRestHttpClient(new Uri(organizationUrl), new VssCredentials(), new VssHttpRequestSettings());            
+
+            // Assert
+            Assert.That(restAPIService, Is.Not.Null);
+            Assert.That(restAPIService2, Is.Not.Null);
         }
 
         [Test]

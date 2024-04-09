@@ -17,8 +17,9 @@ namespace ADP.Portal.Core.Ado.Infrastructure
         {
             this.logger = logger;
             AdoRestHttpClient adoRestHttpClient = vssConnection.Result.GetClient<AdoRestHttpClient>();
-            this.client = adoRestHttpClient.getHttpClient();
-            this.adoOrgUrl = adoRestHttpClient.getOrganizationUrl();
+
+            this.client = adoRestHttpClient?.getHttpClient() ?? new HttpClient();
+            this.adoOrgUrl = adoRestHttpClient?.getOrganizationUrl() ?? "";
         }
 
         public AdoRestApiService(ILogger<AdoRestApiService> logger, string organizationUrl, HttpClient client)
@@ -42,7 +43,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                 foreach (var identity in roleDetails.value.Select(roleObj => roleObj.identity))
                 {
                     var displayName = identity.displayName.Split('\\');
-                    var identityName = identity.displayName.Split('\\')[displayName.Length-1];
+                    var identityName = identity.displayName.Split('\\')[displayName.Length - 1];
                     var id = identity.id;
                     switch (identityName)
                     {
@@ -60,7 +61,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     }
                 }
             }
-            logger.LogInformation("Security Role List: " + adoSecurityRoleList.ToString());
+            logger.LogInformation("Security Role List: {SecurityRoleList} ", adoSecurityRoleList.ToString());
             return adoSecurityRoleList;
         }
 
