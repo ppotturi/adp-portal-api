@@ -63,6 +63,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Assert
             Assert.That(restAPIService, Is.Not.Null);
         }
+
         [Test]
         public void Validate_AdoSecurityRole_Model()
         {
@@ -84,17 +85,18 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             // Arrange
             string projectId = Guid.NewGuid().ToString();
             string envId = Guid.NewGuid().ToString();
-            const string data = @"{""count"" : 1 , ""value"" : [ { ""identity"" : { ""id"" : ""454353"", ""displayName"" : ""Project Administrators"", ""uniqueName"" : ""admin"" }, ""role"" : { ""name"" : ""User"" }  } ] } ";
+            const string data = @"{""count"" : 1 , ""value"" : [ { ""identity"" : { ""id"" : ""454353"", ""displayName"" : ""[Test]\\Project Administrators"", ""uniqueName"" : ""admin"" }, ""role"" : { ""name"" : ""User"" }  } ] } ";
             var message = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(data) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } } };
             httpMessageHandlerMock.MockSend(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>()).Returns(message);
 
             // Act
             List<AdoSecurityRole> result = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
 
-            // Assert
-            Assert.That(result?.Count, Is.EqualTo(1));
+            // Assert          
+            Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].roleName, Is.EqualTo("Administrator"));
             Assert.That(result[0].userId, Is.EqualTo("454353"));
+            
         }
 
         [Test]
@@ -111,7 +113,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             List<AdoSecurityRole> result = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
 
             // Assert
-            Assert.That(result?.Count, Is.EqualTo(1));
+            Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].roleName, Is.EqualTo("Reader"));
             Assert.That(result[0].userId, Is.EqualTo("1234"));
         }
@@ -130,7 +132,7 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             List<AdoSecurityRole> result = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
 
             // Assert
-            Assert.That(result?.Count, Is.EqualTo(1));
+            Assert.That(result.Count, Is.EqualTo(1));
             Assert.That(result[0].roleName, Is.EqualTo("User"));
             Assert.That(result[0].userId, Is.EqualTo("34564"));
         }

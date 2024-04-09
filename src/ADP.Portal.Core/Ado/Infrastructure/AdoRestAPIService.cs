@@ -11,7 +11,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
     {
         private readonly ILogger<AdoRestApiService> logger;
         private readonly string adoOrgUrl;
-        private HttpClient client;
+        private readonly HttpClient client;
 
         public AdoRestApiService(ILogger<AdoRestApiService> logger, Task<IVssConnection> vssConnection)
         {
@@ -41,7 +41,8 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             {
                 foreach (var identity in roleDetails.value.Select(roleObj => roleObj.identity))
                 {
-                    var identityName = identity.displayName.Split('\\').Last();
+                    var displayName = identity.displayName.Split('\\');
+                    var identityName = identity.displayName.Split('\\')[displayName.Length-1];
                     var id = identity.id;
                     switch (identityName)
                     {
@@ -59,6 +60,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     }
                 }
             }
+            logger.LogInformation("Security Role List: " + adoSecurityRoleList.ToString());
             return adoSecurityRoleList;
         }
 
@@ -72,7 +74,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             };
 
             var response = await client.SendAsync(postRequest);
-
+            logger.LogInformation("Security Role Assignment Updated");
             return response.IsSuccessStatusCode;
         }
     }
