@@ -16,7 +16,7 @@ namespace ADP.Portal.Core.Ado.Infrastructure
         public AdoRestApiService(ILogger<AdoRestApiService> logger, Task<IVssConnection> vssConnection)
         {
             this.logger = logger;
-            ADORestHttpClient adoRestHttpClient = vssConnection.Result.GetClient<ADORestHttpClient>();
+            AdoRestHttpClient adoRestHttpClient = vssConnection.Result.GetClient<AdoRestHttpClient>();
             this.client = adoRestHttpClient.getHttpClient();
             this.adoOrgUrl = adoRestHttpClient.getOrganizationUrl();
         }
@@ -30,35 +30,19 @@ namespace ADP.Portal.Core.Ado.Infrastructure
 
 
 
-        public async Task<string> GetUserIdAsync(string projectName, string userName)
+        public async Task<List<AdoSecurityRole>> GetRoleAssignmentAsync(string projectId, string envId)
         {
 
-
-            var uri = adoOrgUrl.Replace("dev.azure.com", "vssps.dev.azure.com") + "/_apis/identities?searchFilter=General&filterValue=[" + projectName + "]\\" + userName + "&queryMembership=None&api-version=7.1-preview.1";
-            try
-            {
-                var response = await client.GetFromJsonAsync<JsonAdoGroupWrapper>(uri);
-                return response?.value?.FirstOrDefault()?.id ?? "";
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Exception {Message}", ex.Message);
-            }
-            return "";
-        }
-
-        public async Task<bool> updateRoleAssignmentAsync(string projectId, string envId)
-        {
             var uri = adoOrgUrl + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
             List<AdoSecurityRole> adoSecurityRoleList = new();
 
             var roleDetails = await client.GetFromJsonAsync<JsonAdoSecurityRoleWrapper>(uri);
             if (roleDetails != null && roleDetails.count > 0 && roleDetails.value != null)
             {
-                foreach (var roleObj in roleDetails.value)
+                foreach (var identity in roleDetails.value.Select(roleObj => roleObj.identity))
                 {
-                    var identityName = roleObj.identity.displayName.Split('\\').Last();
-                    var id = roleObj.identity.id;
+                    var identityName = identity.displayName.Split('\\').Last();
+                    var id = identity.id;
                     switch (identityName)
                     {
                         case "Project Administrators":
@@ -75,7 +59,13 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     }
                 }
             }
+            return adoSecurityRoleList;
+        }
 
+        public async Task<bool> updateRoleAssignmentAsync(string projectId, string envId, List<AdoSecurityRole> adoSecurityRoleList)
+        {
+
+            var uri = adoOrgUrl + "/_apis/securityroles/scopes/distributedtask.environmentreferencerole/roleassignments/resources/" + projectId + "_" + envId + "?api-version=7.1-preview.1";
             var postRequest = new HttpRequestMessage(HttpMethod.Put, uri)
             {
                 Content = JsonContent.Create(adoSecurityRoleList)

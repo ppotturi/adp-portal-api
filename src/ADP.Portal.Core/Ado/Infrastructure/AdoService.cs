@@ -1,4 +1,5 @@
-﻿using ADP.Portal.Core.Ado.Entities;
+﻿using ADP.Portal.Api.Models.Ado;
+using ADP.Portal.Core.Ado.Entities;
 using Mapster;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
@@ -109,7 +110,8 @@ namespace ADP.Portal.Core.Ado.Infrastructure
             foreach (var environmentId in environmentIds)
             {
                 string envId = environmentId.ToString();
-                await adoRestApiService.updateRoleAssignmentAsync(projectId, envId);
+                List<AdoSecurityRole> adoSecurityRoleList = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
+                await adoRestApiService.updateRoleAssignmentAsync(projectId, envId, adoSecurityRoleList);
             }
 
             return environmentIds;

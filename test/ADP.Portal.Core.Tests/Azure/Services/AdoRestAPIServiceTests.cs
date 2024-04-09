@@ -64,53 +64,77 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             Assert.That(restAPIService, Is.Not.Null);
         }
         [Test]
-        public void Validate_AdoGroup_Model()
+        public void Validate_AdoSecurityRole_Model()
         {
             // Arrange
-            const string data = @"{""count"" : 1 , ""value"" : [ { ""id"" : ""454353"", ""providerDisplayName"" : ""testName"", ""ExtensionData"" : ""testvalue"" } ] } ";
+            const string data = @"{""count"" : 1 , ""value"" : [ { ""identity"" : { ""id"" : ""454353"", ""displayName"" : ""testName"", ""uniqueName"" : ""testvalue"" }, ""role"" : { ""name"" : ""testName"" }  } ] } ";
             // Act
-            var jsonAdoGroupWrapper = JsonConvert.DeserializeObject<JsonAdoGroupWrapper>(data);
-            var adoGroup = (jsonAdoGroupWrapper != null && jsonAdoGroupWrapper.value != null) ? jsonAdoGroupWrapper.value[0] : null;
+            var jsonAdoSecurityRoleWrapper = JsonConvert.DeserializeObject<JsonAdoSecurityRoleWrapper>(data);
+            var adoSecurityRoleObj = (jsonAdoSecurityRoleWrapper != null && jsonAdoSecurityRoleWrapper.value != null) ? jsonAdoSecurityRoleWrapper.value[0] : null;
 
             // Assert
-            Assert.That(jsonAdoGroupWrapper, Is.Not.Null);
-            Assert.That(adoGroup, Is.Not.Null);
+            Assert.That(jsonAdoSecurityRoleWrapper, Is.Not.Null);
+            Assert.That(adoSecurityRoleObj, Is.Not.Null);
 
         }
 
         [Test]
-        public async Task GetUserIdAsync_ReturnsUserId_WhenExists()
+        public async Task GetRoleAssignmentAsync_AdministratorTest()
         {
             // Arrange
-            var projectName = "DEFRA-TRADE-PUBLIC";
-            var userName = "Project Administrators";
-            const string data = @"{""count"" : 1 , ""value"" : [ { ""id"" : ""454353"", ""providerDisplayName"" : ""testName"", ""ExtensionData"" : ""testvalue"" } ] } ";
+            string projectId = Guid.NewGuid().ToString();
+            string envId = Guid.NewGuid().ToString();
+            const string data = @"{""count"" : 1 , ""value"" : [ { ""identity"" : { ""id"" : ""454353"", ""displayName"" : ""Project Administrators"", ""uniqueName"" : ""admin"" }, ""role"" : { ""name"" : ""User"" }  } ] } ";
             var message = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(data) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } } };
             httpMessageHandlerMock.MockSend(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>()).Returns(message);
 
             // Act
-            var userid = await adoRestApiService.GetUserIdAsync(projectName, userName);
+            List<AdoSecurityRole> result = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
 
             // Assert
-            Assert.That(userid, Is.EqualTo("454353"));
+            Assert.That(result?.Count, Is.EqualTo(1));
+            Assert.That(result[0].roleName, Is.EqualTo("Administrator"));
+            Assert.That(result[0].userId, Is.EqualTo("454353"));
         }
 
         [Test]
-        public async Task GetUserIdAsync_ReturnsUserId_WhenNotExists()
+        public async Task GetRoleAssignmentAsync_ReaderTest()
         {
             // Arrange
-            var projectName = "DEFRA-TRADE-PUBLIC";
-            var userName = "Project Administrators";
-            const string data = @"{""count"" : 0 , ""value"" : """" } ";
+            string projectId = Guid.NewGuid().ToString();
+            string envId = Guid.NewGuid().ToString();
+            const string data = @"{""count"" : 1 , ""value"" : [ { ""identity"" : { ""id"" : ""1234"", ""displayName"" : ""Project Valid Users"", ""uniqueName"" : ""Project user"" }, ""role"" : { ""name"" : ""User"" }  } ] } ";
             var message = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(data) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } } };
             httpMessageHandlerMock.MockSend(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>()).Returns(message);
 
             // Act
-            var userid = await adoRestApiService.GetUserIdAsync(projectName, userName);
+            List<AdoSecurityRole> result = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
 
             // Assert
-            Assert.That(userid, Is.EqualTo(""));
+            Assert.That(result?.Count, Is.EqualTo(1));
+            Assert.That(result[0].roleName, Is.EqualTo("Reader"));
+            Assert.That(result[0].userId, Is.EqualTo("1234"));
         }
+
+        [Test]
+        public async Task GetRoleAssignmentAsync_ContributorsTest()
+        {
+            // Arrange
+            string projectId = Guid.NewGuid().ToString();
+            string envId = Guid.NewGuid().ToString();
+            const string data = @"{""count"" : 1 , ""value"" : [ { ""identity"" : { ""id"" : ""34564"", ""displayName"" : ""Contributors"", ""uniqueName"" : ""Contributors"" }, ""role"" : { ""name"" : ""Reader"" }  } ] } ";
+            var message = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(data) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } } };
+            httpMessageHandlerMock.MockSend(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>()).Returns(message);
+
+            // Act
+            List<AdoSecurityRole> result = await adoRestApiService.GetRoleAssignmentAsync(projectId, envId);
+
+            // Assert
+            Assert.That(result?.Count, Is.EqualTo(1));
+            Assert.That(result[0].roleName, Is.EqualTo("User"));
+            Assert.That(result[0].userId, Is.EqualTo("34564"));
+        }
+
 
         [Test]
         public async Task postRoleAssignmentAsync_ReturnsSuccess()
@@ -120,9 +144,12 @@ namespace ADP.Portal.Core.Tests.Ado.Services
             string envId = Guid.NewGuid().ToString();
             var message = new HttpResponseMessage(HttpStatusCode.OK);
             httpMessageHandlerMock.MockSend(Arg.Any<HttpRequestMessage>(), Arg.Any<CancellationToken>()).Returns(message);
-
+            List<AdoSecurityRole> adoSecurityRoleList = new();
+            adoSecurityRoleList.Add(new AdoSecurityRole { roleName = "Administrator", userId = "1" });
+            adoSecurityRoleList.Add(new AdoSecurityRole { roleName = "Reader", userId = "2" });
+            adoSecurityRoleList.Add(new AdoSecurityRole { roleName = "User", userId = "3" });
             // Act
-            var result = await adoRestApiService.updateRoleAssignmentAsync(projectId, envId);
+            var result = await adoRestApiService.updateRoleAssignmentAsync(projectId, envId, adoSecurityRoleList);
 
             // Assert
             Assert.That(result, Is.True);
