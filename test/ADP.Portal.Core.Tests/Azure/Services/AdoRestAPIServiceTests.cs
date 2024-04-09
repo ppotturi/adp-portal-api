@@ -88,11 +88,15 @@ namespace ADP.Portal.Core.Tests.Ado.Services
 
             // Act
             var restAPIService = new AdoRestHttpClient(new Uri(organizationUrl),  new VssCredentials());
-            var restAPIService2 = new AdoRestHttpClient(new Uri(organizationUrl), new VssCredentials(), new VssHttpRequestSettings());            
-
+            var restAPIService2 = new AdoRestHttpClient(new Uri(organizationUrl), new VssCredentials(), new VssHttpRequestSettings());
+            var restAPIService3 = new AdoRestHttpClient(new Uri(organizationUrl), httpMessageHandlerMock, true);
+            
             // Assert
             Assert.That(restAPIService, Is.Not.Null);
+            Assert.That(restAPIService.getHttpClient(), Is.Not.Null);
+            Assert.That(restAPIService.getOrganizationUrl(), Is.Not.Null);
             Assert.That(restAPIService2, Is.Not.Null);
+            Assert.That(restAPIService3, Is.Not.Null);
         }
 
         [Test]
