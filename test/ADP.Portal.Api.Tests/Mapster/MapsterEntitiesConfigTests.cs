@@ -27,7 +27,7 @@ namespace ADP.Portal.Api.Tests.Mapster
             var adoVariableGroup = fixture.Build<AdoVariableGroup>().Create();
 
             // Act
-            servicesMock.EntitiesConfigure();
+            servicesMock.Configure();
             var results = adoVariableGroup.Adapt<VariableGroupParameters>();
 
             // Assert

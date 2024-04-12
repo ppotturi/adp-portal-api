@@ -11,20 +11,20 @@ namespace ADP.Portal.Api.Controllers
     [Route("api/[controller]")]
     [ApiVersion("1")]
     [ApiController]
-    public class FluxConfigController : Controller
+    public class FluxTeamConfigController : Controller
     {
+        private readonly GitRepo teamRepo;
         private readonly IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService;
-        private readonly ILogger<FluxConfigController> logger;
-        private readonly IOptions<TeamGitRepoConfig> teamGitRepoConfig;
-        public readonly IOptions<AzureAdConfig> azureAdConfig;
+        private readonly ILogger<FluxTeamConfigController> logger;
+        private readonly IOptions<AzureAdConfig> azureAdConfig;
         private readonly IOptions<FluxServicesGitRepoConfig> fluxServicesGitRepoConfig;
 
-        public FluxConfigController(IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService, ILogger<FluxConfigController> logger,
+        public FluxTeamConfigController(IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService, ILogger<FluxTeamConfigController> logger,
             IOptions<TeamGitRepoConfig> teamGitRepoConfig, IOptions<AzureAdConfig> azureAdConfig, IOptions<FluxServicesGitRepoConfig> fluxServicesGitRepoConfig)
         {
             this.gitOpsFluxTeamConfigService = gitOpsFluxTeamConfigService;
             this.logger = logger;
-            this.teamGitRepoConfig = teamGitRepoConfig;
+            this.teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
             this.azureAdConfig = azureAdConfig;
             this.fluxServicesGitRepoConfig = fluxServicesGitRepoConfig;
         }
@@ -34,15 +34,13 @@ namespace ADP.Portal.Api.Controllers
         /// </summary>
         /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
         /// <returns></returns>
-        [HttpGet("get/{teamName}", Name = "Get")]
+        [HttpGet("{teamName}", Name = "GetFluxConfigForTeam")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult> GetConfigAsync(string teamName)
         {
-            var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
-
             logger.LogInformation("Reading Flux Config for the Team:'{TeamName}'", teamName);
-            var result = await gitOpsFluxTeamConfigService.GetFluxConfigAsync<FluxTeamConfig>(teamRepo, teamName: teamName);
+            var result = await gitOpsFluxTeamConfigService.GetConfigAsync<FluxTeamConfig>(teamRepo, teamName: teamName);
 
             if (result != null)
             {
@@ -56,45 +54,42 @@ namespace ADP.Portal.Api.Controllers
         /// Create a new Flux configuration file in the GitOps repository for a specific team.
         /// </summary>
         /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
-        /// <param name="createFluxConfigRequest">Required: Details about the Services, Environments & ConfigVariables for the team</param>
+        /// <param name="fluxConfigRequest">Required: Details about the Services, Environments & ConfigVariables for the team</param>
         /// <returns></returns>
-        [HttpPost("create/{teamName}", Name = "Create")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [HttpPost("{teamName}", Name = "CreateFluxConfigForTeam")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> CreateConfigAsync(string teamName, [FromBody] CreateFluxConfigRequest createFluxConfigRequest)
+        public async Task<ActionResult> CreateConfigAsync(string teamName, [FromBody] TeamFluxConfigRequest fluxConfigRequest)
         {
-            var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
-
-            var newTeamConfig = createFluxConfigRequest.Adapt<FluxTeamConfig>();
+            var newTeamConfig = fluxConfigRequest.Adapt<FluxTeamConfig>();
 
             logger.LogInformation("Creating Flux Config for the Team:'{TeamName}'", teamName);
-            var result = await gitOpsFluxTeamConfigService.CreateFluxConfigAsync(teamRepo, teamName, newTeamConfig);
+            var result = await gitOpsFluxTeamConfigService.CreateConfigAsync(teamRepo, teamName, newTeamConfig);
             if (result.Errors.Count > 0)
             {
                 logger.LogError("Error while creating Flux Config for the Team:'{TeamName}'", teamName);
                 return BadRequest(result.Errors);
             }
 
-            return NoContent();
+            return Created();
         }
 
         /// <summary>
         /// Updates the information in the Flux configuration file defined for the team in the GitOps repository.
         /// </summary>
         /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
-        /// <param name="createFluxConfigRequest">Required: Details about the Services, Environments & ConfigVariables for the team</param>
+        /// <param name="fluxConfigRequest">Required: Details about the Services, Environments & ConfigVariables for the team</param>
         /// <returns></returns>
-        [HttpPut("update/{teamName}", Name = "Update")]
+        [HttpPut("{teamName}", Name = "UpdateFluxConfigForTeam")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> UpdateConfigAsync(string teamName, [FromBody] CreateFluxConfigRequest createFluxConfigRequest)
+        public async Task<ActionResult> UpdateConfigAsync(string teamName, [FromBody] TeamFluxConfigRequest fluxConfigRequest)
         {
-            var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
 
-            var newTeamConfig = createFluxConfigRequest.Adapt<FluxTeamConfig>();
+            var newTeamConfig = fluxConfigRequest.Adapt<FluxTeamConfig>();
 
             logger.LogInformation("Updating Flux Config for the Team:'{TeamName}'", teamName);
-            var result = await gitOpsFluxTeamConfigService.UpdateFluxConfigAsync(teamRepo, teamName, newTeamConfig);
+            var result = await gitOpsFluxTeamConfigService.UpdateConfigAsync(teamRepo, teamName, newTeamConfig);
 
             if (!result.IsConfigExists)
             {
@@ -111,23 +106,52 @@ namespace ADP.Portal.Api.Controllers
         }
 
         /// <summary>
+        /// This operation will create a new service in the Flux Config.
+        /// </summary>
+        /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
+        /// <param name="serviceFluxConfigRequest">The request object containing all the necessary information to create a new service in the Flux Config.</param>
+        /// <returns></returns>
+        [HttpPost("{teamName}/services", Name = "CreateServiceFluxConfigForTeam")]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult> CreateServiceAsync(string teamName, [FromBody] ServiceFluxConfigRequest serviceFluxConfigRequest)
+        {
+            var newTeamService = serviceFluxConfigRequest.Adapt<Core.Git.Entities.FluxService>();
+
+            logger.LogInformation("Creating Service in the Flux Config for the Team:'{TeamName}'", teamName);
+
+            var result = await gitOpsFluxTeamConfigService.AddFluxServiceAsync(teamRepo, teamName, newTeamService);
+
+            if (!result.IsConfigExists)
+            {
+                logger.LogWarning("Flux Config not found for the Team:'{TeamName}'", teamName);
+                return BadRequest($"Flux config not found for the team:{teamName}");
+            }
+            if (result.Errors.Count > 0)
+            {
+                logger.LogError("Error while updating Flux config for the Team:'{TeamName}'", teamName);
+                return BadRequest(result.Errors);
+            }
+
+            return Created();
+        }
+
+        /// <summary>
         /// This operation will generate the Flux Manifests based on the configuration defined for the specific team in the GitOps repository.
         /// </summary>
         /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
         /// <param name="serviceName">Optional: Generate manifests only for this service if specified. Default is All services</param>
         /// <returns></returns>
-        [HttpPost("generate/{teamName}/{serviceName?}", Name = "Generate")]
+        [HttpPost("{teamName}/generate", Name = "GenerateFluxConfigForTeam")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> GenerateAsync(string teamName, string? serviceName)
+        public async Task<ActionResult> GenerateAsync(string teamName, [FromQuery] string? serviceName)
         {
-            var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
-
             var fluxServicesRepo = fluxServicesGitRepoConfig.Value.Adapt<GitRepo>();
             var tenantName = azureAdConfig.Value.TenantName;
 
             logger.LogInformation("Generating Flux Manifests for the Team:{TeamName}", teamName);
-            var result = await gitOpsFluxTeamConfigService.GenerateFluxTeamConfigAsync(teamRepo, fluxServicesRepo, tenantName, teamName, serviceName);
+            var result = await gitOpsFluxTeamConfigService.GenerateConfigAsync(teamRepo, fluxServicesRepo, tenantName, teamName, serviceName);
 
             if (!result.IsConfigExists)
             {

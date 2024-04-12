@@ -105,7 +105,7 @@ namespace ADP.Portal.Api
             {
                 return new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
             });
-            builder.Services.EntitiesConfigure();
+            builder.Services.Configure();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();

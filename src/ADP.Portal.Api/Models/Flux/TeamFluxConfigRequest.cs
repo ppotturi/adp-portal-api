@@ -1,6 +1,6 @@
 ﻿namespace ADP.Portal.Api.Models.Flux
 {
-    public class CreateFluxConfigRequest
+    public class TeamFluxConfigRequest
     {
         public required string ProgrammeName { get; set; }
         public required string ServiceCode { get; set; }

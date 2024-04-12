@@ -18,10 +18,10 @@ using NUnit.Framework;
 namespace ADP.Portal.Api.Tests.Controllers
 {
     [TestFixture]
-    public class FluxConfigControllerTests
+    public class FluxTeamConfigControllerTests
     {
-        private readonly FluxConfigController controller;
-        private readonly ILogger<FluxConfigController> loggerMock;
+        private readonly FluxTeamConfigController controller;
+        private readonly ILogger<FluxTeamConfigController> loggerMock;
         private readonly IOptions<TeamGitRepoConfig> teamGitRepoConfigMock;
         private readonly IOptions<AzureAdConfig> azureAdConfigMock;
         private readonly IOptions<FluxServicesGitRepoConfig> fluxServicesGitRepoConfigMock;
@@ -32,17 +32,17 @@ namespace ADP.Portal.Api.Tests.Controllers
         public void SetUp()
         {
             TypeAdapterConfig.GlobalSettings.Scan(Assembly.GetExecutingAssembly());
-            MapsterEntitiesConfig.EntitiesConfigure(Substitute.For<IServiceCollection>());
+            MapsterConfig.Configure(Substitute.For<IServiceCollection>());
         }
 
-        public FluxConfigControllerTests()
+        public FluxTeamConfigControllerTests()
         {
             teamGitRepoConfigMock = Substitute.For<IOptions<TeamGitRepoConfig>>();
             azureAdConfigMock = Substitute.For<IOptions<AzureAdConfig>>();
             fluxServicesGitRepoConfigMock = Substitute.For<IOptions<FluxServicesGitRepoConfig>>();
-            loggerMock = Substitute.For<ILogger<FluxConfigController>>();
+            loggerMock = Substitute.For<ILogger<FluxTeamConfigController>>();
             gitOpsFluxTeamConfigServiceMock = Substitute.For<IGitOpsFluxTeamConfigService>();
-            controller = new FluxConfigController(gitOpsFluxTeamConfigServiceMock, loggerMock, teamGitRepoConfigMock, azureAdConfigMock, fluxServicesGitRepoConfigMock);
+            controller = new FluxTeamConfigController(gitOpsFluxTeamConfigServiceMock, loggerMock, teamGitRepoConfigMock, azureAdConfigMock, fluxServicesGitRepoConfigMock);
             fixture = new Fixture();
         }
 
@@ -53,7 +53,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
             azureAdConfigMock.Value.Returns(fixture.Build<AzureAdConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.GenerateFluxTeamConfigAsync(Arg.Any<GitRepo>(), Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            gitOpsFluxTeamConfigServiceMock.GenerateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(new GenerateFluxConfigResult());
 
             // Act
@@ -71,7 +71,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
             azureAdConfigMock.Value.Returns(fixture.Build<AzureAdConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.GenerateFluxTeamConfigAsync(Arg.Any<GitRepo>(), Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            gitOpsFluxTeamConfigServiceMock.GenerateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(new GenerateFluxConfigResult() { IsConfigExists = false, Errors = ["Flux team config not found"] });
 
             // Act
@@ -95,7 +95,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
             azureAdConfigMock.Value.Returns(fixture.Build<AzureAdConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.GenerateFluxTeamConfigAsync(Arg.Any<GitRepo>(), Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
+            gitOpsFluxTeamConfigServiceMock.GenerateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(new GenerateFluxConfigResult() { Errors = ["Flux team config not found"] });
 
             // Act
@@ -115,10 +115,10 @@ namespace ADP.Portal.Api.Tests.Controllers
         public async Task CreateConfigAsync_Returns_BadRequest()
         {
             // Arrange
-            var request = fixture.Build<CreateFluxConfigRequest>().Create();
+            var request = fixture.Build<TeamFluxConfigRequest>().Create();
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.CreateFluxConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
+            gitOpsFluxTeamConfigServiceMock.CreateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
                 .Returns(new FluxConfigResult() { Errors = ["Flux team config not found"] });
 
             // Act
@@ -135,23 +135,23 @@ namespace ADP.Portal.Api.Tests.Controllers
         }
 
         [Test]
-        public async Task CreateConfigAsync_Returns_Ok()
+        public async Task CreateConfigAsync_Returns_Created()
         {
             // Arrange
-            var request = fixture.Build<CreateFluxConfigRequest>().Create();
+            var request = fixture.Build<TeamFluxConfigRequest>().Create();
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.CreateFluxConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
+            gitOpsFluxTeamConfigServiceMock.CreateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
                 .Returns(new FluxConfigResult());
 
             // Act
             var result = await controller.CreateConfigAsync("teamName", request);
 
             // Assert
-            Assert.That(result, Is.InstanceOf<NoContentResult>());
+            Assert.That(result, Is.InstanceOf<CreatedResult>());
             if (result != null)
             {
-                var results = (NoContentResult)result;
+                var results = (CreatedResult)result;
                 Assert.That(results, Is.Not.Null);
             }
         }
@@ -160,10 +160,10 @@ namespace ADP.Portal.Api.Tests.Controllers
         public async Task UpdateConfigAsync_Returns_BadRequest_When_FileNotFound()
         {
             // Arrange
-            var request = fixture.Build<CreateFluxConfigRequest>().Create();
+            var request = fixture.Build<TeamFluxConfigRequest>().Create();
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.UpdateFluxConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
+            gitOpsFluxTeamConfigServiceMock.UpdateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
                 .Returns(new FluxConfigResult() { IsConfigExists = false });
 
             // Act
@@ -184,10 +184,10 @@ namespace ADP.Portal.Api.Tests.Controllers
         public async Task UpdateConfigAsync_Returns_BadRequest_When_Errors()
         {
             // Arrange
-            var request = fixture.Build<CreateFluxConfigRequest>().Create();
+            var request = fixture.Build<TeamFluxConfigRequest>().Create();
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.UpdateFluxConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
+            gitOpsFluxTeamConfigServiceMock.UpdateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
                 .Returns(new FluxConfigResult() { Errors = ["Flux team config not found"] });
 
             // Act
@@ -207,10 +207,10 @@ namespace ADP.Portal.Api.Tests.Controllers
         public async Task UpdateConfigAsync_Returns_Ok()
         {
             // Arrange
-            var request = fixture.Build<CreateFluxConfigRequest>().Create();
+            var request = fixture.Build<TeamFluxConfigRequest>().Create();
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.UpdateFluxConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
+            gitOpsFluxTeamConfigServiceMock.UpdateConfigAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<FluxTeamConfig>())
                 .Returns(new FluxConfigResult());
 
             // Act
@@ -232,7 +232,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             var fluxTeam = fixture.Build<FluxTeamConfig>().Create();
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.GetFluxConfigAsync<FluxTeamConfig>(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>())
+            gitOpsFluxTeamConfigServiceMock.GetConfigAsync<FluxTeamConfig>(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(fluxTeam);
 
             // Act
@@ -257,7 +257,7 @@ namespace ADP.Portal.Api.Tests.Controllers
             // Arrange
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
-            gitOpsFluxTeamConfigServiceMock.GetFluxConfigAsync<FluxTeamConfig>(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>())
+            gitOpsFluxTeamConfigServiceMock.GetConfigAsync<FluxTeamConfig>(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>())
                 .ReturnsNull();
 
             // Act
@@ -265,6 +265,76 @@ namespace ADP.Portal.Api.Tests.Controllers
 
             // Assert
             Assert.That(result, Is.InstanceOf<NotFoundResult>());
+        }
+
+
+        [Test]
+        public async Task CreateServiceAsync_Returns_BadRequest_When_Errors()
+        {
+            // Arrange
+            var request = fixture.Build<ServiceFluxConfigRequest>().Create();
+            teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
+            fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
+            gitOpsFluxTeamConfigServiceMock.AddFluxServiceAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<Core.Git.Entities.FluxService>())
+                .Returns(new FluxConfigResult() { Errors = ["Flux team config not found"] });
+
+            // Act
+            var result = await controller.CreateServiceAsync("teamName", request);
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+            if (result != null)
+            {
+                var badResults = (BadRequestObjectResult)result;
+                Assert.That(badResults, Is.Not.Null);
+                Assert.That(badResults.StatusCode, Is.EqualTo(400));
+            }
+        }
+
+        [Test]
+        public async Task CreateServiceAsync_Returns_Created()
+        {
+            // Arrange
+            var request = fixture.Build<ServiceFluxConfigRequest>().Create();
+            teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
+            fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
+            gitOpsFluxTeamConfigServiceMock.AddFluxServiceAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<Core.Git.Entities.FluxService>())
+                .Returns(new FluxConfigResult());
+
+            // Act
+            var result = await controller.CreateServiceAsync("teamName", request);
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<CreatedResult>());
+            if (result != null)
+            {
+                var results = (CreatedResult)result;
+                Assert.That(results, Is.Not.Null);
+            }
+        }
+
+        [Test]
+        public async Task CreateServiceAsync_Returns_BadRequest_When_TeamFlux_Not_Exists()
+        {
+            // Arrange
+            var request = fixture.Build<ServiceFluxConfigRequest>().Create();
+            teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
+            fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
+            gitOpsFluxTeamConfigServiceMock.AddFluxServiceAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<Core.Git.Entities.FluxService>())
+                .Returns(new FluxConfigResult() { IsConfigExists = false });
+
+            // Act
+            var result = await controller.CreateServiceAsync("teamName", request);
+
+            // Assert
+            Assert.That(result, Is.InstanceOf<BadRequestObjectResult>());
+            if (result != null)
+            {
+                var badResults = (BadRequestObjectResult)result;
+                Assert.That(badResults, Is.Not.Null);
+                Assert.That(badResults.StatusCode, Is.EqualTo(400));
+                Assert.That(badResults.Value, Is.EqualTo($"Flux config not found for the team:teamName"));
+            }
         }
     }
 }
