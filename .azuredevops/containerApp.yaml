@@ -68,7 +68,7 @@ properties:
           - name: AzureAd__SpObjectId
             secretRef: sp-object-id 
           - name: TeamGitRepo__Name
-            value: "adp-team-onboard"
+            value: "adp-teams-config"
           - name: TeamGitRepo__BranchName
             value: "main"
           - name: TeamGitRepo__Organisation
