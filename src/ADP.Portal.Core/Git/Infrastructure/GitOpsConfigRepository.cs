@@ -142,7 +142,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             {
                 var baselineBlob = new NewBlob
                 {
-                    Content = serializer.Serialize(treeContent.Value),
+                    Content = serializer.Serialize(treeContent.Value).Replace(FluxConstants.TEMPLATE_IMAGEPOLICY_KEY, FluxConstants.TEMPLATE_IMAGEPOLICY_KEY_VALUE),
                     Encoding = EncodingType.Utf8
                 };
 

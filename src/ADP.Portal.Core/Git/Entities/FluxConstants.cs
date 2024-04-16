@@ -17,6 +17,8 @@
         public const string INGRESS_KEY = "ingress";
         public const string PREDEPLOY_KEY = "pre-deploy";
         public const string INFRA_KEY = "infra";
+        public const string POSTGRESRESOURCEGROUPNAME_KEY = "postgresResourceGroupName";
+        public const string POSTGRESSERVERNAME_KEY = "postgresServerName";
 
         public const string PROGRAMME_FOLDER = "flux/templates/programme";
         public const string SERVICE_FOLDER = "flux/templates/programme/team/service";
@@ -25,7 +27,8 @@
 
         public const string PRE_DEPLOY_KUSTOMIZE_FILE = "flux/templates/programme/team/service/pre-deploy-kustomize.yaml";
         public const string TEAM_ENV_KUSTOMIZATION_FILE = "flux/templates/programme/team/environment/kustomization.yaml";
-        public const string TEAM_SERVICE_ENV_PATCH_FILE = "{0}/{1}/{2}/deploy/{3}/patch.yaml";
+        public const string TEAM_SERVICE_DEPLOY_ENV_PATCH_FILE = "{0}/{1}/{2}/deploy/{3}/patch.yaml";
+        public const string TEAM_SERVICE_INFRA_ENV_PATCH_FILE = "{0}/{1}/{2}/infra/{3}/patch.yaml";
 
         public const string TEMPLATE_VAR_SERVICE_NAME = "SERVICE_NAME";
         public const string TEMPLATE_VAR_ENVIRONMENT = "ENVIRONMENT";
@@ -35,6 +38,16 @@
         public const string TEMPLATE_VAR_TEAM_NAME = "TEAM_NAME";
         public const string TEMPLATE_VAR_SERVICE_CODE = "SERVICE_CODE";
         public const string TEMPLATE_VAR_VERSION = "VERSION";
-        public const string TEMPLATE_VAR_DEFAULT_VERSION = "0.1.0";
+        public const string TEMPLATE_VAR_VERSION_TAG = "VERSION_TAG";
+        public const string TEMPLATE_VAR_MIGRATION_VERSION = "MIGRATION_VERSION";
+        public const string TEMPLATE_VAR_MIGRATION_VERSION_TAG = "MIGRATION_VERSION_TAG";
+        public const string TEMPLATE_VAR_PS_EXEC_VERSION = "PS_EXEC_VERSION";
+        public const string TEMPLATE_VAR_DEFAULT_VERSION = "__ENVIRONMENT__adpinfcr__ENV_INSTANCE__401.azurecr.io/image/__SERVICE_NAME__:0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-__ENVIRONMENT__-0__ENV_INSTANCE__\"}";
+        public const string TEMPLATE_VAR_DEFAULT_VERSION_TAG = "0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-__ENVIRONMENT__-0__ENV_INSTANCE__:tag\"}";
+        public const string TEMPLATE_VAR_DEFAULT_MIGRATION_VERSION = "__SSV_PLATFORM_ACR__.azurecr.io/image/__SERVICE_NAME__-dbmigration:0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-dbmigration-__ENVIRONMENT__-0__ENV_INSTANCE__\"}";
+        public const string TEMPLATE_VAR_DEFAULT_MIGRATION_VERSION_TAG = "0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-dbmigration-__ENVIRONMENT__-0__ENV_INSTANCE__:tag\"}";
+        public const string TEMPLATE_VAR_PS_EXEC_DEFAULT_VERSION = "__SSV_PLATFORM_ACR__.azurecr.io/image/powershell-executor:1#{\"$imagepolicy\":\"flux-config:powershell-executor-__ENVIRONMENT__-0__ENV_INSTANCE__\"}";
+        public const string TEMPLATE_IMAGEPOLICY_KEY = "#{\"$imagepolicy\":\"flux-config";
+        public const string TEMPLATE_IMAGEPOLICY_KEY_VALUE = " # {\"$imagepolicy\": \"flux-config";
     }
 }

@@ -520,5 +520,71 @@ namespace ADP.Portal.Core.Tests.Git.Services
             Assert.That(result.Errors.Count, Is.EqualTo(1));
             Assert.That(result.Errors[0], Is.EqualTo($"Failed to save the config for the team: {teamName}"));
         }
+
+        [Test]
+        public async Task GenerateFluxTeamConfig_BackendService_UpdatePatchFiles()
+        {
+            // Arrange
+            var gitRepo = fixture.Build<GitRepo>().Create();
+            var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
+            string serviceName = "service1";
+
+            var envList = fixture.Build<FluxEnvironment>().CreateMany(2).ToList();
+            var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).With(e => e.Environments, envList).With(x => x.Type, FluxServiceType.Backend)
+                                    .With(x => x.ConfigVariables, [new FluxConfig { Key = FluxConstants.POSTGRES_DB_KEY, Value = "db" }]).CreateMany(1).ToList();
+            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
+
+            var fluxTenantConfig = fixture.Build<FluxTenant>().With(x => x.Environments, envList).Create();
+            var serviceTemplates = fixture.Build<KeyValuePair<string, Dictionary<object, object>>>().CreateMany(1)
+                .Select(x => new KeyValuePair<string, Dictionary<object, object>>($"flux/templates/programme/team/service/deploy/{envList[0].Name[..3]}/0{envList[0].Name[3..]}/patch.yaml", x.Value));
+
+            gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
+            gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
+            gitOpsConfigRepository.GetAllFilesAsync(gitRepo, FluxConstants.GIT_REPO_TEMPLATE_PATH).Returns(serviceTemplates);
+            gitOpsConfigRepository.GetBranchAsync(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns((Reference?)default);
+            gitOpsConfigRepository.CreateCommitAsync(gitRepoFluxServices, Arg.Any<Dictionary<string, Dictionary<object, object>>>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(fixture.Build<Commit>().Create());
+
+            // Act
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            await gitOpsConfigRepository.Received().CreateBranchAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
+            await gitOpsConfigRepository.Received().CreatePullRequestAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
+        }
+
+        [Test]
+        public async Task GenerateFluxTeamConfig_FrontendService_UpdatePatchFiles()
+        {
+            // Arrange
+            var gitRepo = fixture.Build<GitRepo>().Create();
+            var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
+            string serviceName = "service1";
+
+            var envList = fixture.Build<FluxEnvironment>().With(x=> x.ConfigVariables, default(List<FluxConfig>)).CreateMany(1).ToList();
+            var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).With(e => e.Environments, envList).With(x => x.Type, FluxServiceType.Frontend)
+                                    .With(x => x.ConfigVariables, [new FluxConfig { Key = FluxConstants.POSTGRES_DB_KEY, Value = "db" }]).CreateMany(1).ToList();
+            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
+
+            var fluxTenantConfig = fixture.Build<FluxTenant>().With(x => x.Environments, envList).Create();
+            var serviceTemplates = fixture.Build<KeyValuePair<string, Dictionary<object, object>>>().CreateMany(1)
+                .Select(x => new KeyValuePair<string, Dictionary<object, object>>($"flux/templates/programme/team/service/infra/{envList[0].Name[..3]}/0{envList[0].Name[3..]}/patch.yaml", x.Value));
+
+            gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
+            gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
+            gitOpsConfigRepository.GetAllFilesAsync(gitRepo, FluxConstants.GIT_REPO_TEMPLATE_PATH).Returns(serviceTemplates);
+            gitOpsConfigRepository.GetBranchAsync(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns((Reference?)default);
+            gitOpsConfigRepository.CreateCommitAsync(gitRepoFluxServices, Arg.Any<Dictionary<string, Dictionary<object, object>>>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(fixture.Build<Commit>().Create());
+
+            // Act
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            await gitOpsConfigRepository.Received().CreateBranchAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
+            await gitOpsConfigRepository.Received().CreatePullRequestAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
+        }
     }
 }

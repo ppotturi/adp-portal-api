@@ -23,13 +23,13 @@ PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
 # Flux Config Controller
 ###
 @serviceName = ffc-demo-claim-service
-POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/generate/ffc-demo/{{serviceName}}
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/ffc-demo/generate?serviceName={{serviceName}}
 
 ###
-GET {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/get/ffc-demo
+GET {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/get/ffc-demo
 
 ###
-POST {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/create/ffc-find
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/create/ffc-find
 Content-Type: application/json
 Api-Version: 1.0
 
@@ -56,7 +56,7 @@ Api-Version: 1.0
 }
 
 ###
-PUT {{ADP.Portal.Api_HostAddress}}/api/fluxconfig/update/ffc-find
+PUT {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/update/ffc-find
 Content-Type: application/json
 
 {
