@@ -425,7 +425,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(default(FluxTeamConfig));
-            
+
             // Act
             var result = await service.UpdateConfigAsync(gitRepo, "team1", fluxTeamConfig);
 
@@ -483,7 +483,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             string teamName = "team1";
             var fluxServices = fixture.Build<FluxService>().CreateMany(1).ToList();
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>()
-                .With(c=> c.Services, fluxServices)
+                .With(c => c.Services, fluxServices)
                 .Create();
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
@@ -562,7 +562,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
             string serviceName = "service1";
 
-            var envList = fixture.Build<FluxEnvironment>().With(x=> x.ConfigVariables, default(List<FluxConfig>)).CreateMany(1).ToList();
+            var envList = fixture.Build<FluxEnvironment>().With(x => x.ConfigVariables, default(List<FluxConfig>)).CreateMany(1).ToList();
             var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).With(e => e.Environments, envList).With(x => x.Type, FluxServiceType.Frontend)
                                     .With(x => x.ConfigVariables, [new FluxConfig { Key = FluxConstants.POSTGRES_DB_KEY, Value = "db" }]).CreateMany(1).ToList();
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
