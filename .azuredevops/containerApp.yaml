@@ -67,6 +67,8 @@ properties:
             secretRef: sp-client-secret             
           - name: AzureAd__SpObjectId
             secretRef: sp-object-id 
+          - name: AzureAd__TenantName
+            value: {{tenantName}} 
           - name: TeamGitRepo__Name
             value: "adp-teams-config"
           - name: TeamGitRepo__BranchName
