@@ -11,8 +11,8 @@ using ADP.Portal.Core.Azure.Services;
 using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Git.Jwt;
 using ADP.Portal.Core.Git.Services;
+using Asp.Versioning;
 using Azure.Identity;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
 using Microsoft.OpenApi.Models;
@@ -116,7 +116,7 @@ namespace ADP.Portal.Api
             });
             builder.Services.AddApiVersioning(config =>
             {
-                config.DefaultApiVersion = new Microsoft.AspNetCore.Mvc.ApiVersion(1, 0);
+                config.DefaultApiVersion = new ApiVersion(1, 0);
                 config.AssumeDefaultVersionWhenUnspecified = true;
                 config.ReportApiVersions = true;
                 config.ApiVersionReader = new HeaderApiVersionReader("api-version");

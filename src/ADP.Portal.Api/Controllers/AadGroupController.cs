@@ -2,6 +2,7 @@
 using ADP.Portal.Api.Models.Group;
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Services;
+using Asp.Versioning;
 using Mapster;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -32,7 +33,7 @@ namespace ADP.Portal.Api.Controllers
         /// </summary>
         /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
         /// <returns></returns>
-        [HttpGet("get/{teamName}")]
+        [HttpGet("{teamName}/groups-config", Name = "GetGroupsConfigForTeam")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult> GetGroupsConfigAsync(string teamName)
         {
@@ -44,14 +45,13 @@ namespace ADP.Portal.Api.Controllers
 
             return Ok(groups);
         }
-
         /// <summary>
         /// Create a new Groups configuration for the specified Team in the GitOps repository.
         /// </summary>
         /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
         /// <param name="createGroupsConfigRequest">Required: Collection of the users to set up as members in the Admin Group</param>
         /// <returns></returns>
-        [HttpPost("create/{teamName}")]
+        [HttpPost("{teamName}/groups-config", Name = "CreateGroupsConfigForTeam")]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult> CreateGroupsConfigAsync(string teamName, [FromBody] CreateGroupsConfigRequest createGroupsConfigRequest)
@@ -85,10 +85,10 @@ namespace ADP.Portal.Api.Controllers
         /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
         /// <param name="groupType">Optional: Type of groups to sync i.e. UserGroup/AccessGroup/OpenVpnGroup</param>
         /// <returns></returns>
-        [HttpPut("sync/{teamName}/{groupType?}")]
+        [HttpPut("{teamName}/sync", Name = "SyncGroupsForTeam")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult> SyncGroupsAsync(string teamName, string? groupType = null)
+        public async Task<ActionResult> SyncGroupsAsync(string teamName, [FromQuery] string? groupType = null)
         {
             var isValidType = Enum.TryParse<SyncGroupType>(groupType, true, out var syncGroupTypeEnum);
             if (groupType != null && !isValidType)

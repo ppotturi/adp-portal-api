@@ -8,7 +8,7 @@ properties:
   managedEnvironmentId: {{managedEnvironmentId}}
   configuration:
     ingress:
-      external: false
+      external: true
       allowInsecure: false
       targetPort: 8080
       traffic:
