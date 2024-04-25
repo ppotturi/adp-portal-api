@@ -1,4 +1,3 @@
-
 using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Mapster;
 using ADP.Portal.Api.Providers;
@@ -8,6 +7,7 @@ using ADP.Portal.Core.Ado.Infrastructure;
 using ADP.Portal.Core.Ado.Services;
 using ADP.Portal.Core.Azure.Infrastructure;
 using ADP.Portal.Core.Azure.Services;
+using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Git.Jwt;
 using ADP.Portal.Core.Git.Services;
@@ -57,6 +57,7 @@ namespace ADP.Portal.Api
             builder.Services.Configure<AdpAdoProjectConfig>(builder.Configuration.GetSection("AdpAdoProject"));
             builder.Services.Configure<AzureAdConfig>(builder.Configuration.GetSection("AzureAd"));
             builder.Services.Configure<GitHubAppAuthConfig>(builder.Configuration.GetSection("GitHubAppAuth"));
+            builder.Services.Configure<GitHubOptions>(builder.Configuration.GetSection("TeamGitRepo"));
             builder.Services.Configure<TeamGitRepoConfig>(builder.Configuration.GetSection("TeamGitRepo"));
             builder.Services.Configure<FluxServicesGitRepoConfig>(builder.Configuration.GetSection("FluxServicesGitRepo"));
             builder.Services.AddScoped<IAzureCredential>(provider =>
@@ -74,7 +75,7 @@ namespace ADP.Portal.Api
 
             builder.Services.AddScoped<IAdoRestApiService, AdoRestApiService>();
             builder.Services.AddScoped<IAdoProjectService, AdoProjectService>();
-            builder.Services.AddScoped<IAdoService, AdoService>();      
+            builder.Services.AddScoped<IAdoService, AdoService>();
             builder.Services.AddScoped<IGroupService, GroupService>();
             builder.Services.AddScoped<IAzureAadGroupService, AzureAadGroupService>();
             builder.Services.AddScoped(provider =>
@@ -85,7 +86,6 @@ namespace ADP.Portal.Api
                 var graphBaseUrl = "https://graph.microsoft.com/v1.0";
 
                 return new GraphServiceClient(clientSecretCredential, graphApiDefaultScope, graphBaseUrl);
-
             });
 
             builder.Services.AddScoped<IGitHubClient>(provider =>
@@ -94,6 +94,7 @@ namespace ADP.Portal.Api
                 return GetGitHubClient(gitHubAppAuth);
             });
 
+            builder.Services.AddScoped<IGitHubService, GitHubService>();
             builder.Services.AddScoped<IGitOpsConfigRepository, GitOpsConfigRepository>();
             builder.Services.AddScoped<IGitOpsGroupsConfigService, GitOpsGroupsConfigService>();
             builder.Services.AddScoped<IGitOpsFluxTeamConfigService, GitOpsFluxTeamConfigService>();
