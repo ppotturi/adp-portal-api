@@ -119,17 +119,46 @@ public class FluxTeamConfigController : Controller
         var newTeamService = serviceFluxConfigRequest.Adapt<Core.Git.Entities.FluxService>();
 
         logger.LogInformation("Creating Service in the Flux Config for the Team:'{TeamName}'", teamName);
-
-        var result = await gitOpsFluxTeamConfigService.AddFluxServiceAsync(teamRepo, teamName, newTeamService);
+        var result = await gitOpsFluxTeamConfigService.AddServiceAsync(teamRepo, teamName, newTeamService);
 
         if (!result.IsConfigExists)
         {
-            logger.LogWarning("Flux Config not found for the Team:'{TeamName}'", teamName);
             return BadRequest($"Flux config not found for the team:{teamName}");
         }
         if (result.Errors.Count > 0)
         {
             logger.LogError("Error while updating Flux config for the Team:'{TeamName}'", teamName);
+            return BadRequest(result.Errors);
+        }
+
+        return Created();
+    }
+
+    /// <summary>
+    /// Add or update a service environment in the Flux configuration file defined for the team in the GitOps repository.
+    /// </summary>
+    /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
+    /// <param name="serviceName">Required: Name of the Service</param>
+    /// <param name="environmentRequest">Required: Details about the Environment for the service</param>
+    /// <returns></returns>
+    [HttpPost("{teamName}/services/{serviceName}/environments", Name = "AddEnvironmentForTeamService")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> AddServiceEnvironmentAsync(string teamName, string serviceName, [FromBody] string environmentRequest)
+    {
+        var newEnvironment = new FluxEnvironment { Name = environmentRequest };
+
+        logger.LogInformation("Adding Environment for the Service:'{ServiceName}' in the Team:'{TeamName}'", serviceName, teamName);
+        var result = await gitOpsFluxTeamConfigService.AddServiceEnvironmentAsync(teamRepo, teamName, serviceName, newEnvironment);
+
+        if (!result.IsConfigExists)
+        {
+            return BadRequest(result.Errors[0]);
+        }
+
+        if (result.Errors.Count > 0)
+        {
+            logger.LogError("Error while adding Environment for the Service:'{ServiceName}' in the Team:'{TeamName}'", serviceName, teamName);
             return BadRequest(result.Errors);
         }
 
@@ -155,7 +184,6 @@ public class FluxTeamConfigController : Controller
 
         if (!result.IsConfigExists)
         {
-            logger.LogWarning("Flux Config not found for the Team:'{TeamName}'", teamName);
             return BadRequest($"Flux generator config not found for the team:{teamName}");
         }
         if (result.Errors.Count > 0)

@@ -12,6 +12,8 @@ namespace ADP.Portal.Core.Git.Services
 
         Task<GenerateFluxConfigResult> GenerateConfigAsync(GitRepo gitRepo, GitRepo gitRepoFluxServices, string tenantName, string teamName, string? serviceName = null);
 
-        Task<FluxConfigResult> AddFluxServiceAsync(GitRepo gitRepo, string teamName, FluxService fluxService);
+        Task<FluxConfigResult> AddServiceAsync(GitRepo gitRepo, string teamName, FluxService fluxService);
+
+        Task<FluxConfigResult> AddServiceEnvironmentAsync(GitRepo gitRepo, string teamName, string serviceName, FluxEnvironment newEnvironment);
     }
 }

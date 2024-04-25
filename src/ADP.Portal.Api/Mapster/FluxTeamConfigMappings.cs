@@ -1,4 +1,5 @@
 ﻿using ADP.Portal.Api.Models.Flux;
+
 using Mapster;
 
 namespace ADP.Portal.Api.Mapster

@@ -60,6 +60,7 @@ public class AadGroupController : ControllerBase
         var teamRepo = teamGitRepoConfig.Value.Adapt<GitRepo>();
         var tenantName = azureAdConfig.Value.TenantName;
         var ownerId = azureAdConfig.Value.SpObjectId;
+        teamName = teamName.ToLower();
 
         logger.LogInformation("Creating Groups Config for the Team:'{TeamName}'", teamName);
         var result = await gitOpsConfigService.CreateGroupsConfigAsync(tenantName, teamName, teamRepo, createGroupsConfigRequest.Members);
