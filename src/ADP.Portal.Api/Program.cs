@@ -100,11 +100,17 @@ namespace ADP.Portal.Api
             builder.Services.AddScoped<IGitOpsFluxTeamConfigService, GitOpsFluxTeamConfigService>();
             builder.Services.AddSingleton(provider =>
             {
-                return new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+                return new DeserializerBuilder()
+                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                    .WithAttemptingUnquotedStringTypeDeserialization()
+                    .Build();
             });
             builder.Services.AddSingleton(provider =>
             {
-                return new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+                return new SerializerBuilder()
+                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                    .WithQuotingNecessaryStrings()
+                    .Build();
             });
             builder.Services.Configure();
 

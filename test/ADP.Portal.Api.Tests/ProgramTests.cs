@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Graph;
 using NUnit.Framework;
+using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Api.Tests
 {
@@ -113,6 +114,50 @@ namespace ADP.Portal.Api.Tests
 
             // Assert
             Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public void TestSerializerResolution()
+        {
+            // Arrange
+            var data = new Dictionary<object, object>
+            {
+                { "IsValid", true },
+                { "Counter", 5 }
+            };
+            var builder = WebApplication.CreateBuilder();
+            Program.ConfigureApp(builder);
+
+            // Act
+            var app = builder.Build();
+            app.MapControllers();
+            var serializer = app.Services.GetService<ISerializer>();
+            var result = serializer?.Serialize(data);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+        }
+
+        [Test]
+        public void TestDeserializerResolution()
+        {
+            // Arrange
+            var data = new StringReader(@"
+                    isValid: 'true'
+                    counter: 5
+                ");
+            var builder = WebApplication.CreateBuilder();
+            Program.ConfigureApp(builder);
+
+            // Act
+            var app = builder.Build();
+            app.MapControllers();
+            var deserializer = app.Services.GetService<IDeserializer>();
+            var result = deserializer?.Deserialize(data);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            Assert.That(result?.GetType(), Is.EqualTo(typeof(Dictionary<object, object>)));
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using ADP.Portal.Core.Git.Entities;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
 using Octokit;
 using YamlDotNet.Serialization;
@@ -54,6 +55,43 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return await GetAllFilesContentsAsync(gitRepo, path);
         }
 
+        public async Task<bool> CreatePullRequestAsync(GitRepo gitRepo, string branchName, string message)
+        {
+            var repository = await gitHubClient.Repository.Get(gitRepo.Organisation, gitRepo.Name);
+
+            var pullRequest = new NewPullRequest(message, branchName, gitRepo.BranchName);
+            var createdPullRequest = await gitHubClient.PullRequest.Create(repository.Owner.Login, repository.Name, pullRequest);
+
+            return createdPullRequest != null;
+        }
+
+        public async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
+        {
+            var repositoryItems = await GetRepositoryFiles(gitRepo, path);
+
+            var fileTasks = repositoryItems
+                .Where(item => item.Type == ContentType.File)
+                .Select(async item =>
+                {
+                    var file = await GetRepositoryFiles(gitRepo, item.Path);
+                    var result = deserializer.Deserialize<Dictionary<object, object>>(file[0].Content);
+                    var list = new List<KeyValuePair<string, Dictionary<object, object>>>() { (new KeyValuePair<string, Dictionary<object, object>>(item.Path, result)) };
+                    return list.AsEnumerable();
+                });
+
+            var dirTasks = repositoryItems
+                .Where(item => item.Type == ContentType.Dir)
+                .Select(async item =>
+                {
+                    return await GetAllFilesContentsAsync(gitRepo, item.Path);
+                });
+
+            var allTasks = fileTasks.Concat(dirTasks);
+            var allResults = await Task.WhenAll(allTasks);
+
+            return allResults.SelectMany(x => x);
+        }
+
         public async Task<Reference?> GetBranchAsync(GitRepo gitRepo, string branchName)
         {
             try
@@ -93,43 +131,6 @@ namespace ADP.Portal.Core.Git.Infrastructure
                 return featureBranchCommit;
             }
             return default;
-        }
-
-        public async Task<bool> CreatePullRequestAsync(GitRepo gitRepo, string branchName, string message)
-        {
-            var repository = await gitHubClient.Repository.Get(gitRepo.Organisation, gitRepo.Name);
-
-            var pullRequest = new NewPullRequest(message, branchName, gitRepo.BranchName);
-            var createdPullRequest = await gitHubClient.PullRequest.Create(repository.Owner.Login, repository.Name, pullRequest);
-
-            return createdPullRequest != null;
-        }
-
-        private async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
-        {
-            var repositoryItems = await GetRepositoryFiles(gitRepo, path);
-
-            var fileTasks = repositoryItems
-                .Where(item => item.Type == ContentType.File)
-                .Select(async item =>
-                {
-                    var file = await GetRepositoryFiles(gitRepo, item.Path);
-                    var result = deserializer.Deserialize<Dictionary<object, object>>(file[0].Content);
-                    var list = new List<KeyValuePair<string, Dictionary<object, object>>>() { (new KeyValuePair<string, Dictionary<object, object>>(item.Path, result)) };
-                    return list.AsEnumerable();
-                });
-
-            var dirTasks = repositoryItems
-                .Where(item => item.Type == ContentType.Dir)
-                .Select(async item =>
-                {
-                    return await GetAllFilesContentsAsync(gitRepo, item.Path);
-                });
-
-            var allTasks = fileTasks.Concat(dirTasks);
-            var allResults = await Task.WhenAll(allTasks);
-
-            return allResults.SelectMany(x => x);
         }
 
         private async Task<TreeResponse?> CreateTree(IGitHubClient client, Repository repository, Dictionary<string, Dictionary<object, object>> treeContents, string parentSha)

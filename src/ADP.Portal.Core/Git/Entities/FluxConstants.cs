@@ -27,6 +27,7 @@
 
         public const string PRE_DEPLOY_KUSTOMIZE_FILE = "flux/templates/programme/team/service/pre-deploy-kustomize.yaml";
         public const string TEAM_ENV_KUSTOMIZATION_FILE = "flux/templates/programme/team/environment/kustomization.yaml";
+        public const string TEAM_SERVICE_KUSTOMIZATION_FILE = "flux/templates/programme/team/service/kustomization.yaml";
         public const string TEAM_SERVICE_DEPLOY_ENV_PATCH_FILE = "{0}/{1}/{2}/deploy/{3}/patch.yaml";
         public const string TEAM_SERVICE_INFRA_ENV_PATCH_FILE = "{0}/{1}/{2}/infra/{3}/patch.yaml";
 

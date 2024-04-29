@@ -17,4 +17,12 @@ namespace ADP.Portal.Core.Git.Entities
         Frontend,
         Backend
     }
+
+    public static class FluxServiceExtensions
+    {
+        public static bool HasDatastore(this FluxService service)
+        {
+            return service.ConfigVariables.Exists(token => token.Key.Equals(FluxConstants.POSTGRES_DB_KEY));
+        }
+    }
 }

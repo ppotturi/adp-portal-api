@@ -1,15 +1,13 @@
-﻿using ADP.Portal.Core.Git.Entities;
+﻿using System.Net;
+using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Git.Services;
 using AutoFixture;
 using Microsoft.Extensions.Logging;
-using Microsoft.TeamFoundation.SourceControl.WebApi;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using Octokit;
-using System.Net;
-using YamlDotNet.Core;
 using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Tests.Git.Services
@@ -31,20 +29,22 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task GenerateFluxTeamConfig_ShouldReturn_ConfigNotExists_WhenTeamConfig_NotFound()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_ShouldReturn_ConfigNotExists_WhenTeamConfig_NotFound(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
             string tenantName = "tenant1";
             string teamName = "team1";
-            string serviceName = "service1";
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>())
                 .Throws(new NotFoundException("Config not found", HttpStatusCode.NotFound));
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -52,20 +52,22 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task GenerateFluxTeamConfig_ShouldReturn_ConfigNotExists_WhenTenantConfig_NotFound()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_ShouldReturn_ConfigNotExists_WhenTenantConfig_NotFound(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
             string tenantName = "tenant1";
             string teamName = "team1";
-            string serviceName = "service1";
 
             gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>())
                 .Throws(new NotFoundException("Config not found", HttpStatusCode.NotFound));
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -73,14 +75,16 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task GenerateFluxTeamConfig_GetFluxTemplates_WhenConfig_Found()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_GetFluxTemplates_WhenConfig_Found(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
             string tenantName = "tenant1";
             string teamName = "team1";
-            string serviceName = "service1";
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
             var fluxTenantConfig = fixture.Build<FluxTenant>().Create();
 
@@ -88,7 +92,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -97,14 +101,16 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task GenerateFluxTeamConfig_DoNotRegerate_WhenService_NotFound()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_DoNotRegerate_WhenService_NotFound(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
             string tenantName = "tenant1";
             string teamName = "team1";
-            string serviceName = "service1";
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
             var fluxTenantConfig = fixture.Build<FluxTenant>().Create();
 
@@ -113,7 +119,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             gitOpsConfigRepository.GetAllFilesAsync(gitRepo, FluxConstants.GIT_REPO_TEMPLATE_PATH).Returns([]);
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, tenantName, teamName, serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -149,12 +155,14 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task GenerateFluxTeamConfig_RegerateConfig_Create_BranchPullRequest_OneServices_WhenTemplates_Found()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_RegerateConfig_Create_BranchPullRequest_OneServices_WhenTemplates_Found(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
-            string serviceName = "service1";
             var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).CreateMany(1).ToList();
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
 
@@ -168,7 +176,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             gitOpsConfigRepository.CreateCommitAsync(gitRepoFluxServices, Arg.Any<Dictionary<string, Dictionary<object, object>>>(), Arg.Any<string>(), Arg.Any<string>()).Returns(fixture.Build<Commit>().Create());
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -201,12 +209,14 @@ namespace ADP.Portal.Core.Tests.Git.Services
         // Service Env in list of Tenant Env
 
         [Test]
-        public async Task GenerateFluxTeamConfig_ServiceAndEnvironmentTemplates_Found()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_ServiceAndEnvironmentTemplates_Found(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
-            string serviceName = "service1";
 
             var envList = fixture.Build<FluxEnvironment>().CreateMany(2).ToList();
             var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).With(e => e.Environments, envList).CreateMany(1)
@@ -230,7 +240,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
                 .Returns(commit);
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -496,12 +506,15 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task GenerateFluxTeamConfig_BackendService_UpdatePatchFiles()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_BackendService_UpdatePatchFiles(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
-            string serviceName = "service1";
+
 
             var envList = fixture.Build<FluxEnvironment>().CreateMany(2).ToList();
             var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).With(e => e.Environments, envList).With(x => x.Type, FluxServiceType.Backend)
@@ -520,7 +533,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
                 .Returns(fixture.Build<Commit>().Create());
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);
@@ -529,12 +542,15 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task GenerateFluxTeamConfig_FrontendService_UpdatePatchFiles()
+        [TestCase("service1", "dev")]
+        [TestCase("service1", null)]
+        [TestCase(null, null)]
+        public async Task GenerateFluxTeamConfig_FrontendService_UpdatePatchFiles(string? serviceName, string? environment)
         {
             // Arrange
             var gitRepo = fixture.Build<GitRepo>().Create();
             var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
-            string serviceName = "service1";
+
 
             var envList = fixture.Build<FluxEnvironment>().With(x => x.ConfigVariables, default(List<FluxConfig>)).CreateMany(1).ToList();
             var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).With(e => e.Environments, envList).With(x => x.Type, FluxServiceType.Frontend)
@@ -553,7 +569,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
                 .Returns(fixture.Build<Commit>().Create());
 
             // Act
-            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName);
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName, environment);
 
             // Assert
             Assert.That(result, Is.Not.Null);

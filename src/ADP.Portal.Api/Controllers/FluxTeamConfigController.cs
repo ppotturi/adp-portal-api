@@ -174,13 +174,13 @@ public class FluxTeamConfigController : Controller
     [HttpPost("{teamName}/generate", Name = "GenerateFluxConfigForTeam")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> GenerateAsync(string teamName, [FromQuery] string? serviceName)
+    public async Task<ActionResult> GenerateAsync(string teamName, [FromQuery] string? serviceName, [FromQuery] string? environment = null)
     {
         var fluxServicesRepo = fluxServicesGitRepoConfig.Value.Adapt<GitRepo>();
         var tenantName = azureAdConfig.Value.TenantName;
 
         logger.LogInformation("Generating Flux Manifests for the Team:{TeamName}", teamName);
-        var result = await gitOpsFluxTeamConfigService.GenerateConfigAsync(teamRepo, fluxServicesRepo, tenantName, teamName, serviceName);
+        var result = await gitOpsFluxTeamConfigService.GenerateConfigAsync(teamRepo, fluxServicesRepo, tenantName, teamName, serviceName, environment);
 
         if (!result.IsConfigExists)
         {
