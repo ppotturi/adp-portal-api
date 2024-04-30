@@ -20,19 +20,24 @@ public class GithubTeamsController : Controller
         this.logger = logger;
     }
 
-    [HttpPut("{teamName}")]
+    [HttpPut("{teamId?}")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(GithubTeamDetails))]
-    public async Task<IActionResult> SyncTeam([FromRoute] string teamName, [FromBody] SyncTeamRequest request, CancellationToken cancellationToken = default)
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> SyncTeam([FromRoute] int? teamId, [FromBody] SyncTeamRequest request, CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("Setting github team: '{TeamName}'", teamName);
+        logger.LogInformation("Setting github team: '{TeamId}'", teamId);
         var team = await github.SyncTeamAsync(new()
         {
-            Name = teamName,
+            Id = teamId,
+            Name = request.Name,
             Members = request.Members,
             Maintainers = request.Maintainers,
             Description = request.Description,
             IsPublic = request.IsPublic
         }, cancellationToken);
+
+        if (team is null)
+            return Conflict();
 
         return Ok(team);
     }

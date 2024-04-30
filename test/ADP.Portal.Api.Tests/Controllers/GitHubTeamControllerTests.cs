@@ -31,32 +31,68 @@ public class GitHubTeamsControllerTests
     {
         // arrange
         using var cts = new CancellationTokenSource();
-        var teamName = Guid.NewGuid().ToString();
+        var teamId = Random.Shared.Next();
         var request = fixture.Create<SyncTeamRequest>();
         var expected = fixture.Create<GithubTeamDetails>();
 
         github.SyncTeamAsync(new()
         {
+            Id = teamId,
             Description = request.Description,
             IsPublic = request.IsPublic,
             Maintainers = request.Maintainers,
             Members = request.Members,
-            Name = teamName
+            Name = request.Name
         }, cts.Token).Returns(expected);
 
         // act
-        var result = await sut.SyncTeam(teamName, request, cts.Token);
+        var result = await sut.SyncTeam(teamId, request, cts.Token);
 
         // assert
         result.Should().BeOfType<OkObjectResult>()
             .Subject.Value.Should().BeSameAs(expected);
         _ = github.Received(1).SyncTeamAsync(new()
         {
+            Id = teamId,
             Description = request.Description,
             IsPublic = request.IsPublic,
             Maintainers = request.Maintainers,
             Members = request.Members,
-            Name = teamName
+            Name = request.Name
+        }, cts.Token);
+    }
+
+    [Test]
+    public async Task SyncTeam_ReturnsConflictWhenSyncReturnsNull()
+    {
+        // arrange
+        using var cts = new CancellationTokenSource();
+        var teamId = Random.Shared.Next();
+        var request = fixture.Create<SyncTeamRequest>();
+
+        github.SyncTeamAsync(new()
+        {
+            Id = teamId,
+            Description = request.Description,
+            IsPublic = request.IsPublic,
+            Maintainers = request.Maintainers,
+            Members = request.Members,
+            Name = request.Name
+        }, cts.Token).Returns(null as GithubTeamDetails);
+
+        // act
+        var result = await sut.SyncTeam(teamId, request, cts.Token);
+
+        // assert
+        result.Should().BeOfType<ConflictResult>();
+        _ = github.Received(1).SyncTeamAsync(new()
+        {
+            Id = teamId,
+            Description = request.Description,
+            IsPublic = request.IsPublic,
+            Maintainers = request.Maintainers,
+            Members = request.Members,
+            Name = request.Name
         }, cts.Token);
     }
 }

@@ -4,5 +4,5 @@ namespace ADP.Portal.Core.Git.Services;
 
 public interface IGitHubService
 {
-    Task<GithubTeamDetails> SyncTeamAsync(GithubTeamUpdate team, CancellationToken cancellationToken);
+    Task<GithubTeamDetails?> SyncTeamAsync(GithubTeamUpdate team, CancellationToken cancellationToken);
 }

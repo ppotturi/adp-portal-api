@@ -19,30 +19,32 @@ public class GitHubService : IGitHubService
         this.logger = logger;
     }
 
-    public async Task<GithubTeamDetails> SyncTeamAsync(GithubTeamUpdate team, CancellationToken cancellationToken)
+    public async Task<GithubTeamDetails?> SyncTeamAsync(GithubTeamUpdate team, CancellationToken cancellationToken)
     {
-        logger.LogInformation("Setting team details for team {TeamName}", team.Name);
-        var currentTeam = await GetTeamDetails(team.Name);
+        logger.LogInformation("Setting team details for team {TeamId}", team.Id);
+        var currentTeam = await GetTeamDetails(team.Id);
 
         if (currentTeam is null)
         {
-            logger.LogInformation("Team {TeamName} does not exist, it will be created.", team.Name);
+            logger.LogInformation("Team {TeamId} does not exist, it will be created.", team.Id);
             return await CreateTeamAsync(team);
         }
         else
         {
-            logger.LogInformation("Team {TeamName} already exists ({TeamId}), it will be updated.", team.Name, currentTeam.Id);
+            logger.LogInformation("Team {TeamId} already exists ({TeamName}), it will be updated.", currentTeam.Id, team.Name);
             return await UpdateTeamAsync(currentTeam, team);
         }
     }
 
-    private async Task<GithubTeamDetails> UpdateTeamAsync(GithubTeamDetails currentTeam, GithubTeamUpdate team)
+    private async Task<GithubTeamDetails?> UpdateTeamAsync(GithubTeamDetails currentTeam, GithubTeamUpdate team)
     {
         if (TryBuildUpdate(currentTeam, team, out var update))
         {
-            logger.LogInformation("Updating details for team {TeamName} ({TeamId}).", currentTeam.Name, currentTeam.Id);
-            var updatedTeam = await client.Organization.Team.Update(currentTeam.Id, update);
-            logger.LogInformation("Team {TeamName} ({TeamId}) has been updated.", team.Name, currentTeam.Id);
+            logger.LogInformation("Updating details for team {TeamId} ({TeamName}).", currentTeam.Id, currentTeam.Name);
+            var updatedTeam = await TryUpdateTeam(currentTeam.Id, update);
+            if (updatedTeam is null)
+                return null;
+            logger.LogInformation("Team {TeamId} ({TeamName}).", currentTeam.Id, team.Name);
 
             currentTeam = currentTeam with
             {
@@ -68,7 +70,8 @@ public class GitHubService : IGitHubService
 
     private static bool TryBuildUpdate(GithubTeamDetails currentTeam, GithubTeamUpdate team, [NotNullWhen(true)] out UpdateTeam? update)
     {
-        if (IsUnchanged(currentTeam.Description, team.Description)
+        if (IsUnchanged(currentTeam.Name, team.Name)
+            && IsUnchanged(currentTeam.Description, team.Description)
             && IsUnchanged(currentTeam.IsPublic, team.IsPublic)
             && IsUnchanged(currentTeam.Name, team.Name))
         {
@@ -102,7 +105,7 @@ public class GitHubService : IGitHubService
             .ToDictionary();
     }
 
-    private async Task<GithubTeamDetails> CreateTeamAsync(GithubTeamUpdate team)
+    private async Task<GithubTeamDetails?> CreateTeamAsync(GithubTeamUpdate team)
     {
         var request = new NewTeam(team.Name)
         {
@@ -114,9 +117,11 @@ public class GitHubService : IGitHubService
             request.Maintainers.Add(member);
 
         logger.LogInformation("Creating team {TeamName}.", team.Name);
-        var newTeam = await client.Organization.Team.Create(options.Value.Organisation, request);
+        var newTeam = await TryCreateTeam(request);
+        if (newTeam is null)
+            return null;
 
-        logger.LogInformation("Team {TeamName} ({TeamId}) has been created, syncing members.", newTeam.Name, newTeam.Id);
+        logger.LogInformation("Team {TeamId} ({TeamName}) has been created, syncing members.", newTeam.Id, newTeam.Name);
         await SyncTeamMembers(newTeam.Id, [], BuildTeamRoleDictionary(null, team.Members));
 
         return new()
@@ -171,21 +176,24 @@ public class GitHubService : IGitHubService
         }
     }
 
-    private async Task<GithubTeamDetails?> GetTeamDetails(string teamName)
+    private async Task<GithubTeamDetails?> GetTeamDetails(int? teamId)
     {
-        logger.LogInformation("Getting details of {TeamName}.", teamName);
-        var team = await GetTeamByNameOrDefault(teamName);
-        if (team is null)
+        if (teamId is not int id)
+            return null;
+
+        logger.LogInformation("Getting details of {TeamId}.", teamId);
+        var team = await TryGetTeam(id);
+        if (team is null || !StringComparer.OrdinalIgnoreCase.Equals(team.Organization.Login, options.Value.Organisation))
         {
-            logger.LogInformation("Cannot find team {TeamName}.", teamName);
+            logger.LogInformation("Cannot find team {TeamId}.", teamId);
             return null;
         }
 
-        logger.LogInformation("Getting members and maintainers of {TeamName}.", teamName);
+        logger.LogInformation("Getting members and maintainers of {TeamId}.", teamId);
         var members = await client.Organization.Team.GetAllMembers(team.Id, new TeamMembersRequest(TeamRoleFilter.Member));
         var maintainers = await client.Organization.Team.GetAllMembers(team.Id, new TeamMembersRequest(TeamRoleFilter.Maintainer));
 
-        logger.LogInformation("Retreived all needed data about team {TeamName}.", teamName);
+        logger.LogInformation("Retreived all needed data about team {TeamId}.", teamId);
         return new()
         {
             Id = team.Id,
@@ -198,11 +206,35 @@ public class GitHubService : IGitHubService
         };
     }
 
-    private async Task<Team?> GetTeamByNameOrDefault(string teamName)
+    private async Task<Team?> TryCreateTeam(NewTeam request)
     {
         try
         {
-            return await client.Organization.Team.GetByName(options.Value.Organisation, teamName);
+            return await client.Organization.Team.Create(options.Value.Organisation, request);
+        }
+        catch (ApiValidationException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<Team?> TryUpdateTeam(int teamId, UpdateTeam request)
+    {
+        try
+        {
+            return await client.Organization.Team.Update(teamId, request);
+        }
+        catch (ApiValidationException)
+        {
+            return null;
+        }
+    }
+
+    private async Task<Team?> TryGetTeam(int teamId)
+    {
+        try
+        {
+            return await client.Organization.Team.Get(teamId);
         }
         catch (NotFoundException)
         {
