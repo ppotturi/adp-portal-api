@@ -12,7 +12,7 @@ namespace ADP.Portal.Api.Controllers;
 [Route("api/[controller]")]
 [ApiVersion("1.0")]
 [ApiController]
-public class FluxTeamConfigController : Controller
+public class FluxTeamConfigController : ControllerBase
 {
     private readonly GitRepo teamRepo;
     private readonly IGitOpsFluxTeamConfigService gitOpsFluxTeamConfigService;

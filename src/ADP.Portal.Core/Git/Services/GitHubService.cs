@@ -185,7 +185,6 @@ public class GitHubService : IGitHubService
         var team = await TryGetTeam(id);
         if (team is null || !StringComparer.OrdinalIgnoreCase.Equals(team.Organization.Login, options.Value.Organisation))
         {
-            logger.LogInformation("Cannot find team {TeamId}.", teamId);
             return null;
         }
 
@@ -193,7 +192,6 @@ public class GitHubService : IGitHubService
         var members = await client.Organization.Team.GetAllMembers(team.Id, new TeamMembersRequest(TeamRoleFilter.Member));
         var maintainers = await client.Organization.Team.GetAllMembers(team.Id, new TeamMembersRequest(TeamRoleFilter.Maintainer));
 
-        logger.LogInformation("Retreived all needed data about team {TeamId}.", teamId);
         return new()
         {
             Id = team.Id,

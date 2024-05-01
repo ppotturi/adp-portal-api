@@ -99,7 +99,6 @@ namespace ADP.Portal.Core.Git.Services
             logger.LogInformation("Generating flux config for the team:'{TeamName}', service:'{ServiceName}' and environment:'{Environment}'.", teamName, serviceName, environment);
             var generatedFiles = ProcessTemplates(templates, tenantConfig, teamConfig, serviceName, environment);
 
-            var branchName = $"refs/heads/features/{teamName}{(string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}")}";
             if (generatedFiles.Count > 0) await PushFilesToFluxRepository(gitRepoFluxServices, teamName, serviceName, generatedFiles);
 
             return result;

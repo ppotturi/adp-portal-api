@@ -9,7 +9,7 @@ namespace ADP.Portal.Api.Controllers;
 [Route("api/github/teams")]
 [ApiVersion("1.0")]
 [ApiController]
-public class GithubTeamsController : Controller
+public class GithubTeamsController : ControllerBase
 {
     private readonly IGitHubService github;
     private readonly ILogger<GithubTeamsController> logger;
