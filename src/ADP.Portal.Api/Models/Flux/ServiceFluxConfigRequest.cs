@@ -4,6 +4,7 @@
     {
         public required string Name { get; set; }
         public required bool IsFrontend { get; set; }
+        public bool IsHelmOnly { get; set; } = false;
         public List<string>? Environments { get; set; }
         public Dictionary<string, string>? ConfigVariables { get; set; }
     }

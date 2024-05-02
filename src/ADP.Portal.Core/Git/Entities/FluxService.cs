@@ -15,7 +15,8 @@ namespace ADP.Portal.Core.Git.Entities
     public enum FluxServiceType
     {
         Frontend,
-        Backend
+        Backend,
+        HelmOnly
     }
 
     public static class FluxServiceExtensions

@@ -696,5 +696,58 @@ namespace ADP.Portal.Core.Tests.Git.Services
             Assert.That(result.IsConfigExists, Is.True);
             Assert.That(result.Errors, Is.EqualTo(new List<string>() { $"Failed to save the config for the team: {teamName}" }));
         }
+
+        [Test]
+        public async Task GenerateFluxTeamConfig_HelmOnlyService()
+        {
+            // Arrange
+            var gitRepo = fixture.Build<GitRepo>().Create();
+            var gitRepoFluxServices = fixture.Build<GitRepo>().Create();
+            string serviceName = "helm-only-service";
+
+            var envList = fixture.Build<FluxEnvironment>().CreateMany(2).ToList();
+            var fluxServices = fixture.Build<FluxService>()
+                                    .With(p => p.Name, serviceName)
+                                    .With(e => e.Environments, envList)
+                                    .With(x => x.Type, FluxServiceType.HelmOnly)
+                                    .CreateMany(1)
+                                    .ToList();
+            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
+
+            var fluxTenantConfig = fixture.Build<FluxTenant>().With(x => x.Environments, envList).Create();
+            var serviceTemplates = fixture.Build<KeyValuePair<string, Dictionary<object, object>>>().CreateMany(2)
+                .Select((x, index) =>
+                {
+                    return index switch
+                    {
+                        0 => new KeyValuePair<string, Dictionary<object, object>>($"flux/templates/programme/team/service/deploy/{x.Key}", x.Value),
+                        1 => new KeyValuePair<string, Dictionary<object, object>>($"flux/templates/programme/team/service/kustomization.yaml", new Dictionary<object, object>() { { "resources", new List<string>() { "infra-kustomize.yaml", "deploy-kustomize.yaml" } } }),
+                        _ => new KeyValuePair<string, Dictionary<object, object>>($"flux/templates/programme/team/service/deploy/{x.Key}", x.Value),
+                    };
+                });
+
+            var serviceEnvTemplates = fixture.Build<KeyValuePair<string, Dictionary<object, object>>>().CreateMany(1)
+                .Select(x => new KeyValuePair<string, Dictionary<object, object>>("flux/templates/programme/team/service/deploy-kustomize.yaml", new Dictionary<object, object>() { { "spec", new Dictionary<object, object>() { { "dependsOn", new object() } } } }));
+            var resources = new Dictionary<object, object>() { { "resources", new List<object>() } };
+
+            var teamEnvTemplates = fixture.Build<KeyValuePair<string, Dictionary<object, object>>>().CreateMany(1)
+                .Select(x => new KeyValuePair<string, Dictionary<object, object>>("flux/templates/programme/team/environment/kustomization.yaml",
+                                        x.Value.Union(resources).ToDictionary()));
+
+            gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
+            gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
+            gitOpsConfigRepository.GetAllFilesAsync(gitRepo, FluxConstants.GIT_REPO_TEMPLATE_PATH).Returns(serviceTemplates.Union(serviceEnvTemplates).Union(teamEnvTemplates));
+            gitOpsConfigRepository.GetBranchAsync(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns((Reference?)default);
+            gitOpsConfigRepository.CreateCommitAsync(gitRepoFluxServices, Arg.Any<Dictionary<string, Dictionary<object, object>>>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(fixture.Build<Commit>().Create());
+
+            // Act
+            var result = await service.GenerateConfigAsync(gitRepo, gitRepoFluxServices, "tenant1", "team1", serviceName);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            await gitOpsConfigRepository.Received().CreateBranchAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
+            await gitOpsConfigRepository.Received().CreatePullRequestAsync(gitRepoFluxServices, Arg.Any<string>(), Arg.Any<string>());
+        }
     }
 }

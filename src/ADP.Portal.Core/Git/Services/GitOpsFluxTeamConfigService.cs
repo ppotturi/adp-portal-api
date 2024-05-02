@@ -3,8 +3,11 @@ using ADP.Portal.Core.Git.Extensions;
 using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Helpers;
 using Microsoft.Extensions.Logging;
+using Microsoft.TeamFoundation.Pipelines.WebApi;
+using Microsoft.TeamFoundation.TestManagement.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Octokit;
+using System.Text.RegularExpressions;
 using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Git.Services
@@ -237,10 +240,7 @@ namespace ADP.Portal.Core.Git.Services
                     if (!template.Key.Contains(FluxConstants.ENV_KEY))
                     {
                         var serviceTemplate = template.Value.DeepCopy();
-                        if (template.Key.Equals(FluxConstants.TEAM_SERVICE_KUSTOMIZATION_FILE) && service.HasDatastore())
-                        {
-                            ((List<object>)serviceTemplate[FluxConstants.RESOURCES_KEY]).Add("pre-deploy-kustomize.yaml");
-                        }
+                        serviceTemplate = UpdateServiceKustomizationFiles(serviceTemplate, template.Key, service);
                         var key = template.Key.Replace(FluxConstants.PROGRAMME_FOLDER, teamConfig.ProgrammeName).Replace(FluxConstants.TEAM_KEY, teamConfig.TeamName).Replace(FluxConstants.SERVICE_KEY, service.Name);
                         serviceFiles.Add($"services/{key}", serviceTemplate);
                     }
@@ -251,7 +251,10 @@ namespace ADP.Portal.Core.Git.Services
                 }
                 UpdateServicePatchFiles(serviceFiles, service, teamConfig);
 
-                service.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_DEPENDS_ON, Value = service.HasDatastore() ? FluxConstants.PREDEPLOY_KEY : FluxConstants.INFRA_KEY });
+                if (service.Type != FluxServiceType.HelmOnly)
+                {
+                    service.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_DEPENDS_ON, Value = service.HasDatastore() ? FluxConstants.PREDEPLOY_KEY : FluxConstants.INFRA_KEY });
+                }
                 service.ConfigVariables.Add(new FluxConfig { Key = FluxConstants.TEMPLATE_VAR_SERVICE_NAME, Value = service.Name });
                 service.ConfigVariables.ForEach(serviceFiles.ReplaceToken);
                 finalFiles.AddRange(serviceFiles);
@@ -268,6 +271,14 @@ namespace ADP.Portal.Core.Git.Services
                 if (!service.HasDatastore())
                 {
                     matched = !filter.Key.StartsWith(FluxConstants.SERVICE_PRE_DEPLOY_FOLDER) && !filter.Key.StartsWith(FluxConstants.PRE_DEPLOY_KUSTOMIZE_FILE);
+                }
+                return matched;
+            }).Where(filter =>
+            {
+                var matched = true;
+                if (service.Type == FluxServiceType.HelmOnly)
+                {
+                    matched = !filter.Key.StartsWith(FluxConstants.SERVICE_INFRA_FOLDER) && !filter.Key.StartsWith(FluxConstants.INFRA_KUSTOMIZE_FILE);
                 }
                 return matched;
             });
@@ -327,6 +338,23 @@ namespace ADP.Portal.Core.Git.Services
                 }
             }
             return finalFiles;
+        }
+
+        private static Dictionary<object, object> UpdateServiceKustomizationFiles(Dictionary<object, object> serviceTemplate, string templateKey, FluxService service)
+        {
+            if (templateKey.Equals(FluxConstants.TEAM_SERVICE_KUSTOMIZATION_FILE) && service.HasDatastore())
+            {
+                ((List<object>)serviceTemplate[FluxConstants.RESOURCES_KEY]).Add("pre-deploy-kustomize.yaml");
+            }
+            if (templateKey.Equals(FluxConstants.TEAM_SERVICE_KUSTOMIZATION_FILE) && service.Type == FluxServiceType.HelmOnly)
+            {
+                ((List<object>)serviceTemplate[FluxConstants.RESOURCES_KEY]).Remove("infra-kustomize.yaml");
+            }
+            if (templateKey.Equals(FluxConstants.DEPLOY_KUSTOMIZE_FILE) && service.Type == FluxServiceType.HelmOnly)
+            {
+                ((Dictionary<object, object>)serviceTemplate[FluxConstants.SPEC_KEY]).Remove(FluxConstants.DEPENDS_ON_KEY);
+            }
+            return serviceTemplate;
         }
 
         private static void UpdateServicePatchFiles(Dictionary<string, Dictionary<object, object>> serviceFiles, FluxService service, FluxTeamConfig teamConfig)

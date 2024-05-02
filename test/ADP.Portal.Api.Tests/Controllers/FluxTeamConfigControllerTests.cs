@@ -292,10 +292,15 @@ namespace ADP.Portal.Api.Tests.Controllers
         }
 
         [Test]
-        public async Task CreateServiceAsync_Returns_Created()
+        [TestCase(true, false)]
+        [TestCase(false, false)]
+        [TestCase(true, true)]
+        public async Task CreateServiceAsync_Returns_Created(bool isFrontend, bool isHelmOnly)
         {
             // Arrange
             var request = fixture.Build<ServiceFluxConfigRequest>().Create();
+            request.IsFrontend = isFrontend;
+            request.IsHelmOnly = isHelmOnly;
             teamGitRepoConfigMock.Value.Returns(fixture.Build<TeamGitRepoConfig>().Create());
             fluxServicesGitRepoConfigMock.Value.Returns(fixture.Build<FluxServicesGitRepoConfig>().Create());
             gitOpsFluxTeamConfigServiceMock.AddServiceAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<Core.Git.Entities.FluxService>())

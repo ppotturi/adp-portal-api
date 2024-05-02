@@ -22,9 +22,104 @@ PUT {{ADP.Portal.Api_HostAddress}}/api/aadgroup/sync/ffc-demo/UserGroupsMembers
 
 # Flux Config Controller
 ###
-@serviceName = ffc-demo-claim-service
-POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/ffc-demo/generate?serviceName={{serviceName}}
+# Create a team
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo
+Content-Type: application/json
 
+{
+  "ProgrammeName": "ffc",
+  "ServiceCode": "test-demo",
+  "TeamName": "test-demo",
+  "Services": [
+  ],
+  "ConfigVariables": {
+    "TEAM_CPU_QUOTA": "2000",
+    "TEAM_MEMORY_QUOTA": "3000Mi",
+    "TEAM_PODS_QUOTA": "20"
+  }
+}
+
+###
+
+# Update a team
+PUT {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo
+Content-Type: application/json
+
+{
+  "ProgrammeName": "ffc",
+  "ServiceCode": "test-demo",
+  "TeamName": "test-demo",
+  "Services": [
+  ],
+  "ConfigVariables": {
+    "TEAM_CPU_QUOTA": "2000",
+    "TEAM_MEMORY_QUOTA": "3000Mi",
+    "TEAM_PODS_QUOTA": "20"
+  }
+}
+
+###
+# Helm only ingress app
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo/services
+Content-Type: application/json
+
+{
+    "Name": "test-ingress-3",
+    "IsFrontend": true,
+    "IsHelmOnly": true,
+    "Environments": [
+        "snd1",
+        "snd2",
+        "snd3"
+    ],
+    "ConfigVariables": {}
+}
+
+###
+# Generate flux service manifest for helm only app
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo/generate?serviceName=test-ingress-3
+
+###
+# Frontend app
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo/services
+Content-Type: application/json
+
+{
+    "Name": "ffc-frontend-2",
+    "IsFrontend": true,
+    "Environments": [
+        "snd1",
+        "snd2",
+        "snd3"
+    ],
+    "ConfigVariables": {}
+}
+
+###
+
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo/generate?serviceName=ffc-frontend-2
+
+###
+# Backend app
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo/services
+Content-Type: application/json
+
+{
+    "Name": "ffc-backend-2",
+    "IsFrontend": false,
+    "Environments": [
+        "snd1",
+        "snd2",
+        "snd3"
+    ],
+    "ConfigVariables": {
+        "POSTGRES_DB":"test-demo-backend"
+    }
+}
+
+###
+
+POST {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/test-demo/generate?serviceName=ffc-backend-2
 ###
 GET {{ADP.Portal.Api_HostAddress}}/api/fluxteamconfig/get/ffc-demo
 
