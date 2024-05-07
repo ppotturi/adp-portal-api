@@ -7,9 +7,9 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
 {
 
     [TestFixture]
-    public class DictionaryExtensionsTests
+    public class FluxTemplateExtensionsTests
     {
-        private Dictionary<string, Dictionary<object, object>> instanceDictionary;
+        private Dictionary<string, FluxTemplateFile> items;
         private List<object> instanceList;
         private readonly Dictionary<object, object> copyInstanceDictionary;
         private readonly FluxConfig config;
@@ -18,15 +18,15 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
         [SetUp]
         public void Setup()
         {
-            instanceDictionary = new Dictionary<string, Dictionary<object, object>>();
-            instanceList = new List<object>();
+            items = [];
+            instanceList = [];
         }
 
-        public DictionaryExtensionsTests()
+        public FluxTemplateExtensionsTests()
         {
-            instanceDictionary = new Dictionary<string, Dictionary<object, object>>();
-            instanceList = new List<object>();
-            copyInstanceDictionary = new Dictionary<object, object>();
+            items = [];
+            instanceList = [];
+            copyInstanceDictionary = [];
             config = new FluxConfig() { Key = "key1", Value = "value1" };
         }
 
@@ -35,10 +35,10 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
         {
             // Arrange
             var innerDictionaryMock = Substitute.For<Dictionary<object, object>>();
-            instanceDictionary.Add("dictionary_key1", new Dictionary<object, object> { { "child_key1", innerDictionaryMock } });
+            items.Add("dictionary_key1", new FluxTemplateFile(new Dictionary<object, object> { { "child_key1", innerDictionaryMock } }));
 
             // Act
-            instanceDictionary.ReplaceToken(config);
+            items.ReplaceToken(config);
 
             // Assert
             innerDictionaryMock.Received().ReplaceToken(config);
@@ -53,10 +53,10 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             {
                 { "List_key1", listMock }
             };
-            instanceDictionary.Add("dictionary_key1", dictionaryObject);
+            items.Add("dictionary_key1", new FluxTemplateFile(dictionaryObject));
 
             // Act
-            instanceDictionary.ReplaceToken(config);
+            items.ReplaceToken(config);
 
             // Assert
             listMock.Received().ReplaceToken(config);
@@ -74,10 +74,10 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
                 { "key", originalValue }
             };
 
-            instanceDictionary.Add("dictionary_key1", dictionaryObject);
+            items.Add("dictionary_key1", new FluxTemplateFile(dictionaryObject));
 
             // Act
-            instanceDictionary.ReplaceToken(config);
+            items.ReplaceToken(config);
 
             // Assert
             Assert.That(dictionaryObject["key"], Is.EqualTo(expectedValue));
@@ -95,10 +95,10 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
                 { "key", originalValue }
             };
 
-            instanceDictionary.Add("dictionary_key1", dictionaryObject);
+            items.Add("dictionary_key1", new FluxTemplateFile( dictionaryObject));
 
             // Act
-            instanceDictionary.ReplaceToken(config);
+            items.ReplaceToken(config);
 
             // Assert
             Assert.That(dictionaryObject["key"], Is.EqualTo(expectedValue));
@@ -110,20 +110,20 @@ namespace ADP.Portal.Core.Tests.Git.Extensions
             // Arrange
 
             var expectedReplaceValue = "list_object_value1";
-            var listMock = Substitute.For<Dictionary<object, object>>();
+            var listMock = new FluxTemplateFile([]);
             var listObject = new List<object>
             {
                 new List<object>() { "list_object___key1__" }
             };
 
-            listMock.Add("list1", new List<object>() { listObject });
-            instanceDictionary.Add("dictionary_key1", listMock);
+            listMock.Content.Add("list1", new List<object>() { listObject });
+            items.Add("dictionary_key1", listMock);
 
             // Act
-            instanceDictionary.ReplaceToken(config);
+            items.ReplaceToken(config);
 
             // Assert
-            var list1object = ((List<object>?)((List<object>)listMock["list1"]).FirstOrDefault())?.FirstOrDefault();
+            var list1object = ((List<object>?)((List<object>)listMock.Content["list1"]).FirstOrDefault())?.FirstOrDefault();
             if (list1object != null)
             {
                 Assert.That(((List<object>)list1object)[0], Is.EqualTo(expectedReplaceValue));

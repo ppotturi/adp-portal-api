@@ -4,15 +4,15 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Core.Git.Extensions
 {
-    public static partial class DictionaryExtensions
+    public static class FluxTemplateExtensions
     {
         const string TOKEN_FORMAT = "__{0}__";
 
-        public static void ReplaceToken(this Dictionary<string, Dictionary<object, object>> instance, FluxConfig config)
+        public static void ReplaceToken(this Dictionary<string, FluxTemplateFile> instance, FluxConfig config)
         {
             foreach (var item in instance)
             {
-                item.Value.ReplaceToken(config);
+                item.Value.Content.ReplaceToken(config);
             }
         }
 
@@ -43,6 +43,15 @@ namespace ADP.Portal.Core.Git.Extensions
 
             var serializedValue = serializer.Serialize(instance);
             return deserializer.Deserialize<Dictionary<object, object>>(serializedValue);
+        }
+
+        public static FluxTemplateFile DeepCopy(this FluxTemplateFile instance)
+        {
+            var serializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            var deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+
+            var serializedValue = serializer.Serialize(instance.Content);
+            return new FluxTemplateFile(deserializer.Deserialize<Dictionary<object, object>>(serializedValue));
         }
     }
 }

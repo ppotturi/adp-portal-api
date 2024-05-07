@@ -1,32 +1,31 @@
-﻿using System.Text;
-using ADP.Portal.Core.Git.Entities;
+﻿using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using AutoFixture;
-using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NUnit.Framework;
 using Octokit;
+using System.Text;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Core.Tests.Git.Infrastructure
 {
     [TestFixture]
-    public class GitOpsConfigRepositoryTests
+    public class GitHubRepositoryTests
     {
         private readonly IGitHubClient gitHubClientMock;
-        private readonly GitOpsConfigRepository repository;
+        private readonly GitHubRepository repository;
         private readonly IDeserializer deserializer;
         private readonly ISerializer serializer;
         private readonly Fixture fixture;
-        
-        public GitOpsConfigRepositoryTests()
+
+        public GitHubRepositoryTests()
         {
             gitHubClientMock = Substitute.For<IGitHubClient>();
             serializer = new SerializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
             deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
-            repository = new GitOpsConfigRepository(gitHubClientMock, deserializer, serializer);
+            repository = new GitHubRepository(gitHubClientMock, deserializer, serializer);
             fixture = new Fixture();
         }
 
@@ -34,9 +33,9 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task GetConfigAsync_WhenCalledWithStringType_ReturnsStringContent_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org") ;
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var contentFile = CreateRepositoryContent("fileContent");
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "fileName", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "fileName", gitRepo.Reference)
                 .Returns([contentFile]);
 
             // Act
@@ -50,10 +49,10 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task GetConfigAsync_WhenCalledWithNonStringType_DeserializesContent_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var yamlContent = "property:\n - name: \"test\"";
             var contentFile = CreateRepositoryContent(yamlContent);
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "fileName", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "fileName", gitRepo.Reference)
                 .Returns([contentFile]);
 
             // Act
@@ -68,12 +67,12 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task GetAllFilesAsync_SingleFile_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var yamlContent = "property:\n - name: \"test\"";
             var contentFile = CreateRepositoryContent(yamlContent);
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "file", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "file", gitRepo.Reference)
                 .Returns([contentFile]);
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "path", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "path", gitRepo.Reference)
                 .Returns([CreateRepositoryDirectoryContent()]);
 
             // Act
@@ -88,12 +87,12 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task GetAllFilesAsync_Multiple_NestedFile_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var yamlContent = "property:\n - name: \"test\"";
             var contentFile = CreateRepositoryContent(yamlContent);
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "file", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "file", gitRepo.Reference)
                 .Returns([contentFile, contentFile]);
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "path", gitRepo.BranchName)
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "path", gitRepo.Reference)
                 .Returns([CreateRepositoryDirectoryContent()]);
 
             // Act
@@ -108,7 +107,7 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task GetBranchAsync_Success_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var subReference = Substitute.For<Reference>();
             gitHubClientMock.Git.Reference.Get(gitRepo.Organisation, gitRepo.Name, "test-branch")
                 .Returns(subReference);
@@ -125,7 +124,7 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task GetBranchAsync_Error_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             gitHubClientMock.Git.Reference.Get(gitRepo.Organisation, gitRepo.Name, "test")
                 .Throws(new NotFoundException("Branch not found", System.Net.HttpStatusCode.NotFound));
 
@@ -141,7 +140,7 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task CreateBranchAsync_Success_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var subReference = Substitute.For<Reference>();
             gitHubClientMock.Git.Reference.Create(gitRepo.Organisation, gitRepo.Name, new NewReference("refs/heads/features/test", "sha"))
                 .Returns(subReference);
@@ -157,7 +156,7 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task UpdateBranchAsync_Success_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var subReference = Substitute.For<Reference>();
             gitHubClientMock.Git.Reference.Update(gitRepo.Organisation, gitRepo.Name, "test", new ReferenceUpdate("sha"))
                 .Returns(subReference);
@@ -173,12 +172,12 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task CreateCommitAsync_Success_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var subReference = new Reference("", "", "", fixture.Create<TagObject>());
             var commit = fixture.Create<Commit>();
             var treeItem = fixture.Create<TreeItem>();
             var tree = new TreeResponse(commit.Sha, "", [treeItem], false);
-            var files = fixture.Create<Dictionary<string, Dictionary<object, object>>>();
+            var files = fixture.Create<Dictionary<string, FluxTemplateFile>>();
             var repo = new Repository("", "", "", "", "", "", "", "", default, "", fixture.Create<User>(), "", "", default, "", "", "", default, default, default, default, "", default, default, default, default, fixture.Create<RepositoryPermissions>(),
                 fixture.Create<Repository>(), fixture.Create<Repository>(), fixture.Create<LicenseMetadata>(), default, default, default, default, default, default, default, default, default, default, default, default, default,
                 fixture.Create<RepositoryVisibility>(), new List<string>(), default, default, default);
@@ -204,12 +203,12 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task CreateCommitAsync_NoChanges_Success_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var subReference = new Reference("", "", "", fixture.Create<TagObject>());
             var commit = fixture.Create<Commit>();
             var treeItem = fixture.Create<TreeItem>();
             var tree = new TreeResponse(commit.Sha, "", [treeItem], false);
-            var files = Substitute.For<Dictionary<string, Dictionary<object, object>>>();
+            var files = Substitute.For<Dictionary<string, FluxTemplateFile>>();
             var repo = new Repository("", "", "", "", "", "", "", "", default, "", fixture.Create<User>(), "", "", default, "", "", "", default, default, default, default, "", default, default, default, default, fixture.Create<RepositoryPermissions>(),
                 fixture.Create<Repository>(), fixture.Create<Repository>(), fixture.Create<LicenseMetadata>(), default, default, default, default, default, default, default, default, default, default, default, default, default,
                 fixture.Create<RepositoryVisibility>(), new List<string>(), default, default, default);
@@ -234,14 +233,14 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         public async Task CreatePullRequestAsync_Success_Test()
         {
             // Arrange
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var repo = new Repository("", "", "", "", "", "", "", "", default, "", fixture.Create<User>(), "", "", default, "", "", "", default, default, default, default, "", default, default, default, default, fixture.Create<RepositoryPermissions>(),
                 fixture.Create<Repository>(), fixture.Create<Repository>(), fixture.Create<LicenseMetadata>(), default, default, default, default, default, default, default, default, default, default, default, default, default,
                 fixture.Create<RepositoryVisibility>(), new List<string>(), default, default, default);
 
             gitHubClientMock.Repository.Get(gitRepo.Organisation, gitRepo.Name).Returns(repo);
             gitHubClientMock.PullRequest.Create(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<NewPullRequest>()).Returns(fixture.Create<PullRequest>());
-            
+
             // Act
             var actualValue = await repository.CreatePullRequestAsync(gitRepo, "test", "New PR");
 
@@ -259,9 +258,9 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
             var commit = new Commit(default, default, default, default, "sha", default, default, default, default, default, reference, Enumerable.Empty<GitReference>(), 0, default);
             var content = new RepositoryContentChangeSet(default, commit);
             var yamlContent = "property:\n - name: \"test\"";
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             gitHubClientMock.Repository.Content.CreateFile(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CreateFileRequest>()).Returns(content);
-            
+
             // Act
             var response = await repository.CreateConfigAsync(gitRepo, "test", yamlContent);
 
@@ -276,7 +275,7 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
         {
             // Arrange
             var yamlContent = "property:\n - name: \"test\"";
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
 
             // Act
             await repository.UpdateConfigAsync(gitRepo, "test", yamlContent);
@@ -293,10 +292,10 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
             var commit = new Commit(default, default, default, default, "sha", default, default, default, default, default, reference, Enumerable.Empty<GitReference>(), 0, default);
             var content = new RepositoryContentChangeSet(default, commit);
             var yamlContent = "property:\n - name: \"test\"";
-            var gitRepo = new GitRepo("repo", "branch", "org");
+            var gitRepo = new GitRepo { Name = "repo", Reference = "branch", Organisation = "org" };
             var files = CreateRepositoryContent(yamlContent);
 
-            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "test", gitRepo.BranchName).Returns(new List<RepositoryContent>() { files });
+            gitHubClientMock.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "test", gitRepo.Reference).Returns(new List<RepositoryContent>() { files });
             gitHubClientMock.Repository.Content.UpdateFile(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<UpdateFileRequest>()).Returns(content);
 
             // Act
@@ -305,7 +304,7 @@ namespace ADP.Portal.Core.Tests.Git.Infrastructure
             // Assert
             Assert.That(response, Is.Not.Null);
             Assert.That(response, Is.EqualTo(commit.Sha));
-            await gitHubClientMock.Repository.Content.Received().GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "test", gitRepo.BranchName);
+            await gitHubClientMock.Repository.Content.Received().GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, "test", gitRepo.Reference);
             await gitHubClientMock.Repository.Content.Received().UpdateFile(gitRepo.Organisation, gitRepo.Name, "test", Arg.Any<UpdateFileRequest>());
         }
 

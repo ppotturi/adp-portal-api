@@ -3,7 +3,7 @@ using Octokit;
 
 namespace ADP.Portal.Core.Git.Infrastructure
 {
-    public interface IGitOpsConfigRepository
+    public interface IGitHubRepository
     {
         Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo);
 
@@ -11,7 +11,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         Task<string> UpdateConfigAsync(GitRepo gitRepo, string fileName, string content);
 
-        Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesAsync(GitRepo gitRepo, string path);
+        Task<IEnumerable<KeyValuePair<string, FluxTemplateFile>>> GetAllFilesAsync(GitRepo gitRepo, string path);
 
         Task<Reference?> GetBranchAsync(GitRepo gitRepo, string branchName);
 
@@ -19,7 +19,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         Task<Reference> UpdateBranchAsync(GitRepo gitRepo, string branchName, string sha);
 
-        Task<Commit?> CreateCommitAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string message, string? branchName = null);
+        Task<Commit?> CreateCommitAsync(GitRepo gitRepo, Dictionary<string, FluxTemplateFile> generatedFiles, string message, string? branchName = null);
 
         Task<bool> CreatePullRequestAsync(GitRepo gitRepo, string branchName, string message);
     }

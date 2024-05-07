@@ -1,6 +1,6 @@
 ﻿namespace ADP.Portal.Api.Models.Ado
 {
-    public class OnBoardAdoProjectRequest
+    public sealed class OnBoardAdoProjectRequest
     {
         public required List<AdoEnvironment> Environments { get; set; }
 

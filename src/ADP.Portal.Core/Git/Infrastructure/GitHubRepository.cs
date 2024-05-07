@@ -1,18 +1,17 @@
 ﻿using ADP.Portal.Core.Git.Entities;
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
 using Octokit;
 using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Git.Infrastructure
 {
-    public class GitOpsConfigRepository : IGitOpsConfigRepository
+    public class GitHubRepository : IGitHubRepository
     {
         private readonly IGitHubClient gitHubClient;
         private readonly IDeserializer deserializer;
         private readonly ISerializer serializer;
 
-        public GitOpsConfigRepository(IGitHubClient gitHubClient, IDeserializer deserializer, ISerializer serializer)
+        public GitHubRepository(IGitHubClient gitHubClient, IDeserializer deserializer, ISerializer serializer)
         {
             this.gitHubClient = gitHubClient;
             this.deserializer = deserializer;
@@ -33,7 +32,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         public async Task<string> CreateConfigAsync(GitRepo gitRepo, string fileName, string content)
         {
-            var response = await gitHubClient.Repository.Content.CreateFile(gitRepo.Organisation, gitRepo.Name, fileName, new CreateFileRequest($"Create config file: {fileName}", content, gitRepo.BranchName));
+            var response = await gitHubClient.Repository.Content.CreateFile(gitRepo.Organisation, gitRepo.Name, fileName, new CreateFileRequest($"Create config file: {fileName}", content, gitRepo.Reference));
             return response.Commit.Sha;
         }
 
@@ -44,13 +43,13 @@ namespace ADP.Portal.Core.Git.Infrastructure
             if (existingFile.Any())
             {
                 var response = await gitHubClient.Repository.Content.UpdateFile(gitRepo.Organisation, gitRepo.Name, fileName,
-                    new UpdateFileRequest($"Update config file: {fileName}", content, existingFile[0].Sha, gitRepo.BranchName));
+                    new UpdateFileRequest($"Update config file: {fileName}", content, existingFile[0].Sha, gitRepo.Reference));
                 return response.Commit.Sha;
             }
             return string.Empty;
         }
 
-        public async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesAsync(GitRepo gitRepo, string path)
+        public async Task<IEnumerable<KeyValuePair<string, FluxTemplateFile>>> GetAllFilesAsync(GitRepo gitRepo, string path)
         {
             return await GetAllFilesContentsAsync(gitRepo, path);
         }
@@ -59,13 +58,13 @@ namespace ADP.Portal.Core.Git.Infrastructure
         {
             var repository = await gitHubClient.Repository.Get(gitRepo.Organisation, gitRepo.Name);
 
-            var pullRequest = new NewPullRequest(message, branchName, gitRepo.BranchName);
+            var pullRequest = new NewPullRequest(message, branchName, gitRepo.Reference);
             var createdPullRequest = await gitHubClient.PullRequest.Create(repository.Owner.Login, repository.Name, pullRequest);
 
             return createdPullRequest != null;
         }
 
-        public async Task<IEnumerable<KeyValuePair<string, Dictionary<object, object>>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
+        public async Task<IEnumerable<KeyValuePair<string, FluxTemplateFile>>> GetAllFilesContentsAsync(GitRepo gitRepo, string path)
         {
             var repositoryItems = await GetRepositoryFiles(gitRepo, path);
 
@@ -75,16 +74,13 @@ namespace ADP.Portal.Core.Git.Infrastructure
                 {
                     var file = await GetRepositoryFiles(gitRepo, item.Path);
                     var result = deserializer.Deserialize<Dictionary<object, object>>(file[0].Content);
-                    var list = new List<KeyValuePair<string, Dictionary<object, object>>>() { (new KeyValuePair<string, Dictionary<object, object>>(item.Path, result)) };
+                    var list = new List<KeyValuePair<string, FluxTemplateFile>>() { new(item.Path, new FluxTemplateFile(result)) };
                     return list.AsEnumerable();
                 });
 
             var dirTasks = repositoryItems
                 .Where(item => item.Type == ContentType.Dir)
-                .Select(async item =>
-                {
-                    return await GetAllFilesContentsAsync(gitRepo, item.Path);
-                });
+                .Select(async item => await GetAllFilesContentsAsync(gitRepo, item.Path));
 
             var allTasks = fileTasks.Concat(dirTasks);
             var allResults = await Task.WhenAll(allTasks);
@@ -114,9 +110,9 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return await gitHubClient.Git.Reference.Update(gitRepo.Organisation, gitRepo.Name, branchName, new ReferenceUpdate(sha));
         }
 
-        public async Task<Commit?> CreateCommitAsync(GitRepo gitRepo, Dictionary<string, Dictionary<object, object>> generatedFiles, string message, string? branchName = null)
+        public async Task<Commit?> CreateCommitAsync(GitRepo gitRepo, Dictionary<string, FluxTemplateFile> generatedFiles, string message, string? branchName = null)
         {
-            var branch = branchName ?? $"heads/{gitRepo.BranchName}";
+            var branch = branchName ?? $"heads/{gitRepo.Reference}";
 
             var repository = await gitHubClient.Repository.Get(gitRepo.Organisation, gitRepo.Name);
 
@@ -133,7 +129,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             return default;
         }
 
-        private async Task<TreeResponse?> CreateTree(IGitHubClient client, Repository repository, Dictionary<string, Dictionary<object, object>> treeContents, string parentSha)
+        private async Task<TreeResponse?> CreateTree(IGitHubClient client, Repository repository, Dictionary<string, FluxTemplateFile> treeContents, string parentSha)
         {
             var newTree = new NewTree() { BaseTree = parentSha };
 
@@ -143,7 +139,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             {
                 var baselineBlob = new NewBlob
                 {
-                    Content = serializer.Serialize(treeContent.Value).Replace(FluxConstants.TEMPLATE_IMAGEPOLICY_KEY, FluxConstants.TEMPLATE_IMAGEPOLICY_KEY_VALUE),
+                    Content = serializer.Serialize(treeContent.Value).Replace(Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY, Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY_VALUE),
                     Encoding = EncodingType.Utf8
                 };
 
@@ -174,11 +170,9 @@ namespace ADP.Portal.Core.Git.Infrastructure
             var newCommit = new NewCommit(message, sha, parent);
             return await client.Git.Commit.Create(repository.Owner.Login, repository.Name, newCommit);
         }
-
-
         private async Task<IReadOnlyList<RepositoryContent>> GetRepositoryFiles(GitRepo gitRepo, string filePathOrName)
         {
-            return await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, filePathOrName, gitRepo.BranchName);
+            return await gitHubClient.Repository.Content.GetAllContentsByRef(gitRepo.Organisation, gitRepo.Name, filePathOrName, gitRepo.Reference);
         }
     }
 }
