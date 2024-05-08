@@ -76,7 +76,7 @@ properties:
           - name: TeamGitRepo__Organisation
             secretRef: git-repo-org
           - name: FluxTemplatesGitRepo__Name
-            value: "adp-teams-config"
+            value: "adp-flux-templates"
           - name: FluxTemplatesGitRepo__Reference
             value: "1.0.0"
           - name: FluxTemplatesGitRepo__Organisation
