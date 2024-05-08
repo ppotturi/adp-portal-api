@@ -20,14 +20,21 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         public async Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo)
         {
-            var file = await GetRepositoryFiles(gitRepo, fileName);
-            if (typeof(T) == typeof(string))
+            try
             {
-                return (T)Convert.ChangeType(file[0].Content, typeof(T));
-            }
+                var file = await GetRepositoryFiles(gitRepo, fileName);
+                if (typeof(T) == typeof(string))
+                {
+                    return (T)Convert.ChangeType(file[0].Content, typeof(T));
+                }
 
-            var result = deserializer.Deserialize<T>(file[0].Content);
-            return result;
+                var result = deserializer.Deserialize<T>(file[0].Content);
+                return result;
+            }
+            catch (NotFoundException)
+            {
+                return default;
+            }
         }
 
         public async Task<string> CreateConfigAsync(GitRepo gitRepo, string fileName, string content)
@@ -138,7 +145,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             {
                 var baselineBlob = new NewBlob
                 {
-                    Content = serializer.Serialize(treeContent.Value.Content).Replace(Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY, Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY_VALUE),
+                    Content = serializer.Serialize(treeContent.Value.Content).Replace(Constants.Flux.Templates.IMAGEPOLICY_KEY, Constants.Flux.Templates.IMAGEPOLICY_KEY_VALUE),
                     Encoding = EncodingType.Utf8
                 };
 

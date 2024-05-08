@@ -19,14 +19,15 @@ namespace ADP.Portal.Core.Tests.Git.Services
     [TestFixture]
     public class GroupsConfigServiceTests
     {
-        private readonly IGitHubRepository gitOpsConfigRepositoryMock;
-        private readonly GroupsConfigService gitOpsConfigService;
-        private readonly ILogger<GroupsConfigService> loggerMock;
-        private readonly IGroupService groupServiceMock;
-        private readonly IOptionsSnapshot<GitRepo> gitRepoOptionsMock;
-        private readonly Fixture fixture;
+        private IGitHubRepository gitOpsConfigRepositoryMock = null!;
+        private GroupsConfigService gitOpsConfigService = null!;
+        private ILogger<GroupsConfigService> loggerMock = null!;
+        private IGroupService groupServiceMock = null!;
+        private IOptionsSnapshot<GitRepo> gitRepoOptionsMock = null!;
+        private Fixture fixture = null!;
 
-        public GroupsConfigServiceTests()
+        [SetUp]
+        public void SetUp()
         {
             gitOpsConfigRepositoryMock = Substitute.For<IGitHubRepository>();
             loggerMock = Substitute.For<ILogger<GroupsConfigService>>();

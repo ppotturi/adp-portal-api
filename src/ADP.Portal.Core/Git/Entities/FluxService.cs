@@ -23,7 +23,7 @@ namespace ADP.Portal.Core.Git.Entities
     {
         public static bool HasDatastore(this FluxService service)
         {
-            return service.ConfigVariables.Exists(token => token.Key.Equals(Constants.Flux.POSTGRES_DB_KEY));
+            return service.ConfigVariables.Exists(token => token.Key.Equals(Constants.Flux.Templates.POSTGRES_DB_KEY));
         }
     }
 }
