@@ -78,7 +78,7 @@ properties:
           - name: FluxTemplatesGitRepo__Name
             value: "adp-flux-templates"
           - name: FluxTemplatesGitRepo__Reference
-            value: "1.0.0"
+            value: "1.0.1"
           - name: FluxTemplatesGitRepo__Organisation
             secretRef: git-repo-org
           - name: FluxServicesGitRepo__Name
