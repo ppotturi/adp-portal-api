@@ -123,8 +123,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             var featureBranchTree = await CreateTree(gitHubClient, repository, generatedFiles, latestCommit.Sha);
             if (featureBranchTree != null)
             {
-                var featureBranchCommit = await CreateCommit(gitHubClient, repository, message, featureBranchTree.Sha, branchRef.Object.Sha);
-                return featureBranchCommit;
+                return await CreateCommit(gitHubClient, repository, message, featureBranchTree.Sha, branchRef.Object.Sha);
             }
             return default;
         }
@@ -139,7 +138,7 @@ namespace ADP.Portal.Core.Git.Infrastructure
             {
                 var baselineBlob = new NewBlob
                 {
-                    Content = serializer.Serialize(treeContent.Value).Replace(Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY, Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY_VALUE),
+                    Content = serializer.Serialize(treeContent.Value.Content).Replace(Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY, Constants.Flux.TEMPLATE_IMAGEPOLICY_KEY_VALUE),
                     Encoding = EncodingType.Utf8
                 };
 
