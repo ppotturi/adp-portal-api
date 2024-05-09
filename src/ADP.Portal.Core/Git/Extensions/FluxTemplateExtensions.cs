@@ -1,4 +1,5 @@
 ﻿using ADP.Portal.Core.Git.Entities;
+using Microsoft.VisualStudio.Services.Common;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -62,6 +63,13 @@ namespace ADP.Portal.Core.Git.Extensions
 
             var serializedValue = serializer.Serialize(instance.Content);
             return new FluxTemplateFile(deserializer.Deserialize<Dictionary<object, object>>(serializedValue));
+        }
+
+        public static IEnumerable<KeyValuePair<string, FluxTemplateFile>> DeepCopy(this IEnumerable<KeyValuePair<string, FluxTemplateFile>> instance)
+        {
+            var clonedInstance = new List<KeyValuePair<string, FluxTemplateFile>>();
+            instance.ForEach(item => clonedInstance.Add(new KeyValuePair<string, FluxTemplateFile>(item.Key, item.Value.DeepCopy())));
+            return clonedInstance;
         }
     }
 }

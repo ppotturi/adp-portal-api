@@ -103,7 +103,7 @@ namespace ADP.Portal.Core.Git.Services
                 }
 
                 logger.LogDebug("Processing templates for the team:'{TeamName}', service:'{ServiceName}' and environment:'{Environment}'.", teamName, serviceName, environment);
-                var generatedFiles = ProcessTemplates(templates, tenantConfig, teamConfig, services);
+                var generatedFiles = ProcessTemplates(templates.DeepCopy(), tenantConfig, teamConfig, services);
 
                 if (generatedFiles.Count > 0)
                 {
