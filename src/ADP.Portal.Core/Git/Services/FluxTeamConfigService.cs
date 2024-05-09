@@ -541,24 +541,24 @@ namespace ADP.Portal.Core.Git.Services
 
         private async Task MergeManifests(string programmeName, string teamName, IEnumerable<FluxService> services, Dictionary<string, FluxTemplateFile> generatedFiles)
         {
-            foreach (var service in services)
+            foreach (var envName in services.SelectMany(services => services.Environments.Select(env => env.Name)).Distinct())
             {
-                foreach (var envName in service.Environments.Select(env => env.Name))
+                var fileName = string.Format(Constants.Flux.Services.TEAM_ENV_KUSTOMIZATION_FILE, programmeName, teamName, $"{envName[..3]}/0{envName[3..]}");
+                if (generatedFiles.ContainsKey(fileName))
                 {
-                    var fileName = string.Format(Constants.Flux.Services.TEAM_ENV_KUSTOMIZATION_FILE, programmeName, teamName, $"{envName[..3]}/0{envName[3..]}");
-                    if (generatedFiles.ContainsKey(fileName))
+                    var config = await gitHubRepository.GetConfigAsync<Dictionary<object, object>>(fileName, fluxServiceRepo);
+                    foreach (var serviceName in services.Where(service => service.Environments.Exists(env => env.Name == envName)).Select(service=> service.Name))
                     {
-                        var config = await gitHubRepository.GetConfigAsync<Dictionary<object, object>>(fileName, fluxServiceRepo);
                         if (config != null)
                         {
                             var content = config[Constants.Flux.Templates.RESOURCES_KEY];
-                            AddItemToList(content, $"../../{service.Name}");
+                            AddItemToList(content, $"../../{serviceName}");
                             generatedFiles[fileName] = new FluxTemplateFile(config);
                         }
                         else
                         {
                             var content = generatedFiles[fileName].Content[Constants.Flux.Templates.RESOURCES_KEY];
-                            AddItemToList(content, $"../../{service.Name}");
+                            AddItemToList(content, $"../../{serviceName}");
                         }
                     }
                 }
