@@ -119,7 +119,7 @@ public class GitHubService : IGitHubService
         logger.LogInformation("Creating team {TeamName}.", team.Name);
         var newTeam = await TryCreateTeam(request);
         if (newTeam is null)
-            return null;
+            return await TryAdoptTeamAsync(team);
 
         logger.LogInformation("Team {TeamId} ({TeamName}) has been created, syncing members.", newTeam.Id, newTeam.Name);
         await SyncTeamMembers(newTeam.Id, [], BuildTeamRoleDictionary(null, team.Members));
@@ -136,8 +136,21 @@ public class GitHubService : IGitHubService
         };
     }
 
+    private async Task<GithubTeamDetails?> TryAdoptTeamAsync(GithubTeamUpdate team)
+    {
+        if (options.Value.BlacklistedTeams.Contains(team.Name, StringComparer.OrdinalIgnoreCase))
+            return null;
+
+        var toAdopt = await GetTeamDetails(team.Name);
+        if (toAdopt is null || !toAdopt.Members.Concat(toAdopt.Maintainers).Contains(options.Value.AdminLogin))
+            return null;
+
+        return await UpdateTeamAsync(toAdopt, team);
+    }
+
     private async Task SyncTeamMembers(int teamId, Dictionary<string, TeamRole> currentMembers, Dictionary<string, TeamRole> targetMembers)
     {
+        targetMembers[options.Value.AdminLogin] = TeamRole.Maintainer;
         var setMembers = targetMembers
             .Where(kvp => !currentMembers.TryGetValue(kvp.Key, out var currentRole) || currentRole < kvp.Value)
             .Select(m => SetMemberRole(m.Key, m.Value));
@@ -183,12 +196,27 @@ public class GitHubService : IGitHubService
 
         logger.LogInformation("Getting details of {TeamId}.", teamId);
         var team = await TryGetTeam(id);
+        return await ResolveTeamDetails(team);
+    }
+
+    private async Task<GithubTeamDetails?> GetTeamDetails(string? teamName)
+    {
+        if (teamName is not string name)
+            return null;
+
+        logger.LogInformation("Getting details of {TeamName}.", name);
+        var team = await TryGetTeam(name);
+        return await ResolveTeamDetails(team);
+    }
+
+    private async Task<GithubTeamDetails?> ResolveTeamDetails(Team? team)
+    {
         if (team is null || !StringComparer.OrdinalIgnoreCase.Equals(team.Organization.Login, options.Value.Organisation))
         {
             return null;
         }
 
-        logger.LogInformation("Getting members and maintainers of {TeamId}.", teamId);
+        logger.LogInformation("Getting members and maintainers of {TeamId}.", team.Id);
         var members = await client.Organization.Team.GetAllMembers(team.Id, new TeamMembersRequest(TeamRoleFilter.Member));
         var maintainers = await client.Organization.Team.GetAllMembers(team.Id, new TeamMembersRequest(TeamRoleFilter.Maintainer));
 
@@ -233,6 +261,18 @@ public class GitHubService : IGitHubService
         try
         {
             return await client.Organization.Team.Get(teamId);
+        }
+        catch (NotFoundException)
+        {
+            return default;
+        }
+    }
+
+    private async Task<Team?> TryGetTeam(string teamName)
+    {
+        try
+        {
+            return await client.Organization.Team.GetByName(options.Value.Organisation, teamName);
         }
         catch (NotFoundException)
         {

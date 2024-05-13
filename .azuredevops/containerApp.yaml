@@ -75,6 +75,10 @@ properties:
             value: "main"
           - name: TeamGitRepo__Organisation
             secretRef: git-repo-org
+          - name: TeamGitRepo__BlacklistedTeams__0
+            value: "ADP-Platform-Admins"
+          - name: TeamGitRepo__AdminLogin
+            value: "adp-platform"
           - name: FluxTemplatesGitRepo__Name
             value: "adp-flux-templates"
           - name: FluxTemplatesGitRepo__Reference
