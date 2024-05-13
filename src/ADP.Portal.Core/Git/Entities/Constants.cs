@@ -47,7 +47,7 @@
                 public const string VALUES_KEY = "values";
                 public const string LABELS_KEY = "labels";
                 public const string INGRESS_KEY = "ingress";
-                public const string INGRESS_ENDPOINT_TOKEN_KEY = "__INGRESS_ENDPOINT__";
+                public const string INGRESS_ENDPOINT_TOKEN_KEY = "INGRESS_ENDPOINT";
                 public const string PREDEPLOY_KEY = "pre-deploy";
                 public const string INFRA_KEY = "infra";
                 public const string POSTGRESRESOURCEGROUPNAME_KEY = "postgresResourceGroupName";
