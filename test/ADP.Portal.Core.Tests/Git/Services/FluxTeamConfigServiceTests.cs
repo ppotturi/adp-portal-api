@@ -2,6 +2,7 @@
 using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Git.Services;
 using AutoFixture;
+using FluentAssertions;
 using Microsoft.Azure.Pipelines.WebApi;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -461,7 +462,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
         [Test]
         [TestCase(true)]
         [TestCase(false)]
-        public async Task GenerateManifest_MergeManifests(bool configExists)
+        public async Task GenerateManifest_Should_Merge_EnvServicesManifests(bool configExists)
         {
             // Arrange
             var serviceName = "service1";
@@ -476,12 +477,14 @@ namespace ADP.Portal.Core.Tests.Git.Services
             var envPath = $"{envList[0].Name[..3]}/0{envList[0].Name[3..]}";
             var content = new FluxTemplateFile(new Dictionary<object, object> { { Constants.Flux.Templates.RESOURCES_KEY, new List<object>() } });
 
+
+            var envServicesKustomization = string.Format(Constants.Flux.Services.TEAM_SERVICE_ENV_KUSTOMIZATION_FILE, fluxTeamConfig.ProgrammeName, fluxTeamConfig.TeamName, envPath);
             var serviceTemplates = fixture.Build<KeyValuePair<string, FluxTemplateFile>>().CreateMany(1)
                 .Select(x => new KeyValuePair<string, FluxTemplateFile>(string.Format("{0}/{1}/{2}/kustomization.yaml", fluxTeamConfig.ProgrammeName, fluxTeamConfig.TeamName, envPath), content));
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
             gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
-            gitOpsConfigRepository.GetConfigAsync<Dictionary<object, object>>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(configExists ? content.Content : null);
+            gitOpsConfigRepository.GetConfigAsync<Dictionary<object, object>>(Arg.Is(envServicesKustomization), Arg.Any<GitRepo>()).Returns(configExists ? content.Content : null);
             gitOpsConfigRepository.GetAllFilesAsync(fluxTemplateRepo, Constants.Flux.Templates.GIT_REPO_TEMPLATE_PATH).Returns(serviceTemplates);
             gitOpsConfigRepository.GetBranchAsync(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns((Reference?)default);
             gitOpsConfigRepository.CreateCommitAsync(fluxServicesRepo, Arg.Any<Dictionary<string, FluxTemplateFile>>(), Arg.Any<string>(), Arg.Any<string>())
@@ -489,11 +492,60 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
             // Act
             var result = await service.GenerateManifestAsync("tenant1", "team1", serviceName);
+            serviceTemplates.First().Value.Content.TryGetValue(Constants.Flux.Templates.RESOURCES_KEY, out var resources);
 
             // Assert
             Assert.That(result, Is.Not.Null);
             await gitOpsConfigRepository.Received().CreateBranchAsync(fluxServicesRepo, Arg.Any<string>(), Arg.Any<string>());
             await gitOpsConfigRepository.Received().CreatePullRequestAsync(fluxServicesRepo, Arg.Any<string>(), Arg.Any<string>());
+            if (configExists && resources != null)
+            {
+                Assert.That(((List<object>)resources)[0], Is.EqualTo($"../../{serviceName}"));
+            }
+        }
+
+        [Test]
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task GenerateManifest_Should_Merge_EnvTeamsManifests(bool configExists)
+        {
+            // Arrange
+            var serviceName = "service1";
+
+            var envList = fixture.Build<FluxEnvironment>().CreateMany(2).ToList();
+            var fluxServices = fixture.Build<FluxService>().With(p => p.Name, serviceName).With(e => e.Environments, envList).With(x => x.Type, FluxServiceType.Backend)
+                                    .With(x => x.ConfigVariables, [new FluxConfig { Key = Constants.Flux.Templates.POSTGRES_DB_KEY, Value = "db" }]).CreateMany(1).ToList();
+            var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
+
+            var fluxTenantConfig = fixture.Build<FluxTenant>().With(x => x.Environments, envList).Create();
+
+            var env = envList[0].Name[..3];
+            var content = new FluxTemplateFile(new Dictionary<object, object> { { Constants.Flux.Templates.RESOURCES_KEY, new List<object>() } });
+
+            var envServicesKustomization = string.Format(Constants.Flux.Services.TEAM_ENV_BASE_KUSTOMIZATION_FILE, env);
+            var serviceTemplates = fixture.Build<KeyValuePair<string, FluxTemplateFile>>().CreateMany(1)
+                .Select(x => new KeyValuePair<string, FluxTemplateFile>(string.Format("environments/{0}/base/kustomization.yaml", env), content));
+
+            gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
+            gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
+            gitOpsConfigRepository.GetConfigAsync<Dictionary<object, object>>(Arg.Is(envServicesKustomization), Arg.Any<GitRepo>()).Returns(configExists ? content.Content : null);
+            gitOpsConfigRepository.GetAllFilesAsync(fluxTemplateRepo, Constants.Flux.Templates.GIT_REPO_TEMPLATE_PATH).Returns(serviceTemplates);
+            gitOpsConfigRepository.GetBranchAsync(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns((Reference?)default);
+            gitOpsConfigRepository.CreateCommitAsync(fluxServicesRepo, Arg.Any<Dictionary<string, FluxTemplateFile>>(), Arg.Any<string>(), Arg.Any<string>())
+                .Returns(fixture.Build<Commit>().Create());
+
+            // Act
+            var result = await service.GenerateManifestAsync("tenant1", "team1", serviceName);
+            serviceTemplates.First().Value.Content.TryGetValue(Constants.Flux.Templates.RESOURCES_KEY, out var resources);
+
+            // Assert
+            Assert.That(result, Is.Not.Null);
+            await gitOpsConfigRepository.Received().CreateBranchAsync(fluxServicesRepo, Arg.Any<string>(), Arg.Any<string>());
+            await gitOpsConfigRepository.Received().CreatePullRequestAsync(fluxServicesRepo, Arg.Any<string>(), Arg.Any<string>());
+            if (configExists && resources != null)
+            {
+                Assert.That(((List<object>)resources)[0], Is.EqualTo($"../../../{fluxTeamConfig.ProgrammeName}/{fluxTeamConfig.TeamName}/base/patch"));
+            }
         }
 
         [Test]
@@ -555,12 +607,17 @@ namespace ADP.Portal.Core.Tests.Git.Services
         }
 
         [Test]
-        public async Task AddServiceAsync_Should_AddService_When_Service_Not_Exists()
+        [TestCase(FluxServiceType.Frontend)]
+        [TestCase(FluxServiceType.Backend)]
+        public async Task AddServiceAsync_Should_AddService_When_Service_Not_Exists(FluxServiceType type)
         {
             // Arrange
             var teamName = "team1";
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().Create();
-            var fluxService = fixture.Build<FluxService>().Create();
+            var fluxService = fixture.Build<FluxService>()
+                .With(x => x.Type, type)
+                .With(x => x.ConfigVariables, [])
+                .Create();
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
             gitOpsConfigRepository.UpdateConfigAsync(Arg.Any<GitRepo>(), string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), Arg.Any<string>()).Returns("sha");
@@ -572,6 +629,12 @@ namespace ADP.Portal.Core.Tests.Git.Services
             Assert.That(result, Is.Not.Null);
             Assert.That(result.IsConfigExists, Is.True);
             Assert.That(result.Errors.Count, Is.EqualTo(0));
+
+            if(type == FluxServiceType.Frontend)
+            {
+                Assert.That(fluxService.ConfigVariables[0].Key, Is.EqualTo(Constants.Flux.Templates.INGRESS_ENDPOINT_TOKEN_KEY));
+                Assert.That(fluxService.ConfigVariables[0].Value, Is.EqualTo(fluxService.Name));
+            }
         }
 
 

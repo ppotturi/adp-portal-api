@@ -16,8 +16,8 @@
             {
                 public const string TEAM_SERVICE_DEPLOY_ENV_PATCH_FILE = "services/{0}/{1}/{2}/deploy/{3}/patch.yaml";
                 public const string TEAM_SERVICE_INFRA_ENV_PATCH_FILE = "services/{0}/{1}/{2}/infra/{3}/patch.yaml";
-                public const string TEAM_ENV_KUSTOMIZATION_FILE = "services/{0}/{1}/{2}/kustomization.yaml";
-                
+                public const string TEAM_SERVICE_ENV_KUSTOMIZATION_FILE = "services/{0}/{1}/{2}/kustomization.yaml";
+                public const string TEAM_ENV_BASE_KUSTOMIZATION_FILE = "services/environments/{0}/base/kustomization.yaml";
             }
 
             public static class Templates
@@ -47,6 +47,7 @@
                 public const string VALUES_KEY = "values";
                 public const string LABELS_KEY = "labels";
                 public const string INGRESS_KEY = "ingress";
+                public const string INGRESS_ENDPOINT_TOKEN_KEY = "__INGRESS_ENDPOINT__";
                 public const string PREDEPLOY_KEY = "pre-deploy";
                 public const string INFRA_KEY = "infra";
                 public const string POSTGRESRESOURCEGROUPNAME_KEY = "postgresResourceGroupName";

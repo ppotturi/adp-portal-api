@@ -18,12 +18,14 @@
             return this;
         }
 
-        public YamlQuery Get(string prop)
+        public YamlQuery Get(string? prop = null)
         {
             if (current == null)
                 throw new InvalidOperationException();
 
-            current = Query<object>(current, null, prop, key);
+            if (prop != null)
+                current = Query<object>(current, null, prop, key);
+
             return this;
         }
 
