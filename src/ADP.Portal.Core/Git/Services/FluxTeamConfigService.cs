@@ -81,6 +81,11 @@ namespace ADP.Portal.Core.Git.Services
                 return result;
             }
 
+            foreach (var service in teamConfig.Services)
+            {
+                service.Environments = service.Environments.Where(env => tenantConfig.Environments.Exists(x => x.Name.Equals(env.Name))).ToList();
+            }
+
             logger.LogInformation("Reading flux templates.");
 
             var cacheKey = $"flux-templates-{fluxTemplatesRepo.Reference}";
@@ -109,7 +114,7 @@ namespace ADP.Portal.Core.Git.Services
                 {
                     logger.LogDebug("Merging manifests for the team:'{TeamName}', service:'{ServiceName}' and environment:'{Environment}'.", teamName, serviceName, environment);
                     await MergeEnvServicesManifestsAsync(teamConfig.ProgrammeName, teamConfig.TeamName, services, generatedFiles);
-                   
+
                     await MergeEnvTeamsManifestsAsync(teamConfig.ProgrammeName, teamConfig.TeamName, services, generatedFiles);
 
                     logger.LogDebug("Pushing manifests to the repository:{FluxServiceRepo} for the team:'{TeamName}', service:'{ServiceName}' and environment:'{Environment}'.", fluxServiceRepo.Name, teamName, serviceName, environment);
@@ -373,8 +378,7 @@ namespace ADP.Portal.Core.Git.Services
             {
                 foreach (var template in templates)
                 {
-                    service.Environments.Where(env => tenantConfig.Environments.Exists(x => x.Name.Equals(env.Name)))
-                        .ForEach(environment =>
+                    service.Environments.ForEach(environment =>
                         {
 
                             var key = template.Key.Replace(Constants.Flux.Templates.PROGRAMME_FOLDER, teamConfig.ProgrammeName)
@@ -559,7 +563,7 @@ namespace ADP.Portal.Core.Git.Services
                         var item = new YamlQuery(config ?? file.Content)
                             .On(Constants.Flux.Templates.RESOURCES_KEY)
                             .Get().ToList<List<object>>();
-                        AddItemToList(item.First(), $"../../{serviceName}");
+                        AddItemToList(item[0], $"../../{serviceName}");
                         generatedFiles[fileName] = new FluxTemplateFile(config ?? file.Content);
                     }
                 }
@@ -578,7 +582,7 @@ namespace ADP.Portal.Core.Git.Services
                     var item = new YamlQuery(config)
                             .On(Constants.Flux.Templates.RESOURCES_KEY)
                             .Get().ToList<List<object>>();
-                    AddItemToList(item.First(), $"../../../{programmeName}/{teamName}/base/patch");
+                    AddItemToList(item[0], $"../../../{programmeName}/{teamName}/base/patch");
                     generatedFiles[fileName] = new FluxTemplateFile(config);
                 }
             }
