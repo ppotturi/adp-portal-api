@@ -97,12 +97,12 @@ public class GitHubService : IGitHubService
         maintainers ??= [];
         members ??= [];
 
-        members = members.Except(maintainers);
+        members = members.Except(maintainers, StringComparer.OrdinalIgnoreCase);
 
         return Enumerable.Concat(
             maintainers.Select(m => KeyValuePair.Create(m, TeamRole.Maintainer)),
             members.Select(m => KeyValuePair.Create(m, TeamRole.Member)))
-            .ToDictionary();
+            .ToDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task<GithubTeamDetails?> CreateTeamAsync(GithubTeamUpdate team)
@@ -153,9 +153,10 @@ public class GitHubService : IGitHubService
         targetMembers[options.Value.AdminLogin] = TeamRole.Maintainer;
         var setMembers = targetMembers
             .Where(kvp => !currentMembers.TryGetValue(kvp.Key, out var currentRole) || currentRole < kvp.Value)
-            .Select(m => SetMemberRole(m.Key, m.Value));
-        var removeMembers = currentMembers.Keys.Except(targetMembers.Keys)
-            .Select(RemoveMember);
+            .Select(kvp => SetMemberRole(kvp.Key, kvp.Value));
+        var removeMembers = currentMembers
+            .Where(kvp => !targetMembers.ContainsKey(kvp.Key))
+            .Select(kvp => RemoveMember(kvp.Key));
         var mutations = setMembers.Concat(removeMembers);
 
         // If we want to run the changes in parallel, change to `await Task.WhenAll(mutations)`
