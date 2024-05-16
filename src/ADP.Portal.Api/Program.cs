@@ -100,7 +100,9 @@ namespace ADP.Portal.Api
             builder.Services.AddScoped<ICacheService, CacheService>();
             builder.Services.AddMemoryCache();
             builder.Services.AddScoped<IGroupsConfigService, GroupsConfigService>();
+            builder.Services.AddScoped<IFluxTemplateService, FluxTemplateService>();
             builder.Services.AddScoped<IFluxTeamConfigService, FluxTeamConfigService>();
+            builder.Services.AddScoped<IFluxManifestService, FluxManifestService>();
             builder.Services.AddSingleton(provider =>
             {
                 return new DeserializerBuilder()

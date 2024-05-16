@@ -12,21 +12,21 @@ namespace ADP.Portal.Core.Git.Services
     public class FluxTeamConfigService : IFluxTeamConfigService
     {
         private readonly IGitHubRepository gitHubRepository;
-        private readonly ICacheService cacheService;
+        private readonly IFluxTemplateService fluxTemplateService;
         private readonly GitRepo teamGitRepo;
         private readonly GitRepo fluxServiceRepo;
         private readonly GitRepo fluxTemplatesRepo;
         private readonly ILogger<FluxTeamConfigService> logger;
         private readonly ISerializer serializer;
 
-        public FluxTeamConfigService(IGitHubRepository gitHubRepository, IOptionsSnapshot<GitRepo> gitRepoOptions, ICacheService cacheService,
+        public FluxTeamConfigService(IGitHubRepository gitHubRepository, IOptionsSnapshot<GitRepo> gitRepoOptions, IFluxTemplateService fluxTemplateService,
             ILogger<FluxTeamConfigService> logger, ISerializer serializer)
         {
             this.gitHubRepository = gitHubRepository;
-            this.cacheService = cacheService;
             this.teamGitRepo = gitRepoOptions.Get(Constants.GitRepo.TEAM_REPO_CONFIG);
             this.fluxServiceRepo = gitRepoOptions.Get(Constants.GitRepo.TEAM_FLUX_SERVICES_CONFIG);
             this.fluxTemplatesRepo = gitRepoOptions.Get(Constants.GitRepo.TEAM_FLUX_TEMPLATES_CONFIG);
+            this.fluxTemplateService = fluxTemplateService;
             this.logger = logger;
             this.serializer = serializer;
         }
@@ -87,17 +87,9 @@ namespace ADP.Portal.Core.Git.Services
             }
 
             logger.LogInformation("Reading flux templates.");
-
-            var cacheKey = $"flux-templates-{fluxTemplatesRepo.Reference}";
-            var templates = cacheService.Get<IEnumerable<KeyValuePair<string, FluxTemplateFile>>>(cacheKey);
-            if (templates == null)
-            {
-                templates = await gitHubRepository.GetAllFilesAsync(fluxTemplatesRepo, Constants.Flux.Templates.GIT_REPO_TEMPLATE_PATH);
-                cacheService.Set(cacheKey, templates);
-            }
+            var templates = await fluxTemplateService.GetFluxTemplatesAsync();
 
             logger.LogInformation("Generating flux config for the team:'{TeamName}', service:'{ServiceName}' and environment:'{Environment}'.", teamName, serviceName, environment);
-
             var services = serviceName != null ? teamConfig.Services.Where(x => x.Name.Equals(serviceName)) : teamConfig.Services;
 
             if (services.Any())
@@ -118,7 +110,7 @@ namespace ADP.Portal.Core.Git.Services
                     await MergeEnvTeamsManifestsAsync(teamConfig.ProgrammeName, teamConfig.TeamName, services, generatedFiles);
 
                     logger.LogDebug("Pushing manifests to the repository:{FluxServiceRepo} for the team:'{TeamName}', service:'{ServiceName}' and environment:'{Environment}'.", fluxServiceRepo.Name, teamName, serviceName, environment);
-                    await PushFilesToFluxRepository(fluxServiceRepo, teamName, serviceName, generatedFiles);
+                    await PushFilesToFluxRepository(fluxServiceRepo, teamName, serviceName, environment, generatedFiles);
                 }
             }
 
@@ -480,15 +472,20 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private async Task PushFilesToFluxRepository(GitRepo gitRepoFluxServices, string teamName, string? serviceName, Dictionary<string, FluxTemplateFile> generatedFiles)
+        private async Task PushFilesToFluxRepository(GitRepo gitRepoFluxServices, string teamName, string? serviceName, string? environment, Dictionary<string, FluxTemplateFile> generatedFiles)
         {
-            var branchName = $"refs/heads/features/{teamName}{(string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}")}";
+            var branchName = string.Concat("refs/heads/features/", teamName,
+                                    string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}",
+                                    string.IsNullOrEmpty(environment) ? "" : $"-{environment}");
+
             var branchRef = await gitHubRepository.GetBranchAsync(gitRepoFluxServices, branchName);
 
             string message;
             if (branchRef == null)
             {
-                message = string.IsNullOrEmpty(serviceName) ? $"{teamName.ToUpper()} Manifest" : $"{serviceName.ToUpper()} Manifest";
+                message = string.Concat(string.IsNullOrEmpty(serviceName) ? $"{teamName.ToUpper()}" : $"{serviceName.ToUpper()}",
+                    string.IsNullOrEmpty(environment) ? "" : $" {environment.ToUpper()}",
+                    " Manifest");
             }
             else
             {

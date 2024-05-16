@@ -67,7 +67,6 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
             var pullRequest = new NewPullRequest(message, branchName, gitRepo.Reference);
             var createdPullRequest = await gitHubClient.PullRequest.Create(repository.Owner.Login, repository.Name, pullRequest);
-
             return createdPullRequest != null;
         }
 
