@@ -60,7 +60,10 @@ public class AadGroupController : ControllerBase
         teamName = teamName.ToLower();
 
         logger.LogInformation("Creating Groups Config for the Team:'{TeamName}'", teamName);
-        var result = await groupsConfigService.CreateGroupsConfigAsync(tenantName, teamName, createGroupsConfigRequest.Members);
+        var result = await groupsConfigService.CreateGroupsConfigAsync(tenantName, teamName,
+                                                                       createGroupsConfigRequest.AdminMembers,
+                                                                       createGroupsConfigRequest.TechUserMembers,
+                                                                       createGroupsConfigRequest.NonTechUserMembers);
         if (result.Errors.Count != 0)
         {
             logger.LogError("Error while creating groups config for the Team:'{TeamName}'", teamName);
@@ -69,6 +72,37 @@ public class AadGroupController : ControllerBase
 
         logger.LogInformation("Sync Groups for the Team:'{TeamName}'", teamName);
         var syncResult = await groupsConfigService.SyncGroupsAsync(tenantName, teamName, ownerId, null);
+        if (syncResult.Errors.Count != 0)
+        {
+            logger.LogError("Error while syncing groups for the Team:'{TeamName}'", teamName);
+            return BadRequest(syncResult.Errors);
+        }
+
+        return Created();
+    }
+
+    [HttpPatch("{teamName}/members", Name = "SetMembersForTeam")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult> SetGroupMembersAsync(string teamName, [FromBody] SetGroupMembersRequest setGroupMembersRequest)
+    {
+        var tenantName = azureAdConfig.Value.TenantName;
+        var ownerId = azureAdConfig.Value.SpObjectId;
+        teamName = teamName.ToLower();
+
+        logger.LogInformation("Setting group members for team: {TeamName}", teamName);
+        var result = await groupsConfigService.SetGroupMembersAsync(tenantName, teamName,
+                                                                    setGroupMembersRequest.AdminMembers,
+                                                                    setGroupMembersRequest.TechUserMembers,
+                                                                    setGroupMembersRequest.NonTechUserMembers);
+        if (result.Errors.Count != 0)
+        {
+            logger.LogError("Error while creating groups config for the Team:'{TeamName}'", teamName);
+            return BadRequest(result.Errors);
+        }
+
+        logger.LogInformation("Sync Groups for the Team:'{TeamName}'", teamName);
+        var syncResult = await groupsConfigService.SyncGroupsAsync(tenantName, teamName, ownerId, GroupType.UserGroup);
         if (syncResult.Errors.Count != 0)
         {
             logger.LogError("Error while syncing groups for the Team:'{TeamName}'", teamName);

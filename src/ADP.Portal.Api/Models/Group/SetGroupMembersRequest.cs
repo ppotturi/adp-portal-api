@@ -2,7 +2,7 @@
 
 namespace ADP.Portal.Api.Models.Group;
 
-public sealed class CreateGroupsConfigRequest
+public sealed class SetGroupMembersRequest
 {
     [Required]
     public required IEnumerable<string> TechUserMembers { get; set; }

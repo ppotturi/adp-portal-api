@@ -6,8 +6,10 @@ namespace ADP.Portal.Core.Git.Services
     {
         Task<IEnumerable<Group>> GetGroupsConfigAsync(string tenantName, string teamName);
 
-        Task<GroupConfigResult> CreateGroupsConfigAsync(string tenantName, string teamName, IEnumerable<string> groupMembers);
+        Task<GroupConfigResult> CreateGroupsConfigAsync(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers);
 
         Task<GroupSyncResult> SyncGroupsAsync(string tenantName, string teamName, string ownerId, GroupType? groupType);
+
+        Task<GroupConfigResult> SetGroupMembersAsync(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers);
     }
 }

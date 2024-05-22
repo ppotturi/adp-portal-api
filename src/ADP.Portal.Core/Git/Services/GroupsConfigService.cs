@@ -9,314 +9,338 @@ using Microsoft.VisualStudio.Services.Common;
 using Octokit;
 using YamlDotNet.Serialization;
 
-namespace ADP.Portal.Core.Git.Services
+namespace ADP.Portal.Core.Git.Services;
+
+public partial class GroupsConfigService : IGroupsConfigService
 {
-    public partial class GroupsConfigService : IGroupsConfigService
+    private readonly IGitHubRepository gitHubRepository;
+    private readonly GitRepo teamGitRepo;
+    private readonly ILogger<GroupsConfigService> logger;
+    private readonly IGroupService groupService;
+    private readonly ISerializer serializer;
+    private const string GLOBAL_READ_GROUP = "AAG-Azure-ADP-GlobalRead";
+    private const string PLATFORM_ENGINEERS_GROUP = "AG-Azure-CDO-ADP-PlatformEngineers";
+
+    public GroupsConfigService(IGitHubRepository gitHubRepository, IOptionsSnapshot<GitRepo> gitRepoOptions,
+        ILogger<GroupsConfigService> logger, IGroupService groupService, ISerializer serializer)
     {
-        private readonly IGitHubRepository gitHubRepository;
-        private readonly GitRepo teamGitRepo;
-        private readonly ILogger<GroupsConfigService> logger;
-        private readonly IGroupService groupService;
-        private readonly ISerializer serializer;
-        private const string GLOBAL_READ_GROUP = "AAG-Azure-ADP-GlobalRead";
-        private const string PLATFORM_ENGINEERS_GROUP = "AG-Azure-CDO-ADP-PlatformEngineers";
+        this.gitHubRepository = gitHubRepository;
+        this.teamGitRepo = gitRepoOptions.Get(Constants.GitRepo.TEAM_REPO_CONFIG);
+        this.logger = logger;
+        this.groupService = groupService;
+        this.serializer = serializer;
+    }
 
-        public GroupsConfigService(IGitHubRepository gitHubRepository, IOptionsSnapshot<GitRepo> gitRepoOptions,
-            ILogger<GroupsConfigService> logger, IGroupService groupService, ISerializer serializer)
+    public async Task<IEnumerable<Group>> GetGroupsConfigAsync(string tenantName, string teamName)
+    {
+        return await GetGroupsConfigAsync(tenantName, teamName, null);
+    }
+
+    public async Task<GroupConfigResult> CreateGroupsConfigAsync(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers)
+    {
+        var result = new GroupConfigResult();
+
+        var fileName = $"{tenantName}/{teamName}.yaml";
+        var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers);
+
+        logger.LogInformation("Create groups config for the team({TeamName})", teamName);
+        var response = await gitHubRepository.CreateConfigAsync(teamGitRepo, fileName, serializer.Serialize(groups));
+        if (string.IsNullOrEmpty(response))
         {
-            this.gitHubRepository = gitHubRepository;
-            this.teamGitRepo = gitRepoOptions.Get(Constants.GitRepo.TEAM_REPO_CONFIG);
-            this.logger = logger;
-            this.groupService = groupService;
-            this.serializer = serializer;
+            result.Errors.Add($"Failed to save the config for the team: {teamName}");
         }
+        return result;
+    }
 
-        public async Task<IEnumerable<Group>> GetGroupsConfigAsync(string tenantName, string teamName)
+    public async Task<GroupConfigResult> SetGroupMembersAsync(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers)
+    {
+        var result = new GroupConfigResult();
+
+        var existingGroups = await GetGroupsConfigAsync(tenantName, teamName, GroupType.UserGroup);
+        if (existingGroups == null || !existingGroups.Any())
         {
-            return await GetGroupsConfigAsync(tenantName, teamName, null);
-        }
-
-        public async Task<GroupConfigResult> CreateGroupsConfigAsync(string tenantName, string teamName, IEnumerable<string> groupMembers)
-        {
-            var result = new GroupConfigResult();
-
-            var fileName = $"{tenantName}/{teamName}.yaml";
-            var groups = BuildTeamGroups(tenantName, teamName, groupMembers);
-
-            logger.LogInformation("Create groups config for the team({TeamName})", teamName);
-            var response = await gitHubRepository.CreateConfigAsync(teamGitRepo, fileName, serializer.Serialize(groups));
-            if (string.IsNullOrEmpty(response))
-            {
-                result.Errors.Add($"Failed to save the config for the team: {teamName}");
-            }
+            logger.LogDebug("User groups for team {TeamName} have not been created", teamName);
+            result.Errors.Add($"User groups for team {teamName} have not been created");
             return result;
         }
 
-        private static GroupsRoot BuildTeamGroups(string tenantName, string teamName, IEnumerable<string> groupMembers)
+        var fileName = $"{tenantName}/{teamName}.yaml";
+        var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers);
+        logger.LogInformation("Update groups config for the team {TeamName}", teamName);
+        var response = await gitHubRepository.UpdateConfigAsync(teamGitRepo, fileName, serializer.Serialize(groups));
+        if (string.IsNullOrEmpty(response))
         {
-            var environments = new List<string>();
-            switch (tenantName)
-            {
-                case "defradev":
-                    environments = ["snd1", "snd2", "snd3"];
-                    break;
-                case "defra":
-                    environments = ["snd4", "dev1", "tst1", "pre1", "prd1"];
-                    break;
-            }
+            result.Errors.Add($"Failed to save the config for the team: {teamName}");
+        }
+        return result;
+    }
 
-            var root = new GroupsRoot
-            {
-                Groups = [
-                    new Group {
-                        DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_TechUser",
-                        Type = GroupType.UserGroup,
-                        GroupMemberships = [GLOBAL_READ_GROUP]
-                    },
-                    new Group {
-                        DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_NonTechUser",
-                        Type = GroupType.UserGroup,
-                        GroupMemberships = [GLOBAL_READ_GROUP]
-                    },
-                    new Group {
-                        DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_Admin",
-                        Type = GroupType.UserGroup,
-                        Members = groupMembers.ToList()
-                    }
-                ]
-            };
+    private static GroupsRoot BuildTeamGroups(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers)
+    {
+        var environments = new List<string>();
+        switch (tenantName)
+        {
+            case "defradev":
+                environments = ["snd1", "snd2", "snd3"];
+                break;
+            case "defra":
+                environments = ["snd4", "dev1", "tst1", "pre1", "prd1"];
+                break;
+        }
 
-            environments.ForEach(item =>
+        var root = new GroupsRoot
+        {
+            Groups = [
+                new Group {
+                    DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_TechUser",
+                    Type = GroupType.UserGroup,
+                    GroupMemberships = [GLOBAL_READ_GROUP],
+                    Members = techUserGroupMembers.ToList()
+                },
+                new Group {
+                    DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_NonTechUser",
+                    Type = GroupType.UserGroup,
+                    GroupMemberships = [GLOBAL_READ_GROUP],
+                    Members = nonTechUserGroupMembers.ToList()
+                },
+                new Group {
+                    DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_Admin",
+                    Type = GroupType.UserGroup,
+                    Members = adminGroupMembers.ToList()
+                }
+            ]
+        };
+
+        environments.ForEach(item =>
+        {
+            root.Groups.Add(new Group
             {
-                root.Groups.Add(new Group
-                {
-                    DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-{item.ToUpper()}-PostgresDB_Reader",
-                    Description = "AD group to grant reader access to postgres DB",
-                    Type = GroupType.AccessGroup,
-                    Members = [PLATFORM_ENGINEERS_GROUP]
-                });
-                root.Groups.Add(new Group
-                {
-                    DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-{item.ToUpper()}-PostgresDB_Writer",
-                    Description = "AD group to grant writer access to postgres DB",
-                    Type = GroupType.AccessGroup,
-                    Members = [PLATFORM_ENGINEERS_GROUP]
-                });
+                DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-{item.ToUpper()}-PostgresDB_Reader",
+                Description = "AD group to grant reader access to postgres DB",
+                Type = GroupType.AccessGroup,
+                Members = [PLATFORM_ENGINEERS_GROUP]
             });
-
-            return root;
-        }
-
-        public async Task<GroupSyncResult> SyncGroupsAsync(string tenantName, string teamName, string ownerId, GroupType? groupType)
-        {
-            var result = new GroupSyncResult();
-
-            var groups = await GetGroupsConfigAsync(tenantName, teamName, groupType);
-
-            if (!groups.Any())
+            root.Groups.Add(new Group
             {
-                result.IsConfigExists = false;
-                result.Errors.Add($"Groups config not found for the team:{teamName} in the tenant:{tenantName}");
-                return result;
-            }
+                DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-{item.ToUpper()}-PostgresDB_Writer",
+                Description = "AD group to grant writer access to postgres DB",
+                Type = GroupType.AccessGroup,
+                Members = [PLATFORM_ENGINEERS_GROUP]
+            });
+        });
 
-            logger.LogInformation("Syncing groups for the team({TeamName})", teamName);
-            var tasks = groups.Select(group => ProcessGroupAsync(group, ownerId, result));
-            await Task.WhenAll(tasks);
+        return root;
+    }
 
+    public async Task<GroupSyncResult> SyncGroupsAsync(string tenantName, string teamName, string ownerId, GroupType? groupType)
+    {
+        var result = new GroupSyncResult();
+
+        var groups = await GetGroupsConfigAsync(tenantName, teamName, groupType);
+
+        if (!groups.Any())
+        {
+            result.IsConfigExists = false;
+            result.Errors.Add($"Groups config not found for the team:{teamName} in the tenant:{tenantName}");
             return result;
         }
 
-        private async Task ProcessGroupAsync(Group group, string ownerId, GroupSyncResult result)
-        {
-            logger.LogInformation("Getting groupId for the group({DisplayName})", group.DisplayName);
-            var groupId = await groupService.GetGroupIdAsync(group.DisplayName);
+        logger.LogInformation("Syncing groups for the team({TeamName})", teamName);
+        var tasks = groups.Select(group => ProcessGroupAsync(group, ownerId, result));
+        await Task.WhenAll(tasks);
 
-            if (string.IsNullOrEmpty(groupId) && CanCreateGroup(group.Type))
-            {
-                logger.LogInformation("Creating a new Group({DisplayName})", group.DisplayName);
-                groupId = await CreateNewGroupAsync(group, ownerId);
-            }
+        return result;
+    }
 
-            if (string.IsNullOrEmpty(groupId))
-            {
-                result.Errors.Add($"Group '{group.DisplayName}' does not exists.");
-            }
-            else
-            {
-                logger.LogInformation("Syncing group members for the group({DisplayName})", group.DisplayName);
-                await SyncGroupMembersAsync(group, groupId, result);
-            }
-        }
+    private async Task ProcessGroupAsync(Group group, string ownerId, GroupSyncResult result)
+    {
+        logger.LogInformation("Getting groupId for the group({DisplayName})", group.DisplayName);
+        var groupId = await groupService.GetGroupIdAsync(group.DisplayName);
 
-        private async Task<IEnumerable<Group>> GetGroupsConfigAsync(string tenantName, string teamName, GroupType? groupType)
-        {
-            try
-            {
-                var fileName = $"{tenantName}/{teamName}.yaml";
-
-                logger.LogInformation("Getting groups config for the team({TeamName})", teamName);
-                var result = await gitHubRepository.GetConfigAsync<GroupsRoot>(fileName, teamGitRepo);
-
-                return result?.Groups.Where(g => groupType == null || g.Type == groupType) ?? [];
-            }
-            catch (NotFoundException)
-            {
-                return [];
-            }
-        }
-
-        private async Task<string?> CreateNewGroupAsync(Group group, string ownerId)
+        if (string.IsNullOrEmpty(groupId) && CanCreateGroup(group.Type))
         {
             logger.LogInformation("Creating a new Group({DisplayName})", group.DisplayName);
-
-            var aadGroup = group.Adapt<AadGroup>();
-            aadGroup.OwnerId = ownerId;
-
-            return await groupService.AddGroupAsync(aadGroup);
+            groupId = await CreateNewGroupAsync(group, ownerId);
         }
 
-        private async Task SyncGroupMembersAsync(Group group, string groupId, GroupSyncResult result)
+        if (string.IsNullOrEmpty(groupId))
+        {
+            result.Errors.Add($"Group '{group.DisplayName}' does not exists.");
+        }
+        else
         {
             logger.LogInformation("Syncing group members for the group({DisplayName})", group.DisplayName);
+            await SyncGroupMembersAsync(group, groupId, result);
+        }
+    }
 
-            if (CanSyncUserTypeMembers(group.Type))
-            {
-                await SyncUserTypeMembersAsync(result, group, groupId, false);
-            }
+    private async Task<IEnumerable<Group>> GetGroupsConfigAsync(string tenantName, string teamName, GroupType? groupType)
+    {
+        try
+        {
+            var fileName = $"{tenantName}/{teamName}.yaml";
 
-            if (CanSyncMemberships(group.Type))
-            {
-                logger.LogInformation("Syncing group memberships for the group({DisplayName})", group.DisplayName);
-                await SyncMembershipsAsync(result, group, groupId, false);
-            }
+            logger.LogInformation("Getting groups config for the team({TeamName})", teamName);
+            var result = await gitHubRepository.GetConfigAsync<GroupsRoot>(fileName, teamGitRepo);
 
-            if (CanSyncGroupTypeMembers(group.Type))
+            return result?.Groups.Where(g => groupType == null || g.Type == groupType) ?? [];
+        }
+        catch (NotFoundException)
+        {
+            return [];
+        }
+    }
+
+    private async Task<string?> CreateNewGroupAsync(Group group, string ownerId)
+    {
+        logger.LogInformation("Creating a new Group({DisplayName})", group.DisplayName);
+
+        var aadGroup = group.Adapt<AadGroup>();
+        aadGroup.OwnerId = ownerId;
+
+        return await groupService.AddGroupAsync(aadGroup);
+    }
+
+    private async Task SyncGroupMembersAsync(Group group, string groupId, GroupSyncResult result)
+    {
+        logger.LogInformation("Syncing group members for the group({DisplayName})", group.DisplayName);
+
+        if (CanSyncUserTypeMembers(group.Type))
+        {
+            await SyncUserTypeMembersAsync(result, group, groupId, false);
+        }
+
+        if (CanSyncMemberships(group.Type))
+        {
+            logger.LogInformation("Syncing group memberships for the group({DisplayName})", group.DisplayName);
+            await SyncMembershipsAsync(result, group, groupId, false);
+        }
+
+        if (CanSyncGroupTypeMembers(group.Type))
+        {
+            await SyncGroupTypeMembersAsync(result, group, groupId, false);
+        }
+    }
+
+    private async Task SyncUserTypeMembersAsync(GroupSyncResult result, Group group, string? groupId, bool isNewGroup)
+    {
+        if (groupId == null)
+        {
+            return;
+        }
+
+        var existingMembers = isNewGroup ? [] : await groupService.GetUserTypeGroupMembersAsync(groupId);
+
+        foreach (var member in existingMembers)
+        {
+            if (!group.Members.Contains(member.UserPrincipalName, StringComparer.OrdinalIgnoreCase))
             {
-                await SyncGroupTypeMembersAsync(result, group, groupId, false);
+                await groupService.RemoveGroupMemberAsync(groupId, member.Id);
             }
         }
 
-        private async Task SyncUserTypeMembersAsync(GroupSyncResult result, Group group, string? groupId, bool isNewGroup)
+        var existingMemberNames = existingMembers.Select(i => i.UserPrincipalName).ToList();
+
+        foreach (var member in group.Members)
         {
-            if (groupId == null)
+            if (!existingMemberNames.Contains(member, StringComparer.OrdinalIgnoreCase))
             {
-                return;
-            }
+                var memberId = await groupService.GetUserIdAsync(member);
 
-            var existingMembers = isNewGroup ? [] : await groupService.GetUserTypeGroupMembersAsync(groupId);
-
-            foreach (var member in existingMembers)
-            {
-                if (!group.Members.Contains(member.UserPrincipalName, StringComparer.OrdinalIgnoreCase))
+                if (memberId == null)
                 {
-                    await groupService.RemoveGroupMemberAsync(groupId, member.Id);
+                    result.Errors.Add($"User '{member}' not found for the group:{group.DisplayName}.");
                 }
-            }
-
-            var existingMemberNames = existingMembers.Select(i => i.UserPrincipalName).ToList();
-
-            foreach (var member in group.Members)
-            {
-                if (!existingMemberNames.Contains(member, StringComparer.OrdinalIgnoreCase))
+                else
                 {
-                    var memberId = await groupService.GetUserIdAsync(member);
-
-                    if (memberId == null)
-                    {
-                        result.Errors.Add($"User '{member}' not found for the group:{group.DisplayName}.");
-                    }
-                    else
-                    {
-                        await groupService.AddGroupMemberAsync(groupId, memberId);
-                    }
-                }
-            }
-        }
-
-        private async Task SyncGroupTypeMembersAsync(GroupSyncResult result, Group group, string groupId, bool isNewGroup)
-        {
-
-            var existingMembers = isNewGroup ? [] : await groupService.GetGroupTypeGroupMembersAsync(groupId);
-
-            foreach (var member in existingMembers)
-            {
-                if (!group.Members.Contains(member.DisplayName, StringComparer.OrdinalIgnoreCase))
-                {
-                    await groupService.RemoveGroupMemberAsync(groupId, member.Id);
-                }
-            }
-
-            var existingMemberNames = existingMembers.Select(i => i.DisplayName).ToList();
-
-            foreach (var member in group.Members)
-            {
-                if (!existingMemberNames.Contains(member, StringComparer.OrdinalIgnoreCase))
-                {
-                    var memberId = await groupService.GetGroupIdAsync(member);
-
-                    if (memberId == null)
-                    {
-                        result.Errors.Add($"Group '{member}' not found.");
-                    }
-                    else
-                    {
-                        await groupService.AddGroupMemberAsync(groupId, memberId);
-                    }
-                }
-            }
-        }
-
-        private async Task SyncMembershipsAsync(GroupSyncResult result, Group group, string groupId, bool IsNewGroup)
-        {
-
-            var existingMemberShips = IsNewGroup ? [] : await groupService.GetGroupMemberShipsAsync(groupId);
-
-            foreach (var memberShip in existingMemberShips)
-            {
-                if (memberShip.Id != null && !group.GroupMemberships.Contains(memberShip.DisplayName, StringComparer.OrdinalIgnoreCase))
-                {
-                    await groupService.RemoveGroupMemberAsync(memberShip.Id, groupId);
-                }
-            }
-
-            var existingMembershipNames = existingMemberShips.Select(i => i.DisplayName).ToList();
-
-            foreach (var groupMembership in group.GroupMemberships)
-            {
-                if (!existingMembershipNames.Contains(groupMembership, StringComparer.OrdinalIgnoreCase))
-                {
-                    var groupMembershipId = await groupService.GetGroupIdAsync(groupMembership);
-                    if (groupMembershipId == null)
-                    {
-                        result.Errors.Add($"Membership Group '{groupMembership}' not found for the group:{group.DisplayName}.");
-                    }
-                    else
-                    {
-                        await groupService.AddGroupMemberAsync(groupMembershipId, groupId);
-                    }
+                    await groupService.AddGroupMemberAsync(groupId, memberId);
                 }
             }
         }
+    }
 
-        private static bool CanCreateGroup(GroupType groupType)
+    private async Task SyncGroupTypeMembersAsync(GroupSyncResult result, Group group, string groupId, bool isNewGroup)
+    {
+
+        var existingMembers = isNewGroup ? [] : await groupService.GetGroupTypeGroupMembersAsync(groupId);
+
+        foreach (var member in existingMembers)
         {
-            return (groupType == GroupType.UserGroup || groupType == GroupType.AccessGroup);
+            if (!group.Members.Contains(member.DisplayName, StringComparer.OrdinalIgnoreCase))
+            {
+                await groupService.RemoveGroupMemberAsync(groupId, member.Id);
+            }
         }
 
-        private static bool CanSyncUserTypeMembers(GroupType groupType)
+        var existingMemberNames = existingMembers.Select(i => i.DisplayName).ToList();
+
+        foreach (var member in group.Members)
         {
-            return groupType == GroupType.OpenVpnGroup || groupType == GroupType.UserGroup;
+            if (!existingMemberNames.Contains(member, StringComparer.OrdinalIgnoreCase))
+            {
+                var memberId = await groupService.GetGroupIdAsync(member);
+
+                if (memberId == null)
+                {
+                    result.Errors.Add($"Group '{member}' not found.");
+                }
+                else
+                {
+                    await groupService.AddGroupMemberAsync(groupId, memberId);
+                }
+            }
+        }
+    }
+
+    private async Task SyncMembershipsAsync(GroupSyncResult result, Group group, string groupId, bool IsNewGroup)
+    {
+
+        var existingMemberShips = IsNewGroup ? [] : await groupService.GetGroupMemberShipsAsync(groupId);
+
+        foreach (var memberShip in existingMemberShips)
+        {
+            if (memberShip.Id != null && !group.GroupMemberships.Contains(memberShip.DisplayName, StringComparer.OrdinalIgnoreCase))
+            {
+                await groupService.RemoveGroupMemberAsync(memberShip.Id, groupId);
+            }
         }
 
-        private static bool CanSyncGroupTypeMembers(GroupType groupType)
-        {
-            return groupType == GroupType.AccessGroup;
-        }
+        var existingMembershipNames = existingMemberShips.Select(i => i.DisplayName).ToList();
 
-        private static bool CanSyncMemberships(GroupType groupType)
+        foreach (var groupMembership in group.GroupMemberships)
         {
-            return groupType == GroupType.UserGroup;
+            if (!existingMembershipNames.Contains(groupMembership, StringComparer.OrdinalIgnoreCase))
+            {
+                var groupMembershipId = await groupService.GetGroupIdAsync(groupMembership);
+                if (groupMembershipId == null)
+                {
+                    result.Errors.Add($"Membership Group '{groupMembership}' not found for the group:{group.DisplayName}.");
+                }
+                else
+                {
+                    await groupService.AddGroupMemberAsync(groupMembershipId, groupId);
+                }
+            }
         }
+    }
+
+    private static bool CanCreateGroup(GroupType groupType)
+    {
+        return (groupType == GroupType.UserGroup || groupType == GroupType.AccessGroup);
+    }
+
+    private static bool CanSyncUserTypeMembers(GroupType groupType)
+    {
+        return groupType == GroupType.OpenVpnGroup || groupType == GroupType.UserGroup;
+    }
+
+    private static bool CanSyncGroupTypeMembers(GroupType groupType)
+    {
+        return groupType == GroupType.AccessGroup;
+    }
+
+    private static bool CanSyncMemberships(GroupType groupType)
+    {
+        return groupType == GroupType.UserGroup;
     }
 }
