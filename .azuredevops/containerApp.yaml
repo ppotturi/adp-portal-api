@@ -39,7 +39,10 @@ properties:
         identity: {{userAssignedIdentity}} 
       - name: git-repo-org
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/GIT-REPO-ORG
-        identity: {{userAssignedIdentity}}         
+        identity: {{userAssignedIdentity}}
+      - name: app-insights-connectionstring
+        keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/SHARED-APPINSIGHTS-CONNECTIONSTRING
+        identity: {{userAssignedIdentity}}
   template:
     containers:
       - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
@@ -99,6 +102,12 @@ properties:
             secretRef: github-app-id
           - name: GitHubAppAuth__PrivateKeyBase64
             secretRef: github-privatekey-base64
+          - name: AppInsights__ConnectionString
+            secretRef: app-insights-connectionstring
+          - name: AppInsights__CloudRole
+            value: "adp-portal-api"
+          - name: UserAssignedIdentityResourceId
+            value: {{userAssignedIdentity}}
         resources:
           cpu: 0.5
           memory: 1Gi

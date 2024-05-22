@@ -1,4 +1,5 @@
 using ADP.Portal.Api.Config;
+using ADP.Portal.Api.Extensions;
 using ADP.Portal.Api.Mapster;
 using ADP.Portal.Api.Providers;
 using ADP.Portal.Api.Swagger;
@@ -7,7 +8,6 @@ using ADP.Portal.Core.Ado.Infrastructure;
 using ADP.Portal.Core.Ado.Services;
 using ADP.Portal.Core.Azure.Infrastructure;
 using ADP.Portal.Core.Azure.Services;
-using Entities = ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
 using ADP.Portal.Core.Git.Jwt;
 using ADP.Portal.Core.Git.Services;
@@ -19,6 +19,7 @@ using Microsoft.OpenApi.Models;
 using Octokit;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using Entities = ADP.Portal.Core.Git.Entities;
 
 namespace ADP.Portal.Api
 {
@@ -121,6 +122,13 @@ namespace ADP.Portal.Api
             builder.Services.Configure();
 
             builder.Services.AddControllers();
+
+            var appInsightsConfig = builder.Configuration.GetSection("AppInsights").Get<AppInsightsConfig>();
+
+            if (appInsightsConfig != null)
+            {
+                builder.ConfigureOpenTelemetry(appInsightsConfig);
+            }
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
@@ -135,7 +143,6 @@ namespace ADP.Portal.Api
                 config.ApiVersionReader = new HeaderApiVersionReader("api-version");
             });
         }
-
         private static GitHubClient GetGitHubClient(GitHubAppAuthConfig gitHubAppAuth)
         {
             var gitHubAppName = gitHubAppAuth.AppName.Replace(" ", "");
