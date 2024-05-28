@@ -69,7 +69,7 @@
 
                 public const string DEFAULT_VERSION_TOKEN_VALUE = "__ENVIRONMENT__adpinfcr__ENV_INSTANCE__401.azurecr.io/image/__SERVICE_NAME__:0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-__ENVIRONMENT__-0__ENV_INSTANCE__\"}";
                 public const string DEFAULT_VERSION_TAG_TOKEN_VALUE = "0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-__ENVIRONMENT__-0__ENV_INSTANCE__:tag\"}";
-                public const string DEFAULT_MIGRATION_VERSION_TOKEN_VALUE = "__SSV_PLATFORM_ACR__.azurecr.io/image/__SERVICE_NAME__-dbmigration:0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-dbmigration-__ENVIRONMENT__-0__ENV_INSTANCE__\"}";
+                public const string DEFAULT_MIGRATION_VERSION_TOKEN_VALUE = "__ENVIRONMENT__adpinfcr__ENV_INSTANCE__401.azurecr.io/image/__SERVICE_NAME__-dbmigration:0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-dbmigration-__ENVIRONMENT__-0__ENV_INSTANCE__\"}";
                 public const string DEFAULT_MIGRATION_VERSION_TAG_TOKEN_VALUE = "0.1.0#{\"$imagepolicy\":\"flux-config:__SERVICE_NAME__-dbmigration-__ENVIRONMENT__-0__ENV_INSTANCE__:tag\"}";
                 public const string PS_EXEC_DEFAULT_VERSION_TOKEN_VALUE = "__SSV_PLATFORM_ACR__.azurecr.io/image/powershell-executor:1#{\"$imagepolicy\":\"flux-config:powershell-executor-__ENVIRONMENT__-0__ENV_INSTANCE__\"}";
                 public const string IMAGEPOLICY_KEY = "#{\"$imagepolicy\":\"flux-config";
