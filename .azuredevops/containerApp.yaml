@@ -43,6 +43,12 @@ properties:
       - name: app-insights-connectionstring
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/SHARED-APPINSIGHTS-CONNECTIONSTRING
         identity: {{userAssignedIdentity}}
+      - name: backstage-authority
+        keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/BACKSTAGE-AUTHORITY
+        identity: {{userAssignedIdentity}}
+      - name: backstage-issuer
+        keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/BACKSTAGE-ISSUER
+        identity: {{userAssignedIdentity}}
   template:
     containers:
       - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
@@ -108,6 +114,12 @@ properties:
             value: "adp-portal-api"
           - name: UserAssignedIdentityResourceId
             value: {{userAssignedIdentity}}
+          - name: Authentication__backstage__Authority
+            secretRef: backstage-authority
+          - name: Authentication__backstage__TokenValidationParameters__ValidIssuer
+            secretRef: backstage-issuer
+          - name: Authentication__backstage__TokenValidationParameters__ValidAudience
+            value: backstage
         resources:
           cpu: 0.5
           memory: 1Gi

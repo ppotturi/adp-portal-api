@@ -2,12 +2,14 @@
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Services;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ADP.Portal.Api.Controllers;
 
 [Route("api/github/teams")]
 [ApiVersion("1.0")]
+[Authorize(AuthenticationSchemes = "backstage")]
 [ApiController]
 public class GithubTeamsController : ControllerBase
 {
@@ -36,9 +38,6 @@ public class GithubTeamsController : ControllerBase
             IsPublic = request.IsPublic
         }, cancellationToken);
 
-        if (team is null)
-            return Conflict();
-
-        return Ok(team);
+        return team is null ? Conflict() : Ok(team);
     }
 }
