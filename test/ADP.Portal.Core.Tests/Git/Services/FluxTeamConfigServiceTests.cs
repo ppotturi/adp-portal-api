@@ -309,7 +309,8 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
             var templateValue = new Dictionary<object, object>
             {
-                { Constants.Flux.Templates.RESOURCES_KEY, "" }
+                { Constants.Flux.Templates.RESOURCES_KEY, "" },
+                { Constants.Flux.Templates.SPEC_KEY, "" }
             };
             var templates = fixture.Build<KeyValuePair<string, FluxTemplateFile>>().CreateMany(1)
                 .Select(x => new KeyValuePair<string, FluxTemplateFile>(template, new FluxTemplateFile(templateValue)));

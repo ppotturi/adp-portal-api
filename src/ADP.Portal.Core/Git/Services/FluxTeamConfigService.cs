@@ -423,7 +423,7 @@ namespace ADP.Portal.Core.Git.Services
             }
             if (templateKey.Equals(Constants.Flux.Templates.DEPLOY_KUSTOMIZE_FILE) && service.Type == FluxServiceType.HelmOnly)
             {
-                var content = serviceTemplate.Content[Constants.Flux.Templates.RESOURCES_KEY];
+                var content = serviceTemplate.Content[Constants.Flux.Templates.SPEC_KEY];
                 RemoveItemFromDictionary(content, Constants.Flux.Templates.DEPENDS_ON_KEY);
             }
             return serviceTemplate;
