@@ -57,6 +57,7 @@ public static class Program
     {
         IdentityModelEventSource.ShowPII = true;
         IdentityModelEventSource.LogCompleteSecurityArtifact = true;
+        builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddLogging();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();

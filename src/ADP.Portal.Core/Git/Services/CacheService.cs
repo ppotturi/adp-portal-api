@@ -3,13 +3,13 @@
 namespace ADP.Portal.Core.Git.Services;
 public class CacheService : ICacheService
 {
+    private readonly TimeProvider clock;
     private readonly IMemoryCache cache;
-    private readonly TimeSpan defaultExpiration;
 
-    public CacheService(IMemoryCache cache)
+    public CacheService(TimeProvider clock, IMemoryCache cache)
     {
+        this.clock = clock;
         this.cache = cache;
-        this.defaultExpiration = CalculateExpiration();
     }
 
     public T? Get<T>(string key)
@@ -19,13 +19,13 @@ public class CacheService : ICacheService
 
     public void Set<T>(string key, T value)
     {
-        cache.Set(key, value, new MemoryCacheEntryOptions().SetAbsoluteExpiration(defaultExpiration));
+        cache.Set(key, value, new MemoryCacheEntryOptions().SetAbsoluteExpiration(CalculateExpiration()));
     }
 
-    private static TimeSpan CalculateExpiration()
+    private TimeSpan CalculateExpiration()
     {
-        DateTime now = DateTime.Now;
-        DateTime nextMidnight = now.Date.AddDays(1);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var nextMidnight = now.AddDays(1).Date;
         return nextMidnight - now;
     }
 }
