@@ -474,41 +474,19 @@ namespace ADP.Portal.Core.Git.Services
 
         private async Task PushFilesToFluxRepository(GitRepo gitRepoFluxServices, string teamName, string? serviceName, string? environment, Dictionary<string, FluxTemplateFile> generatedFiles)
         {
-            var branchName = string.Concat("refs/heads/features/", teamName,
-                                    string.IsNullOrEmpty(serviceName) ? "" : $"-{serviceName}",
-                                    string.IsNullOrEmpty(environment) ? "" : $"-{environment}");
+            var branchName = $"refs/heads/{gitRepoFluxServices.Reference}";
 
-            var branchRef = await gitHubRepository.GetBranchAsync(gitRepoFluxServices, branchName);
-
-            string message;
-            if (branchRef == null)
-            {
-                message = string.Concat(string.IsNullOrEmpty(serviceName) ? $"{teamName.ToUpper()}" : $"{serviceName.ToUpper()}",
-                    string.IsNullOrEmpty(environment) ? "" : $" {environment.ToUpper()}",
-                    " Manifest");
-            }
-            else
-            {
-                message = "Manifest Update";
-            }
+            string message = (string.IsNullOrEmpty(serviceName) ? teamName.ToLower() : serviceName.ToLower()) +
+                             (string.IsNullOrEmpty(environment) ? "" : $" {environment.ToLower()}") +
+                             " manifest";
 
             logger.LogInformation("Creating commit for the branch:'{BranchName}'.", branchName);
-            var commitRef = await gitHubRepository.CreateCommitAsync(gitRepoFluxServices, generatedFiles, message, branchRef == null ? null : branchName);
+            var commitRef = await gitHubRepository.CreateCommitAsync(gitRepoFluxServices, generatedFiles, message, branchName);
 
             if (commitRef != null)
             {
-                if (branchRef == null)
-                {
-                    logger.LogInformation("Creating branch:'{BranchName}'.", branchName);
-                    await gitHubRepository.CreateBranchAsync(gitRepoFluxServices, branchName, commitRef.Sha);
-                    logger.LogInformation("Creating pull request for the branch:'{BranchName}'.", branchName);
-                    await gitHubRepository.CreatePullRequestAsync(gitRepoFluxServices, branchName, message);
-                }
-                else
-                {
-                    logger.LogInformation("Updating branch:'{BranchName}' with the changes.", branchName);
-                    await gitHubRepository.UpdateBranchAsync(gitRepoFluxServices, branchName, commitRef.Sha);
-                }
+                logger.LogInformation("Updating branch:'{BranchName}' with the changes.", branchName);
+                await gitHubRepository.UpdateBranchAsync(gitRepoFluxServices, branchName, commitRef.Sha);
             }
             else
             {

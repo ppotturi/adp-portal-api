@@ -126,10 +126,10 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
             var latestCommit = await gitHubClient.Git.Commit.Get(repository.Owner.Login, repository.Name, branchRef.Object.Sha);
 
-            var featureBranchTree = await CreateTree(gitHubClient, repository, generatedFiles, latestCommit.Sha);
-            if (featureBranchTree != null)
+            var branchTree = await CreateTree(gitHubClient, repository, generatedFiles, latestCommit.Sha);
+            if (branchTree != null)
             {
-                return await CreateCommit(gitHubClient, repository, message, featureBranchTree.Sha, branchRef.Object.Sha);
+                return await CreateCommit(gitHubClient, repository, message, branchTree.Sha, branchRef.Object.Sha);
             }
             return default;
         }
