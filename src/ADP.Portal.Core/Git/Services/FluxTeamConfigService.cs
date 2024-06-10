@@ -311,7 +311,10 @@ namespace ADP.Portal.Core.Git.Services
             {
                 var serviceFiles = new Dictionary<string, FluxTemplateFile>();
                 var serviceTypeBasedTemplates = ServiceTypeBasedFiles(serviceTemplates, service);
-
+                if (service.Type == FluxServiceType.HelmOnly)
+                {
+                    serviceTypeBasedTemplates = UpdateHelmDeployDirectoryNames(serviceTypeBasedTemplates);
+                }
                 foreach (var template in serviceTypeBasedTemplates)
                 {
                     if (!template.Key.Contains(Constants.Flux.Templates.ENV_KEY))
@@ -348,7 +351,8 @@ namespace ADP.Portal.Core.Git.Services
                 var matched = true;
                 if (!service.HasDatastore())
                 {
-                    matched = !filter.Key.StartsWith(Constants.Flux.Templates.SERVICE_PRE_DEPLOY_FOLDER) && !filter.Key.StartsWith(Constants.Flux.Templates.PRE_DEPLOY_KUSTOMIZE_FILE);
+                    matched = !filter.Key.StartsWith(Constants.Flux.Templates.SERVICE_PRE_DEPLOY_FOLDER)
+                                && !filter.Key.StartsWith(Constants.Flux.Templates.PRE_DEPLOY_KUSTOMIZE_FILE);
                 }
                 return matched;
             }).Where(filter =>
@@ -356,7 +360,13 @@ namespace ADP.Portal.Core.Git.Services
                 var matched = true;
                 if (service.Type == FluxServiceType.HelmOnly)
                 {
-                    matched = !filter.Key.StartsWith(Constants.Flux.Templates.SERVICE_INFRA_FOLDER) && !filter.Key.StartsWith(Constants.Flux.Templates.INFRA_KUSTOMIZE_FILE);
+                    matched = (!filter.Key.StartsWith(Constants.Flux.Templates.SERVICE_DEPLOY_FOLDER) || filter.Key.Equals(Constants.Flux.Templates.DEPLOY_KUSTOMIZE_FILE))
+                                && !filter.Key.StartsWith(Constants.Flux.Templates.SERVICE_INFRA_FOLDER)
+                                && !filter.Key.StartsWith(Constants.Flux.Templates.INFRA_KUSTOMIZE_FILE);
+                }
+                else
+                {
+                    matched = !filter.Key.StartsWith(Constants.Flux.Templates.SERVICE_HELMONLY_DEPLOY_FOLDER);
                 }
                 return matched;
             });
@@ -425,6 +435,16 @@ namespace ADP.Portal.Core.Git.Services
             {
                 var content = serviceTemplate.Content[Constants.Flux.Templates.SPEC_KEY];
                 RemoveItemFromDictionary(content, Constants.Flux.Templates.DEPENDS_ON_KEY);
+
+                var substituteFrom = new YamlQuery(content)
+                            .On(Constants.Flux.Templates.POST_BUILD_KEY)
+                            .Get(Constants.Flux.Templates.SUBSTITUTE_FROM_KEY)
+                            .ToList<List<object>>().FirstOrDefault();
+                if (substituteFrom != null)
+                {
+                    var miCrendential = substituteFrom.First(x => ((Dictionary<object, object>)x)[Constants.Flux.Templates.NAME_KEY].Equals(Constants.Flux.Templates.SUBSTITUTE_SERVICE_MI_CREDENTIAL_KEY));
+                    RemoveItemFromList(substituteFrom, miCrendential);
+                }
             }
             return serviceTemplate;
         }
@@ -507,13 +527,13 @@ namespace ADP.Portal.Core.Git.Services
             }
         }
 
-        private static void RemoveItemFromList(object content, string item)
+        private static void RemoveItemFromList<T>(object content, T item)
         {
             if (content is not List<object> list)
             {
                 throw new InvalidOperationException($"Unexpected type: {content.GetType()}");
             }
-            list.Remove(item);
+            list.Remove(item ?? throw new ArgumentNullException(nameof(item)));
         }
 
         private static void RemoveItemFromDictionary(object content, string item)
@@ -561,6 +581,24 @@ namespace ADP.Portal.Core.Git.Services
                     generatedFiles[fileName] = new FluxTemplateFile(config);
                 }
             }
+        }
+
+        private static List<KeyValuePair<string, FluxTemplateFile>> UpdateHelmDeployDirectoryNames(IEnumerable<KeyValuePair<string, FluxTemplateFile>> templates)
+        {
+            var transformedTemplates = new List<KeyValuePair<string, FluxTemplateFile>>();
+            foreach (var template in templates)
+            {
+                if (template.Key.StartsWith(Constants.Flux.Templates.SERVICE_HELMONLY_DEPLOY_FOLDER))
+                {
+                    transformedTemplates.Add(new KeyValuePair<string, FluxTemplateFile>(template.Key.Replace(Constants.Flux.Templates.SERVICE_HELMONLY_DEPLOY_FOLDER, Constants.Flux.Templates.SERVICE_DEPLOY_FOLDER), template.Value));
+                }
+                else
+                {
+                    transformedTemplates.Add(new KeyValuePair<string, FluxTemplateFile>(template.Key, template.Value));
+                }
+
+            }
+            return transformedTemplates;
         }
         #endregion
     }

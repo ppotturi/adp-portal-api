@@ -285,9 +285,9 @@ namespace ADP.Portal.Core.Tests.Git.Services
             {
                 { Constants.Flux.Templates.RESOURCES_KEY, new List<string>() }
             };
+
             var templates = fixture.Build<KeyValuePair<string, FluxTemplateFile>>().CreateMany(1)
                 .Select(x => new KeyValuePair<string, FluxTemplateFile>(template, new FluxTemplateFile(templateValue)));
-
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
             gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
@@ -344,6 +344,8 @@ namespace ADP.Portal.Core.Tests.Git.Services
 
         [Test]
         [TestCase("service1", "templates/programme/team/service/deploy-kustomize.yaml", true)]
+        [TestCase("service1", "templates/programme/team/service/deploy-kustomize.yaml", false)]
+        [TestCase("service1", "templates/programme/team/service/helm-only-deploy/base/kustomization.yaml", true)]
         public async Task GenerateManifest_UpdateServiceKustomizationFiles_ForDictionaryObjects(string? serviceName, string template, bool helmOnly)
         {
             // Arrange
@@ -360,9 +362,33 @@ namespace ADP.Portal.Core.Tests.Git.Services
             {
                 { Constants.Flux.Templates.RESOURCES_KEY, new Dictionary<object, object>() }
             };
+
+            if (template.StartsWith(Constants.Flux.Templates.DEPLOY_KUSTOMIZE_FILE))
+            {
+                var substituteFromValue = new List<object>
+                {
+                    new Dictionary<object, object>()
+                    {
+                        { "kind", "ConfigMap" },
+                        { "name", "__SERVICE_NAME__-mi-credential" }
+                    }
+                };
+                var postBuildValue = new Dictionary<object, object>
+                {
+                    {Constants.Flux.Templates.SUBSTITUTE_FROM_KEY, substituteFromValue }
+                };
+                var specValue = new Dictionary<object, object>
+                {
+                    {Constants.Flux.Templates.POST_BUILD_KEY, postBuildValue }
+                };
+                templateValue = new Dictionary<object, object>
+                {
+                    { Constants.Flux.Templates.SPEC_KEY, specValue  }
+                };
+            }
+
             var templates = fixture.Build<KeyValuePair<string, FluxTemplateFile>>().CreateMany(1)
                 .Select(x => new KeyValuePair<string, FluxTemplateFile>(template, new FluxTemplateFile(templateValue)));
-
 
             gitOpsConfigRepository.GetConfigAsync<FluxTeamConfig>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTeamConfig);
             gitOpsConfigRepository.GetConfigAsync<FluxTenant>(Arg.Any<string>(), Arg.Any<GitRepo>()).Returns(fluxTenantConfig);
@@ -371,6 +397,7 @@ namespace ADP.Portal.Core.Tests.Git.Services
             var commit = fixture.Build<Commit>().Create();
             gitOpsConfigRepository.CreateCommitAsync(fluxServicesRepo, Arg.Any<Dictionary<string, FluxTemplateFile>>(), Arg.Any<string>(), Arg.Any<string>())
                 .Returns(commit);
+            fluxTemplateService.GetFluxTemplatesAsync().Returns(templates);
 
             // Act
             var result = await service.GenerateManifestAsync("tenant1", "team1", serviceName, "env1");
@@ -945,13 +972,36 @@ namespace ADP.Portal.Core.Tests.Git.Services
             var fluxTeamConfig = fixture.Build<FluxTeamConfig>().With(p => p.Services, fluxServices).Create();
 
             var fluxTenantConfig = fixture.Build<FluxTenant>().With(x => x.Environments, envList).Create();
-            var serviceTemplates = fixture.Build<KeyValuePair<string, FluxTemplateFile>>().CreateMany(2)
+
+            var substituteFromValue = new List<object>
+                {
+                    new Dictionary<object, object>()
+                    {
+                        { "kind", "ConfigMap" },
+                        { "name", "__SERVICE_NAME__-mi-credential" }
+                    }
+                };
+            var postBuildValue = new Dictionary<object, object>
+                {
+                    {Constants.Flux.Templates.SUBSTITUTE_FROM_KEY, substituteFromValue }
+                };
+            var specValue = new Dictionary<object, object>
+                {
+                    {Constants.Flux.Templates.POST_BUILD_KEY, postBuildValue }
+                };
+            var deployKustomizeTemplateValue = new Dictionary<object, object>
+                {
+                    { Constants.Flux.Templates.SPEC_KEY, specValue  }
+                };
+
+            var serviceTemplates = fixture.Build<KeyValuePair<string, FluxTemplateFile>>().CreateMany(3)
                 .Select((x, index) =>
                 {
                     return index switch
                     {
                         0 => new KeyValuePair<string, FluxTemplateFile>($"flux/templates/programme/team/service/deploy/{x.Key}", x.Value),
                         1 => new KeyValuePair<string, FluxTemplateFile>($"flux/templates/programme/team/service/kustomization.yaml", new FluxTemplateFile(new Dictionary<object, object>() { { "resources", new List<string>() { "infra-kustomize.yaml", "deploy-kustomize.yaml" } } })),
+                        2 => new KeyValuePair<string, FluxTemplateFile>($"flux/templates/programme/team/service/deploy-kustomize.yaml", new FluxTemplateFile(deployKustomizeTemplateValue)),
                         _ => new KeyValuePair<string, FluxTemplateFile>($"flux/templates/programme/team/service/deploy/{x.Key}", x.Value),
                     };
                 });

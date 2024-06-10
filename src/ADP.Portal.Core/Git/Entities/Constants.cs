@@ -31,6 +31,8 @@
                 public const string TEAM_ENV_FOLDER = PROGRAMME_FOLDER + "/team/environment";
                 public const string SERVICE_PRE_DEPLOY_FOLDER = PROGRAMME_FOLDER + "/team/service/pre-deploy";
                 public const string SERVICE_INFRA_FOLDER = PROGRAMME_FOLDER + "/team/service/infra";
+                public const string SERVICE_HELMONLY_DEPLOY_FOLDER = PROGRAMME_FOLDER + "/team/service/helm-only-deploy";
+                public const string SERVICE_DEPLOY_FOLDER = PROGRAMME_FOLDER + "/team/service/deploy";
 
                 public const string PRE_DEPLOY_KUSTOMIZE_FILE = PROGRAMME_FOLDER + "/team/service/pre-deploy-kustomize.yaml";
                 public const string DEPLOY_KUSTOMIZE_FILE = PROGRAMME_FOLDER + "/team/service/deploy-kustomize.yaml";
@@ -53,6 +55,10 @@
                 public const string POSTGRESRESOURCEGROUPNAME_KEY = "postgresResourceGroupName";
                 public const string POSTGRESSERVERNAME_KEY = "postgresServerName";
                 public const string DEPENDS_ON_KEY = "dependsOn";
+                public const string POST_BUILD_KEY = "postBuild";
+                public const string SUBSTITUTE_FROM_KEY = "substituteFrom";
+                public const string SUBSTITUTE_SERVICE_MI_CREDENTIAL_KEY = "__SERVICE_NAME__-mi-credential";
+                public const string NAME_KEY = "name";
 
                 public const string SERVICE_NAME_TOKEN = "SERVICE_NAME";
                 public const string ENVIRONMENT_TOKEN = "ENVIRONMENT";
