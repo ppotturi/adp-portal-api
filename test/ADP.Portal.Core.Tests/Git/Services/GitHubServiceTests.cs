@@ -28,7 +28,7 @@ public class GitHubServiceTests
         {
             Organisation = Guid.NewGuid().ToString(),
             AdminLogin = "adp-platform",
-            BlacklistedTeams =
+            TeamDenyList =
             {
                 "ADP-Platform-Admins"
             }
@@ -342,7 +342,7 @@ public class GitHubServiceTests
     [Test]
     [TestCase(true, TeamPrivacy.Closed)]
     [TestCase(false, TeamPrivacy.Secret)]
-    public async Task SyncTeamAsync_ReturnsNullWhenCreateFails_AndExistingTeamIsBlacklisted(bool isPublic, TeamPrivacy privacy)
+    public async Task SyncTeamAsync_ReturnsNullWhenCreateFails_AndExistingTeamIsOnTheTeamDenyList(bool isPublic, TeamPrivacy privacy)
     {
         // arrange
         using var cts = new CancellationTokenSource();
