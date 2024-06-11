@@ -44,7 +44,7 @@ public partial class GroupsConfigService : IGroupsConfigService
         var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers);
 
         logger.LogInformation("Create groups config for the team({TeamName})", teamName);
-        var response = await gitHubRepository.CreateConfigAsync(teamGitRepo, fileName, serializer.Serialize(groups));
+        var response = await gitHubRepository.CreateFileAsync(teamGitRepo, fileName, serializer.Serialize(groups));
         if (string.IsNullOrEmpty(response))
         {
             result.Errors.Add($"Failed to save the config for the team: {teamName}");
@@ -67,7 +67,7 @@ public partial class GroupsConfigService : IGroupsConfigService
         var fileName = $"{tenantName}/{teamName}.yaml";
         var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers);
         logger.LogInformation("Update groups config for the team {TeamName}", teamName);
-        var response = await gitHubRepository.UpdateConfigAsync(teamGitRepo, fileName, serializer.Serialize(groups));
+        var response = await gitHubRepository.UpdateFileAsync(teamGitRepo, fileName, serializer.Serialize(groups));
         if (string.IsNullOrEmpty(response))
         {
             result.Errors.Add($"Failed to save the config for the team: {teamName}");
@@ -181,7 +181,7 @@ public partial class GroupsConfigService : IGroupsConfigService
             var fileName = $"{tenantName}/{teamName}.yaml";
 
             logger.LogInformation("Getting groups config for the team({TeamName})", teamName);
-            var result = await gitHubRepository.GetConfigAsync<GroupsRoot>(fileName, teamGitRepo);
+            var result = await gitHubRepository.GetFileContentAsync<GroupsRoot>(teamGitRepo, fileName);
 
             return result?.Groups.Where(g => groupType == null || g.Type == groupType) ?? [];
         }

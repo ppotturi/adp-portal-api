@@ -47,7 +47,7 @@ namespace ADP.Portal.Core.Git.Services
                 logger.LogInformation("Reading flux team config for the team:'{TeamName}'.", name);
             }
 
-            return await gitHubRepository.GetConfigAsync<T>(path, teamGitRepo);
+            return await gitHubRepository.GetFileContentAsync<T>(teamGitRepo, path);
         }
 
         public async Task<FluxConfigResult> CreateConfigAsync(string teamName, FluxTeamConfig fluxTeamConfig)
@@ -58,7 +58,7 @@ namespace ADP.Portal.Core.Git.Services
 
             fluxTeamConfig.Services.ForEach(service => service.Environments.ForEach(env => env.Manifest = new FluxManifest { Generate = true }));
 
-            var response = await gitHubRepository.CreateConfigAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
+            var response = await gitHubRepository.CreateFileAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(fluxTeamConfig));
             if (string.IsNullOrEmpty(response))
             {
                 result.Errors.Add($"Failed to save the config for the team: {teamName}");
@@ -146,7 +146,7 @@ namespace ADP.Portal.Core.Git.Services
             }
 
             teamConfig.Services.Add(fluxService);
-            var response = await gitHubRepository.UpdateConfigAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(teamConfig));
+            var response = await gitHubRepository.UpdateFileAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(teamConfig));
 
             if (string.IsNullOrEmpty(response))
             {
@@ -218,7 +218,7 @@ namespace ADP.Portal.Core.Git.Services
             service.Environments.Add(newEnvironment);
 
             logger.LogInformation("Adding environment '{EnvironmentName}' to the service:'{ServiceName}' in the team:'{TeamName}'.", newEnvironment.Name, serviceName, teamName);
-            var response = await gitHubRepository.UpdateConfigAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(teamConfig));
+            var response = await gitHubRepository.UpdateFileAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(teamConfig));
 
             if (string.IsNullOrEmpty(response))
             {
@@ -262,7 +262,7 @@ namespace ADP.Portal.Core.Git.Services
             env.Manifest ??= new FluxManifest() { Generate = generate };
             env.Manifest.Generate = generate;
             env.Manifest.GeneratedVersion = fluxTemplatesRepo.Reference;
-            var response = await gitHubRepository.UpdateConfigAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(teamConfig));
+            var response = await gitHubRepository.UpdateFileAsync(teamGitRepo, string.Format(Constants.Flux.Templates.GIT_REPO_TEAM_CONFIG_PATH, teamName), serializer.Serialize(teamConfig));
 
             if (string.IsNullOrEmpty(response))
             {
@@ -552,7 +552,7 @@ namespace ADP.Portal.Core.Git.Services
                 var fileName = string.Format(Constants.Flux.Services.TEAM_SERVICE_ENV_KUSTOMIZATION_FILE, programmeName, teamName, $"{envName[..3]}/0{envName[3..]}");
                 if (generatedFiles.TryGetValue(fileName, out var file))
                 {
-                    var config = await gitHubRepository.GetConfigAsync<Dictionary<object, object>>(fileName, fluxServiceRepo);
+                    var config = await gitHubRepository.GetFileContentAsync<Dictionary<object, object>>(fluxServiceRepo, fileName);
                     foreach (var serviceName in services.Where(service => service.Environments.Exists(env => env.Name == envName)).Select(service => service.Name))
                     {
                         var item = new YamlQuery(config ?? file.Content)
@@ -570,7 +570,7 @@ namespace ADP.Portal.Core.Git.Services
             foreach (var envName in services.SelectMany(service => service.Environments.Select(env => env.Name[..3])).Distinct())
             {
                 var fileName = string.Format(Constants.Flux.Services.TEAM_ENV_BASE_KUSTOMIZATION_FILE, envName);
-                var config = await gitHubRepository.GetConfigAsync<Dictionary<object, object>>(fileName, fluxServiceRepo);
+                var config = await gitHubRepository.GetFileContentAsync<Dictionary<object, object>>(fluxServiceRepo, fileName);
 
                 if (config != null)
                 {

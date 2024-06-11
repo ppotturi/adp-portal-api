@@ -5,11 +5,11 @@ namespace ADP.Portal.Core.Git.Infrastructure
 {
     public interface IGitHubRepository
     {
-        Task<T?> GetConfigAsync<T>(string fileName, GitRepo gitRepo);
+        Task<T?> GetFileContentAsync<T>(GitRepo gitRepo, string fileName);
 
-        Task<string> CreateConfigAsync(GitRepo gitRepo, string fileName, string content);
+        Task<string> CreateFileAsync(GitRepo gitRepo, string fileName, string content);
 
-        Task<string> UpdateConfigAsync(GitRepo gitRepo, string fileName, string content);
+        Task<string> UpdateFileAsync(GitRepo gitRepo, string fileName, string content);
 
         Task<IEnumerable<KeyValuePair<string, FluxTemplateFile>>> GetAllFilesAsync(GitRepo gitRepo, string path);
 
