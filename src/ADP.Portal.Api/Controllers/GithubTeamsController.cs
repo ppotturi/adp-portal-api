@@ -2,13 +2,14 @@
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Services;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ADP.Portal.Api.Controllers;
 
 [Route("api/github/teams")]
 [ApiVersion("1.0")]
-//[Authorize(AuthenticationSchemes = "backstage")]
+[Authorize(AuthenticationSchemes = "backstage")]
 [ApiController]
 public class GithubTeamsController : ControllerBase
 {
