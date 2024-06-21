@@ -15,6 +15,7 @@ using NSubstitute.ReturnsExtensions;
 using NUnit.Framework;
 using Octokit;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace ADP.Portal.Core.Tests.Git.Services;
 
@@ -27,6 +28,7 @@ public class GroupsConfigServiceTests
     private IGroupService groupServiceMock = null!;
     private IOptionsSnapshot<GitRepo> gitRepoOptionsMock = null!;
     private Fixture fixture = null!;
+    private IDeserializer deserializer = null!;
 
     [SetUp]
     public void SetUp()
@@ -35,7 +37,8 @@ public class GroupsConfigServiceTests
         loggerMock = Substitute.For<ILogger<GroupsConfigService>>();
         groupServiceMock = Substitute.For<IGroupService>();
         gitRepoOptionsMock = Substitute.For<IOptionsSnapshot<GitRepo>>();
-        gitOpsConfigService = new GroupsConfigService(gitOpsConfigRepositoryMock, gitRepoOptionsMock, loggerMock, groupServiceMock, Substitute.For<ISerializer>());
+        deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+        gitOpsConfigService = new GroupsConfigService(gitOpsConfigRepositoryMock, gitRepoOptionsMock, loggerMock, groupServiceMock, Substitute.For<ISerializer>(), deserializer);
         fixture = new Fixture();
     }
 

@@ -7,6 +7,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.Services.Common;
 using Octokit;
+using System.Reflection;
+using System.Text;
 using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Git.Services;
@@ -18,17 +20,18 @@ public partial class GroupsConfigService : IGroupsConfigService
     private readonly ILogger<GroupsConfigService> logger;
     private readonly IGroupService groupService;
     private readonly ISerializer serializer;
-    private const string GLOBAL_READ_GROUP = "AAG-Azure-ADP-GlobalRead";
+    private readonly IDeserializer deserializer;
     private const string PLATFORM_ENGINEERS_GROUP = "AG-Azure-CDO-ADP-PlatformEngineers";
 
     public GroupsConfigService(IGitHubRepository gitHubRepository, IOptionsSnapshot<GitRepo> gitRepoOptions,
-        ILogger<GroupsConfigService> logger, IGroupService groupService, ISerializer serializer)
+        ILogger<GroupsConfigService> logger, IGroupService groupService, ISerializer serializer, IDeserializer deserializer)
     {
         this.gitHubRepository = gitHubRepository;
         this.teamGitRepo = gitRepoOptions.Get(Constants.GitRepo.TEAM_REPO_CONFIG);
         this.logger = logger;
         this.groupService = groupService;
         this.serializer = serializer;
+        this.deserializer = deserializer;
     }
 
     public async Task<IEnumerable<Group>> GetGroupsConfigAsync(string tenantName, string teamName)
@@ -41,7 +44,7 @@ public partial class GroupsConfigService : IGroupsConfigService
         var result = new GroupConfigResult();
 
         var fileName = $"{tenantName}/{teamName}.yaml";
-        var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers);
+        var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers, deserializer);
 
         logger.LogInformation("Create groups config for the team({TeamName})", teamName);
         var response = await gitHubRepository.CreateFileAsync(teamGitRepo, fileName, serializer.Serialize(groups));
@@ -65,7 +68,7 @@ public partial class GroupsConfigService : IGroupsConfigService
         }
 
         var fileName = $"{tenantName}/{teamName}.yaml";
-        var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers);
+        var groups = BuildTeamGroups(tenantName, teamName, adminGroupMembers, techUserGroupMembers, nonTechUserGroupMembers, deserializer);
         logger.LogInformation("Update groups config for the team {TeamName}", teamName);
         var response = await gitHubRepository.UpdateFileAsync(teamGitRepo, fileName, serializer.Serialize(groups));
         if (string.IsNullOrEmpty(response))
@@ -74,9 +77,18 @@ public partial class GroupsConfigService : IGroupsConfigService
         }
         return result;
     }
+    
 
-    private static GroupsRoot BuildTeamGroups(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers)
+    private static GroupsRoot BuildTeamGroups(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers, IDeserializer deserializer)
     {
+        var assemblyName = Assembly.GetExecutingAssembly().GetName();
+        using var stream = Assembly
+            .GetExecutingAssembly()
+            .GetManifestResourceStream($"{assemblyName.Name}.Git.template.UserGroupMemberShip.{tenantName.ToLower()}.yml")!;
+        using var streamReader = new StreamReader(stream, Encoding.UTF8);
+        var data = streamReader.ReadToEnd();
+        var userGroupMemberships = deserializer.Deserialize<UserGroupMembership>(data);
+
         var environments = new List<string>();
         switch (tenantName)
         {
@@ -94,18 +106,19 @@ public partial class GroupsConfigService : IGroupsConfigService
                 new Group {
                     DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_TechUser",
                     Type = GroupType.UserGroup,
-                    GroupMemberships = [GLOBAL_READ_GROUP],
+                    GroupMemberships = BuildGroupMembership(teamName, userGroupMemberships.TechUser),
                     Members = techUserGroupMembers.ToList()
                 },
                 new Group {
                     DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_NonTechUser",
                     Type = GroupType.UserGroup,
-                    GroupMemberships = [GLOBAL_READ_GROUP],
+                    GroupMemberships = BuildGroupMembership(teamName, userGroupMemberships.NontechUser),
                     Members = nonTechUserGroupMembers.ToList()
                 },
                 new Group {
                     DisplayName = $"AAG-Users-ADP-{teamName.ToUpper()}_Admin",
                     Type = GroupType.UserGroup,
+                    GroupMemberships = BuildGroupMembership(teamName, userGroupMemberships.Admin),
                     Members = adminGroupMembers.ToList()
                 }
             ]
@@ -132,6 +145,15 @@ public partial class GroupsConfigService : IGroupsConfigService
         return root;
     }
 
+
+    private static List<string> BuildGroupMembership(string teamName, List<String> userGroupMemberships)
+    {
+        List<string> groupMemberships = new List<string>();
+
+        groupMemberships.AddRange(userGroupMemberships.Select(groupName => groupName.Replace("{teamName}", teamName.ToUpper())).ToList<string>());
+        return groupMemberships;
+    }
+
     public async Task<GroupSyncResult> SyncGroupsAsync(string tenantName, string teamName, string ownerId, GroupType? groupType)
     {
         var result = new GroupSyncResult();
@@ -146,7 +168,12 @@ public partial class GroupsConfigService : IGroupsConfigService
         }
 
         logger.LogInformation("Syncing groups for the team({TeamName})", teamName);
-        var tasks = groups.Select(group => ProcessGroupAsync(group, ownerId, result));
+        //AccessGroups
+        var accessGroupstasks = groups.Where(x => x.Type == GroupType.AccessGroup).Select(group => ProcessGroupAsync(group, ownerId, result));
+        await Task.WhenAll(accessGroupstasks);
+
+        //UserGroups and Others
+        var tasks = groups.Where(x => x.Type != GroupType.AccessGroup).Select(group => ProcessGroupAsync(group, ownerId, result));
         await Task.WhenAll(tasks);
 
         return result;
