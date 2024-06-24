@@ -1,4 +1,5 @@
 ﻿using ADP.Portal.Core.Git.Entities;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
 using Octokit;
 using System.Text;
@@ -40,8 +41,17 @@ namespace ADP.Portal.Core.Git.Infrastructure
 
         public async Task<string> CreateFileAsync(GitRepo gitRepo, string fileName, string content)
         {
-            var response = await gitHubClient.Repository.Content.CreateFile(gitRepo.Organisation, gitRepo.Name, fileName, new CreateFileRequest($"Create config file: {fileName}", content, gitRepo.Reference));
-            return response.Commit.Sha;
+            IEnumerable<RepositoryContent>? existingFile;
+            try
+            {
+                existingFile = await GetRepositoryFiles(gitRepo, fileName);
+            }
+            catch (Octokit.NotFoundException)
+            {
+                var fileCreateResponse = await gitHubClient.Repository.Content.CreateFile(gitRepo.Organisation, gitRepo.Name, fileName, new CreateFileRequest($"Create config file: {fileName}", content, gitRepo.Reference));
+                return fileCreateResponse.Commit.Sha;
+            }
+            return existingFile.FirstOrDefault()?.Sha ?? string.Empty;
         }
 
         public async Task<string> UpdateFileAsync(GitRepo gitRepo, string fileName, string content)

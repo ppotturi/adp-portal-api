@@ -50,7 +50,7 @@ public class AadGroupController : ControllerBase
     /// <param name="createGroupsConfigRequest">Required: Collection of the users to set up as members in the Admin Group</param>
     /// <returns></returns>
     [HttpPost("{teamName}/groups-config", Name = "CreateGroupsConfigForTeam")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> CreateGroupsConfigAsync(string teamName, [FromBody] CreateGroupsConfigRequest createGroupsConfigRequest)
     {
@@ -78,7 +78,7 @@ public class AadGroupController : ControllerBase
             return BadRequest(syncResult.Errors);
         }
 
-        return Created();
+        return NoContent();
     }
 
     [HttpPatch("{teamName}/members", Name = "SetMembersForTeam")]

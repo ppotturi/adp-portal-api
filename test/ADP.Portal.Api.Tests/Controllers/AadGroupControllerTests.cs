@@ -169,7 +169,7 @@ public class AadGroupControllerTests
 
         // Assert
         Assert.That(result, Is.Not.Null);
-        Assert.That((CreatedResult)result, Is.Not.Null);
+        Assert.That((NoContentResult)result, Is.Not.Null);
     }
 
     [Test]
