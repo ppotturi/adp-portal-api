@@ -66,7 +66,7 @@ public class AadGroupController : ControllerBase
                                                                        createGroupsConfigRequest.NonTechUserMembers);
         if (result.Errors.Count != 0)
         {
-            logger.LogError("Error while creating groups config for the Team:'{TeamName}'", teamName);
+            logger.LogError("Error while creating groups config for the Team:'{TeamName}' with errors: {Errors}", teamName, result.Errors);
             return BadRequest(result.Errors);
         }
 
@@ -74,7 +74,7 @@ public class AadGroupController : ControllerBase
         var syncResult = await groupsConfigService.SyncGroupsAsync(tenantName, teamName, ownerId, null);
         if (syncResult.Errors.Count != 0)
         {
-            logger.LogError("Error while syncing groups for the Team:'{TeamName}'", teamName);
+            logger.LogError("Error while syncing groups for the Team:'{TeamName}' with errors: {Errors}", teamName, syncResult.Errors);
             return BadRequest(syncResult.Errors);
         }
 
@@ -105,7 +105,7 @@ public class AadGroupController : ControllerBase
         var syncResult = await groupsConfigService.SyncGroupsAsync(tenantName, teamName, ownerId, GroupType.UserGroup);
         if (syncResult.Errors.Count != 0)
         {
-            logger.LogError("Error while syncing groups for the Team:'{TeamName}'", teamName);
+            logger.LogError("Error while syncing groups for the Team:'{TeamName}' with errors: {Errors}", teamName, syncResult.Errors);
             return BadRequest(syncResult.Errors);
         }
 
@@ -140,11 +140,11 @@ public class AadGroupController : ControllerBase
         {
             if (!result.IsConfigExists)
             {
-                logger.LogError("Config not found for the Team:'{TeamName}'", teamName);
+                logger.LogError("Config not found for the Team:'{TeamName}' with errors: {Errors}", teamName, result.Errors);
                 return BadRequest(result.Errors);
             }
 
-            logger.LogError("Error while syncing groups for the Team:'{TeamName}'", teamName);
+            logger.LogError("Error while syncing groups for the Team:'{TeamName}' with errors: {Errors}", teamName, result.Errors);
             return BadRequest(result.Errors);
         }
 

@@ -64,7 +64,7 @@ public class FluxTeamConfigController : ControllerBase
         var result = await fluxTeamConfigService.CreateConfigAsync(teamName, newTeamConfig);
         if (result.Errors.Count > 0)
         {
-            logger.LogError("Error while creating Flux Config for the Team:'{TeamName}'", teamName);
+            logger.LogError("Error while creating Flux Config for the Team:'{TeamName}' with errors: {Errors}", teamName, result.Errors);
             return BadRequest(result.Errors);
         }
 
@@ -93,7 +93,7 @@ public class FluxTeamConfigController : ControllerBase
         }
         if (result.Errors.Count > 0)
         {
-            logger.LogError("Error while updating Flux config for the Team:'{TeamName}'", teamName);
+            logger.LogError("Error while updating Flux config for the Team:'{TeamName}' with errors: {Errors}", teamName, result.Errors);
             return BadRequest(result.Errors);
         }
 
@@ -110,7 +110,7 @@ public class FluxTeamConfigController : ControllerBase
     [HttpPatch("{teamName}/services/{service}/environments/{environment}/manifest", Name = "SetEnvironmentManifestForTeamService")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> SetEnvironmentManifestAsync(string teamName, string service, string environment, [FromBody] ManifestConfigRequest  manifestConfigRequest)
+    public async Task<ActionResult> SetEnvironmentManifestAsync(string teamName, string service, string environment, [FromBody] ManifestConfigRequest manifestConfigRequest)
     {
         logger.LogInformation("Setting Manifest for the Environment:'{Environment}' for the Service:'{Service}' in the Team:'{TeamName}'", environment, service, teamName);
 
@@ -122,7 +122,7 @@ public class FluxTeamConfigController : ControllerBase
 
         if (result.Errors.Count > 0)
         {
-            logger.LogError("Error while setting Manifest for the Environment:'{Environment}' for the Service:'{Service}' in the Team:'{TeamName}'", environment, service, teamName);
+            logger.LogError("Error while setting Manifest for the Environment:'{Environment}' for the Service:'{Service}' in the Team:'{TeamName}' with errors: {Errors}", environment, service, teamName, result.Errors);
             return BadRequest(result.Errors);
         }
 
@@ -174,7 +174,7 @@ public class FluxTeamConfigController : ControllerBase
 
         if (result.Errors.Count > 0)
         {
-            logger.LogError("Error while adding Environment for the Service:'{ServiceName}' in the Team:'{TeamName}'", service, teamName);
+            logger.LogError("Error while adding Environment for the Service:'{ServiceName}' in the Team:'{TeamName}' with errors: {Errors}", service, teamName, result.Errors);
             return BadRequest(result.Errors);
         }
 
@@ -204,7 +204,7 @@ public class FluxTeamConfigController : ControllerBase
 
         if (result.Errors.Count > 0)
         {
-            logger.LogError("Error while generating manifests for the Team:'{TeamName}'", teamName);
+            logger.LogError("Error while generating manifests for the Team:'{TeamName}' with errors: {Errors}", teamName, result.Errors);
             return BadRequest(result.Errors);
         }
 
