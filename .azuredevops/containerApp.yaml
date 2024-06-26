@@ -47,8 +47,6 @@ properties:
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/BACKSTAGE-AUTHORITY
         identity: {{userAssignedIdentity}}
       - name: backstage-issuer
-        keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/BACKSTAGE-ISSUER
-        identity: {{userAssignedIdentity}}
   template:
     containers:
       - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
@@ -116,10 +114,10 @@ properties:
             value: {{userAssignedIdentity}}
           - name: Authentication__backstage__Authority
             secretRef: backstage-authority
-          - name: Authentication__backstage__TokenValidationParameters__ValidIssuer
-            secretRef: backstage-issuer
-          - name: Authentication__backstage__TokenValidationParameters__ValidAudience
-            value: backstage
+          - name: Authentication__backstage__TokenValidationParameters__ValidateIssuer
+            value: false
+          - name: Authentication__backstage__TokenValidationParameters__ValidateAudience
+            value: false
         resources:
           cpu: 0.5
           memory: 1Gi
