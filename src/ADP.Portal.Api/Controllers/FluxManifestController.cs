@@ -1,6 +1,7 @@
 ﻿using ADP.Portal.Api.Models.Flux;
 using ADP.Portal.Core.Git.Services;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ADP.Portal.Api.Controllers;
@@ -26,6 +27,7 @@ public class FluxManifestController : ControllerBase
     /// <param name="templateType"></param>
     /// <returns></returns>
     [HttpGet("templates/service/{templateType}/patch-values")]
+    [AllowAnonymous]
     public async Task<ActionResult> GetFluxServiceTemplateManifest([FromRoute] string templateType)
     {
         if (!Enum.TryParse<ServiceTemplateType>(templateType, true, out var parsedTemplateType))

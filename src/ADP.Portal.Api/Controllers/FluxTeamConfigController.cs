@@ -1,11 +1,12 @@
 ﻿using ADP.Portal.Api.Config;
 using ADP.Portal.Api.Models.Flux;
-using Entities = ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Services;
 using Asp.Versioning;
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Entities = ADP.Portal.Core.Git.Entities;
 
 namespace ADP.Portal.Api.Controllers;
 
@@ -32,6 +33,7 @@ public class FluxTeamConfigController : ControllerBase
     /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
     /// <returns></returns>
     [HttpGet("{teamName}", Name = "GetFluxConfigForTeam")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetConfigAsync(string teamName)
@@ -54,6 +56,7 @@ public class FluxTeamConfigController : ControllerBase
     /// <param name="fluxConfigRequest">Required: Details about the Services, Environments & ConfigVariables for the team</param>
     /// <returns></returns>
     [HttpPost("{teamName}", Name = "CreateFluxConfigForTeam")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> CreateConfigAsync(string teamName, [FromBody] TeamConfigRequest fluxConfigRequest)
@@ -78,6 +81,7 @@ public class FluxTeamConfigController : ControllerBase
     /// <param name="serviceFluxConfigRequest">The request object containing all the necessary information to create a new service in the Flux Config.</param>
     /// <returns></returns>
     [HttpPost("{teamName}/services", Name = "CreateServiceFluxConfigForTeam")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> CreateServiceAsync(string teamName, [FromBody] ServiceConfigRequest serviceFluxConfigRequest)
@@ -108,6 +112,7 @@ public class FluxTeamConfigController : ControllerBase
     /// <param name="manifestConfigRequest">The request object containing all the necessary information to update the service in the Flux Config.</param>
     /// <returns></returns>
     [HttpPatch("{teamName}/services/{service}/environments/{environment}/manifest", Name = "SetEnvironmentManifestForTeamService")]
+    [Authorize(AuthenticationSchemes = "pipeline")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> SetEnvironmentManifestAsync(string teamName, string service, string environment, [FromBody] ManifestConfigRequest manifestConfigRequest)
@@ -137,6 +142,7 @@ public class FluxTeamConfigController : ControllerBase
     /// <param name="environment">Required: Name of the Environment</param>
     /// <returns></returns>
     [HttpGet("{teamName}/services/{service}/environments/{environment}", Name = "GetEnvironmentForTeamService")]
+    [Authorize(AuthenticationSchemes = "pipeline")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetServiceEnvironmentAsync(string teamName, string service, string environment)
@@ -160,6 +166,7 @@ public class FluxTeamConfigController : ControllerBase
     /// <param name="environmentRequest">Required: Details about the Environment for the service</param>
     /// <returns></returns>
     [HttpPost("{teamName}/services/{service}/environments", Name = "AddEnvironmentForTeamService")]
+    [Authorize(AuthenticationSchemes = "pipeline")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> AddServiceEnvironmentAsync(string teamName, string service, [FromBody] string environmentRequest)
@@ -188,6 +195,7 @@ public class FluxTeamConfigController : ControllerBase
     /// <param name="serviceName">Optional: Generate manifests only for this service if specified. Default is All services</param>
     /// <returns></returns>
     [HttpPost("{teamName}/generate", Name = "GenerateFluxConfigForTeam")]
+    [Authorize(AuthenticationSchemes = "pipeline,backstage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> GenerateAsync(string teamName, [FromQuery] string? serviceName, [FromQuery] string? environment = null)

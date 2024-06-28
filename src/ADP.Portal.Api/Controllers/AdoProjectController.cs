@@ -5,6 +5,7 @@ using ADP.Portal.Core.Ado.Entities;
 using ADP.Portal.Core.Ado.Services;
 using Asp.Versioning;
 using Mapster;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -32,6 +33,7 @@ public class AdoProjectController : ControllerBase
     /// <param name="projectName">Required: Name of the project</param>
     /// <returns></returns>
     [HttpGet("{projectName}")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult> GetAdoProject(string projectName)
@@ -53,6 +55,7 @@ public class AdoProjectController : ControllerBase
     /// <param name="onBoardRequest">Required: Details about environments, pools, connections & variable groups</param>
     /// <returns></returns>
     [HttpPatch("{projectName}/onboard")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OnboardProjectResult))]
     public async Task<ActionResult> OnBoardAsync(string projectName, [FromBody] OnBoardAdoProjectRequest onBoardRequest)
     {

@@ -46,7 +46,9 @@ properties:
       - name: backstage-authority
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/BACKSTAGE-AUTHORITY
         identity: {{userAssignedIdentity}}
-      - name: backstage-issuer
+      - name: api-auth-backend-app-reg-client-id
+        keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/API-AUTH-BACKEND-APP-REG-CLIENT-ID
+        identity: {{userAssignedIdentity}}
   template:
     containers:
       - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
@@ -118,6 +120,12 @@ properties:
             value: false
           - name: Authentication__backstage__TokenValidationParameters__ValidateAudience
             value: false
+          - name: Authentication__pipeline__Instance
+            value: https://login.microsoftonline.com/
+          - name: Authentication__pipeline__TenantId
+            value: {{tenantid}}
+          - name: Authentication__pipeline__ClientId
+            secretRef: api-auth-backend-app-reg-client-id
         resources:
           cpu: 0.5
           memory: 1Gi

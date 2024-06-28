@@ -15,6 +15,7 @@ using Asp.Versioning;
 using Azure.Identity;
 using Microsoft.Extensions.Options;
 using Microsoft.Graph;
+using Microsoft.Identity.Web;
 using Microsoft.IdentityModel.Logging;
 using Microsoft.OpenApi.Models;
 using Octokit;
@@ -61,13 +62,7 @@ public static class Program
         builder.Services.AddLogging();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddProblemDetails();
-        builder.Services.AddAuthentication()
-            .AddJwtBearer("backstage", opt =>
-            {
-                builder.Configuration
-                    .GetSection("Authentication:backstage")
-                    .Bind(opt);
-            });
+        AddAuthenticationSchemes(builder);
         builder.Services.Configure<AdoConfig>(builder.Configuration.GetSection("Ado"));
         builder.Services.Configure<AdpAdoProjectConfig>(builder.Configuration.GetSection("AdpAdoProject"));
         builder.Services.Configure<AzureAdConfig>(builder.Configuration.GetSection("AzureAd"));
@@ -157,6 +152,19 @@ public static class Program
             config.ApiVersionReader = new HeaderApiVersionReader("api-version");
         });
     }
+
+    private static void AddAuthenticationSchemes(WebApplicationBuilder builder)
+    {
+        var auth = builder.Services.AddAuthentication();
+        auth.AddJwtBearer(
+            authenticationScheme: "backstage",
+            configureOptions: builder.Configuration.GetSection("Authentication:backstage").Bind);
+        auth.AddMicrosoftIdentityWebApi(
+            jwtBearerScheme: "pipeline",
+            configuration: builder.Configuration,
+            configSectionName: "Authentication:pipeline");
+    }
+
     private static GitHubClient GetGitHubClient(GitHubAppAuthConfig gitHubAppAuth)
     {
         var gitHubAppName = gitHubAppAuth.AppName.Replace(" ", "");

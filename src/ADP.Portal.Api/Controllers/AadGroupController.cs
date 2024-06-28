@@ -3,6 +3,7 @@ using ADP.Portal.Api.Models.Group;
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Services;
 using Asp.Versioning;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -32,6 +33,7 @@ public class AadGroupController : ControllerBase
     /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
     /// <returns></returns>
     [HttpGet("{teamName}/groups-config", Name = "GetGroupsConfigForTeam")]
+    [Authorize(AuthenticationSchemes = "")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> GetGroupsConfigAsync(string teamName)
     {
@@ -50,6 +52,7 @@ public class AadGroupController : ControllerBase
     /// <param name="createGroupsConfigRequest">Required: Collection of the users to set up as members in the Admin Group</param>
     /// <returns></returns>
     [HttpPost("{teamName}/groups-config", Name = "CreateGroupsConfigForTeam")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> CreateGroupsConfigAsync(string teamName, [FromBody] CreateGroupsConfigRequest createGroupsConfigRequest)
@@ -82,6 +85,7 @@ public class AadGroupController : ControllerBase
     }
 
     [HttpPatch("{teamName}/members", Name = "SetMembersForTeam")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> SetGroupMembersAsync(string teamName, [FromBody] SetGroupMembersRequest setGroupMembersRequest)
@@ -119,6 +123,7 @@ public class AadGroupController : ControllerBase
     /// <param name="groupType">Optional: Type of groups to sync i.e. UserGroup/AccessGroup/OpenVpnGroup</param>
     /// <returns></returns>
     [HttpPut("{teamName}/sync", Name = "SyncGroupsForTeam")]
+    [Authorize(AuthenticationSchemes = "")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> SyncGroupsAsync(string teamName, [FromQuery] string? groupType = null)

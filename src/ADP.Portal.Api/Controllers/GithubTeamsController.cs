@@ -9,7 +9,6 @@ namespace ADP.Portal.Api.Controllers;
 
 [Route("api/github/teams")]
 [ApiVersion("1.0")]
-[Authorize(AuthenticationSchemes = "backstage")]
 [ApiController]
 public class GithubTeamsController : ControllerBase
 {
@@ -23,6 +22,7 @@ public class GithubTeamsController : ControllerBase
     }
 
     [HttpPut("{teamId?}")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(GithubTeamDetails))]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SyncTeam([FromRoute] int? teamId, [FromBody] SyncTeamRequest request, CancellationToken cancellationToken = default)
