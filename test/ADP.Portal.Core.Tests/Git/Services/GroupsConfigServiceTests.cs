@@ -102,7 +102,7 @@ public class GroupsConfigServiceTests
 
         // Assert
         Assert.That(result.Errors, Is.Empty);
-        await groupServiceMock.Received().RemoveGroupMemberAsync(Arg.Is(groupId), Arg.Is(exstingMemberToberemoved[0].Id));
+        await groupServiceMock.DidNotReceive().RemoveGroupMemberAsync(Arg.Is(groupId), Arg.Is(exstingMemberToberemoved[0].Id)); //Member should not be removed
         await groupServiceMock.Received().AddGroupMemberAsync(Arg.Is(groupId), Arg.Is(memberId));
     }
 
@@ -241,6 +241,27 @@ public class GroupsConfigServiceTests
 
         // Assert
         Assert.That(result.Errors, Is.Not.Empty);
+    }
+
+    [Test]
+    public async Task SyncGroupsAsync_ErrorOccursWhileCreating_OpenVpnGroup_ReturnsErrorResult()
+    {
+        // Arrange
+        var groupsRoot = new GroupsRoot
+        {
+            Groups = [
+               new() { DisplayName = "group1" , Type= GroupType.OpenVpnGroup }
+           ]
+        };
+
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
+        groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns("");
+
+        // Act
+        var vpnGroupSyncResult = await gitOpsConfigService.SyncGroupsAsync("tenantName", "teamName", "ownerId", GroupType.OpenVpnGroup);
+
+        // Assert
+        Assert.That(vpnGroupSyncResult.Errors, Is.Not.Empty);
     }
 
 

@@ -1,8 +1,10 @@
 ﻿#This file contains group memberships(Access group names) for 'TechUser', 'NonTechUser', and 'Admin' UserGroups in DefraDev tenant
 techUser: 
-  - AAG-Azure-ADP-GlobalRead 
+  - AAG-Azure-ADP-GlobalRead
   - AAG-Azure-ADP-SND3-AKS-Cluster-Custom-Resources-Reader
+  - AAG-Azure-ADP-{teamName}-SND3-PostgresDB_Writer
 nontechUser: 
   - AAG-Azure-ADP-GlobalRead
 admin:
   - AAG-Azure-ADP-SND3-AKS-Cluster-Custom-Resources-Reader
+  - AAG-Azure-ADP-{teamName}-SND3-PostgresDB_Writer

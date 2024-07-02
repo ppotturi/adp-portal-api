@@ -88,7 +88,10 @@ public partial class GroupsConfigService : IGroupsConfigService
         using var streamReader = new StreamReader(stream, Encoding.UTF8);
         var data = streamReader.ReadToEnd();
         var userGroupMemberships = deserializer.Deserialize<UserGroupMembership>(data);
-
+        var allUsers = new List<string>();
+        allUsers.AddRange(adminGroupMembers);
+        allUsers.AddRange(techUserGroupMembers);
+        allUsers.AddRange(nonTechUserGroupMembers);
         var environments = new List<string>();
         switch (tenantName)
         {
@@ -120,6 +123,12 @@ public partial class GroupsConfigService : IGroupsConfigService
                     Type = GroupType.UserGroup,
                     GroupMemberships = BuildGroupMembership(teamName, userGroupMemberships.Admin),
                     Members = adminGroupMembers.ToList()
+                },
+                new Group {
+                    DisplayName = $"AAG-APP-Defra-Azure-OpenVPN-ADP-Users",
+                    Type = GroupType.OpenVpnGroup,                    
+                    GroupMemberships = [],
+                    Members = allUsers.Select(x => x.ToLower()).Distinct().ToList()
                 }
             ]
         };
@@ -173,8 +182,12 @@ public partial class GroupsConfigService : IGroupsConfigService
         await Task.WhenAll(accessGroupstasks);
 
         //UserGroups and Others
-        var tasks = groups.Where(x => x.Type != GroupType.AccessGroup).Select(group => ProcessGroupAsync(group, ownerId, result));
-        await Task.WhenAll(tasks);
+        var UserGroupTasks = groups.Where(x => x.Type == GroupType.UserGroup).Select(group => ProcessGroupAsync(group, ownerId, result));
+        await Task.WhenAll(UserGroupTasks);
+
+        //UserGroups and Others
+        var OpenVpnGroupTasks = groups.Where(x => x.Type == GroupType.OpenVpnGroup).Select(group => ProcessGroupAsync(group, ownerId, result));
+        await Task.WhenAll(OpenVpnGroupTasks);
 
         return result;
     }
@@ -260,7 +273,7 @@ public partial class GroupsConfigService : IGroupsConfigService
 
         foreach (var member in existingMembers)
         {
-            if (!group.Members.Contains(member.UserPrincipalName, StringComparer.OrdinalIgnoreCase))
+            if (!group.Members.Contains(member.UserPrincipalName, StringComparer.OrdinalIgnoreCase) && group.Type != GroupType.OpenVpnGroup)
             {
                 await groupService.RemoveGroupMemberAsync(groupId, member.Id);
             }
