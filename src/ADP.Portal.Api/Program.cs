@@ -71,6 +71,7 @@ public static class Program
         builder.Services.Configure<Entities.GitRepo>(Entities.Constants.GitRepo.TEAM_REPO_CONFIG, builder.Configuration.GetSection(Entities.Constants.GitRepo.TEAM_REPO_CONFIG));
         builder.Services.Configure<Entities.GitRepo>(Entities.Constants.GitRepo.TEAM_FLUX_SERVICES_CONFIG, builder.Configuration.GetSection(Entities.Constants.GitRepo.TEAM_FLUX_SERVICES_CONFIG));
         builder.Services.Configure<Entities.GitRepo>(Entities.Constants.GitRepo.TEAM_FLUX_TEMPLATES_CONFIG, builder.Configuration.GetSection(Entities.Constants.GitRepo.TEAM_FLUX_TEMPLATES_CONFIG));
+        builder.Services.Configure<GroupsConfigServiceOptions>(builder.Configuration.GetSection("AdGroups"));
         builder.Services.AddScoped<IAzureCredential>(provider =>
         {
             return new DefaultAzureCredentialWrapper();

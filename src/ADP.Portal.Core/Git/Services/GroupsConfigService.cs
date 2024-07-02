@@ -13,20 +13,26 @@ using YamlDotNet.Serialization;
 
 namespace ADP.Portal.Core.Git.Services;
 
+public class GroupsConfigServiceOptions
+{
+    public ICollection<string> PostgresDBMembers { get; set; } = [];
+}
+
 public partial class GroupsConfigService : IGroupsConfigService
 {
     private readonly IGitHubRepository gitHubRepository;
+    private readonly IOptionsSnapshot<GroupsConfigServiceOptions> configOptions;
     private readonly GitRepo teamGitRepo;
     private readonly ILogger<GroupsConfigService> logger;
     private readonly IGroupService groupService;
     private readonly ISerializer serializer;
     private readonly IDeserializer deserializer;
-    private const string PLATFORM_ENGINEERS_GROUP = "AG-Azure-CDO-ADP-PlatformEngineers";
 
-    public GroupsConfigService(IGitHubRepository gitHubRepository, IOptionsSnapshot<GitRepo> gitRepoOptions,
+    public GroupsConfigService(IGitHubRepository gitHubRepository, IOptionsSnapshot<GitRepo> gitRepoOptions, IOptionsSnapshot<GroupsConfigServiceOptions> configOptions,
         ILogger<GroupsConfigService> logger, IGroupService groupService, ISerializer serializer, IDeserializer deserializer)
     {
         this.gitHubRepository = gitHubRepository;
+        this.configOptions = configOptions;
         this.teamGitRepo = gitRepoOptions.Get(Constants.GitRepo.TEAM_REPO_CONFIG);
         this.logger = logger;
         this.groupService = groupService;
@@ -77,9 +83,8 @@ public partial class GroupsConfigService : IGroupsConfigService
         }
         return result;
     }
-    
 
-    private static GroupsRoot BuildTeamGroups(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers, IDeserializer deserializer)
+    private GroupsRoot BuildTeamGroups(string tenantName, string teamName, IEnumerable<string> adminGroupMembers, IEnumerable<string> techUserGroupMembers, IEnumerable<string> nonTechUserGroupMembers, IDeserializer deserializer)
     {
         var assemblyName = Assembly.GetExecutingAssembly().GetName();
         using var stream = Assembly
@@ -98,6 +103,7 @@ public partial class GroupsConfigService : IGroupsConfigService
             case "defradev":
                 environments = ["snd1", "snd2", "snd3"];
                 break;
+
             case "defra":
                 environments = ["snd4", "dev1", "tst1", "pre1", "prd1"];
                 break;
@@ -126,7 +132,7 @@ public partial class GroupsConfigService : IGroupsConfigService
                 },
                 new Group {
                     DisplayName = $"AAG-APP-Defra-Azure-OpenVPN-ADP-Users",
-                    Type = GroupType.OpenVpnGroup,                    
+                    Type = GroupType.OpenVpnGroup,
                     GroupMemberships = [],
                     Members = allUsers.Select(x => x.ToLower()).Distinct().ToList()
                 }
@@ -140,20 +146,19 @@ public partial class GroupsConfigService : IGroupsConfigService
                 DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-{item.ToUpper()}-PostgresDB_Reader",
                 Description = "AD group to grant reader access to postgres DB",
                 Type = GroupType.AccessGroup,
-                Members = [PLATFORM_ENGINEERS_GROUP]
+                Members = configOptions.Value.PostgresDBMembers.ToList()
             });
             root.Groups.Add(new Group
             {
                 DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-{item.ToUpper()}-PostgresDB_Writer",
                 Description = "AD group to grant writer access to postgres DB",
                 Type = GroupType.AccessGroup,
-                Members = [PLATFORM_ENGINEERS_GROUP]
+                Members = configOptions.Value.PostgresDBMembers.ToList()
             });
         });
 
         return root;
     }
-
 
     private static List<string> BuildGroupMembership(string teamName, List<String> userGroupMemberships)
     {
@@ -301,7 +306,6 @@ public partial class GroupsConfigService : IGroupsConfigService
 
     private async Task SyncGroupTypeMembersAsync(GroupSyncResult result, Group group, string groupId, bool isNewGroup)
     {
-
         var existingMembers = isNewGroup ? [] : await groupService.GetGroupTypeGroupMembersAsync(groupId);
 
         foreach (var member in existingMembers)
@@ -334,7 +338,6 @@ public partial class GroupsConfigService : IGroupsConfigService
 
     private async Task SyncMembershipsAsync(GroupSyncResult result, Group group, string groupId, bool IsNewGroup)
     {
-
         var existingMemberShips = IsNewGroup ? [] : await groupService.GetGroupMemberShipsAsync(groupId);
 
         foreach (var memberShip in existingMemberShips)

@@ -1,5 +1,4 @@
-﻿using System.Net;
-using ADP.Portal.Core.Azure.Entities;
+﻿using ADP.Portal.Core.Azure.Entities;
 using ADP.Portal.Core.Azure.Services;
 using ADP.Portal.Core.Git.Entities;
 using ADP.Portal.Core.Git.Infrastructure;
@@ -7,13 +6,13 @@ using ADP.Portal.Core.Git.Services;
 using AutoFixture;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.TeamFoundation.DistributedTask.WebApi;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using NSubstitute.ReceivedExtensions;
 using NSubstitute.ReturnsExtensions;
 using NUnit.Framework;
 using Octokit;
+using System.Net;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -27,6 +26,7 @@ public class GroupsConfigServiceTests
     private ILogger<GroupsConfigService> loggerMock = null!;
     private IGroupService groupServiceMock = null!;
     private IOptionsSnapshot<GitRepo> gitRepoOptionsMock = null!;
+    private GroupsConfigServiceOptions configOptions = new();
     private Fixture fixture = null!;
     private IDeserializer deserializer = null!;
 
@@ -37,9 +37,12 @@ public class GroupsConfigServiceTests
         loggerMock = Substitute.For<ILogger<GroupsConfigService>>();
         groupServiceMock = Substitute.For<IGroupService>();
         gitRepoOptionsMock = Substitute.For<IOptionsSnapshot<GitRepo>>();
+        var configOptionsMock = Substitute.For<IOptionsSnapshot<GroupsConfigServiceOptions>>();
         deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
-        gitOpsConfigService = new GroupsConfigService(gitOpsConfigRepositoryMock, gitRepoOptionsMock, loggerMock, groupServiceMock, Substitute.For<ISerializer>(), deserializer);
+        gitOpsConfigService = new GroupsConfigService(gitOpsConfigRepositoryMock, gitRepoOptionsMock, configOptionsMock, loggerMock, groupServiceMock, Substitute.For<ISerializer>(), deserializer);
         fixture = new Fixture();
+
+        configOptionsMock.Value.Returns(configOptions);
     }
 
     [Test]
@@ -47,7 +50,7 @@ public class GroupsConfigServiceTests
     {
         // Arrange
         GroupsRoot? groupsRoot = null;
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
 
         // Act
         var result = await gitOpsConfigService.SyncGroupsAsync("tenantName", "teamName", "ownerId", GroupType.AccessGroup);
@@ -64,7 +67,7 @@ public class GroupsConfigServiceTests
     public async Task SyncGroupsAsync_GroupsConfigIs_NotFound_ReturnsErrorResult()
     {
         // Arrange
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>())
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>())
             .Throws(new NotFoundException("Not found", HttpStatusCode.NotFound));
 
         // Act
@@ -92,7 +95,7 @@ public class GroupsConfigServiceTests
         var groupId = "openVpngroupId";
         var memberId = "memberId";
         var exstingMemberToberemoved = fixture.Build<AadGroupMember>().CreateMany(1).ToList();
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns(groupId);
         groupServiceMock.GetUserTypeGroupMembersAsync(Arg.Any<string>()).Returns(exstingMemberToberemoved);
         groupServiceMock.GetUserIdAsync(Arg.Is(groupsRoot.Groups[0].Members[0].ToString())).Returns(memberId);
@@ -119,10 +122,9 @@ public class GroupsConfigServiceTests
 
         var groupId = "openNoMenbersVpnGroupId";
         var memberId = "memberId";
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns(groupId);
         groupServiceMock.GetUserTypeGroupMembersAsync(Arg.Any<string>()).Returns([]);
-
 
         // Act
         var result = await gitOpsConfigService.SyncGroupsAsync("tenantName", "teamName", "ownerId", GroupType.OpenVpnGroup);
@@ -132,7 +134,6 @@ public class GroupsConfigServiceTests
         await groupServiceMock.DidNotReceive().RemoveGroupMemberAsync(Arg.Is(groupId), Arg.Any<string>());
         await groupServiceMock.DidNotReceive().AddGroupMemberAsync(Arg.Is(groupId), Arg.Is(memberId));
     }
-
 
     [Test]
     public async Task SyncGroupsAsync_Returns_Success_WhenUserGroup_Members_Synced()
@@ -148,7 +149,7 @@ public class GroupsConfigServiceTests
         var groupId = "usergroupId";
         var memberId = "memberId";
         var exstingMemberToberemoved = fixture.Build<AadGroupMember>().CreateMany(1).ToList();
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns(groupId);
         groupServiceMock.GetUserTypeGroupMembersAsync(Arg.Any<string>()).Returns(exstingMemberToberemoved);
         groupServiceMock.GetUserIdAsync(Arg.Is(groupsRoot.Groups[0].Members[0].ToString())).Returns(memberId);
@@ -162,7 +163,6 @@ public class GroupsConfigServiceTests
         await groupServiceMock.Received().RemoveGroupMemberAsync(Arg.Is(groupId), Arg.Is(exstingMemberToberemoved[0].Id));
         await groupServiceMock.Received().AddGroupMemberAsync(Arg.Is(groupId), Arg.Is(memberId));
     }
-
 
     [Test]
     public async Task SyncGroupsAsync_Returns_Success_WhenUserGroup_Memberships_Synced()
@@ -179,7 +179,7 @@ public class GroupsConfigServiceTests
         var groupId = "userGroupMembershipsId";
         var exstingMembershipsToberemoved = fixture.Build<AadGroup>().CreateMany(1).ToList();
 
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns(groupId);
         groupServiceMock.GetUserTypeGroupMembersAsync(Arg.Any<string>()).Returns([]);
         groupServiceMock.GetGroupMemberShipsAsync(Arg.Is(groupId)).Returns(exstingMembershipsToberemoved);
@@ -208,10 +208,9 @@ public class GroupsConfigServiceTests
         var groupId = "accessGroupMemberId";
         var exstingMembersToberemoved = fixture.Build<AadGroupMember>().CreateMany(1).ToList();
 
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns(groupId);
         groupServiceMock.GetGroupTypeGroupMembersAsync(Arg.Any<string>()).Returns(exstingMembersToberemoved);
-
 
         // Act
         var result = await gitOpsConfigService.SyncGroupsAsync("tenantName", "teamName", "ownerId", GroupType.AccessGroup);
@@ -233,7 +232,7 @@ public class GroupsConfigServiceTests
            ]
         };
 
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns("");
 
         // Act
@@ -264,8 +263,6 @@ public class GroupsConfigServiceTests
         Assert.That(vpnGroupSyncResult.Errors, Is.Not.Empty);
     }
 
-
-
     [Test]
     public async Task SyncGroupsAsync_ErrorOccursWhileAdding_UserTypeMembers_ReturnsErrorResult()
     {
@@ -278,7 +275,7 @@ public class GroupsConfigServiceTests
            ]
         };
         var groupId = "groupId";
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns(groupId);
         groupServiceMock.GetUserTypeGroupMembersAsync(Arg.Any<string>()).Returns([]);
         groupServiceMock.GetUserIdAsync(Arg.Any<string>()).Returns((string?)null);
@@ -292,7 +289,6 @@ public class GroupsConfigServiceTests
         Assert.That(result.Errors[0], Is.EqualTo($"User '{groupsRoot.Groups[0].Members[0]}' not found for the group:{groupsRoot.Groups[0].DisplayName}."));
     }
 
-
     [Test]
     public async Task SyncGroupsAsync_ErrorOccursWhileCreating_AccessGroup_ReturnsErrorResult()
     {
@@ -304,7 +300,7 @@ public class GroupsConfigServiceTests
            ]
         };
 
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Any<string>()).Returns("");
         // Act
         var result = await gitOpsConfigService.SyncGroupsAsync("tenantName", "teamName", "ownerId", GroupType.AccessGroup);
@@ -326,7 +322,7 @@ public class GroupsConfigServiceTests
 
         var groupId = "groupId";
 
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
         groupServiceMock.GetGroupIdAsync(Arg.Is(groupsRoot.Groups[0].DisplayName)).Returns(groupId);
         groupServiceMock.GetGroupTypeGroupMembersAsync(Arg.Any<string>()).Returns([]);
         groupServiceMock.GetUserIdAsync(Arg.Any<string>()).Returns((string?)null);
@@ -350,7 +346,7 @@ public class GroupsConfigServiceTests
             Groups = [new Group { DisplayName = "group1", Type = GroupType.AccessGroup, Members = ["test-group"] }]
         };
 
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(groupsRoot);
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(groupsRoot);
 
         // Act
         var response = await gitOpsConfigService.GetGroupsConfigAsync("tenantName", "teamName");
@@ -364,7 +360,7 @@ public class GroupsConfigServiceTests
     public async Task GetGroupsConfigAsync_NotFound_Returns_NoGroups()
     {
         // Arrange
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(new GroupsRoot() { Groups = [] });
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(new GroupsRoot() { Groups = [] });
 
         // Act
         var response = await gitOpsConfigService.GetGroupsConfigAsync("tenantName", "teamName");
@@ -409,7 +405,7 @@ public class GroupsConfigServiceTests
     {
         // Arrange
         var groups = fixture.Build<Group>().CreateMany(3);
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(new GroupsRoot { Groups = groups.ToList() });
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(new GroupsRoot { Groups = groups.ToList() });
         gitOpsConfigRepositoryMock.UpdateFileAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>()).Returns("response");
         var members = fixture.Build<string>().CreateMany(2);
 
@@ -425,7 +421,7 @@ public class GroupsConfigServiceTests
     public async Task SetGroupMembersAsync_NoExistingGroups_ReturnsError()
     {
         // Arrange
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).ReturnsNull();
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).ReturnsNull();
         var members = fixture.Build<string>().CreateMany(2);
 
         // Act
@@ -441,7 +437,7 @@ public class GroupsConfigServiceTests
     {
         // Arrange
         var groups = fixture.Build<Group>().CreateMany(3);
-        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(),Arg.Any<string>()).Returns(new GroupsRoot { Groups = groups.ToList() });
+        gitOpsConfigRepositoryMock.GetFileContentAsync<GroupsRoot>(Arg.Any<GitRepo>(), Arg.Any<string>()).Returns(new GroupsRoot { Groups = groups.ToList() });
         gitOpsConfigRepositoryMock.UpdateFileAsync(Arg.Any<GitRepo>(), Arg.Any<string>(), Arg.Any<string>()).Returns(string.Empty);
         var members = fixture.Build<string>().CreateMany(2);
 

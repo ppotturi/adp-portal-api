@@ -49,6 +49,9 @@ properties:
       - name: api-auth-backend-app-reg-client-id
         keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/API-AUTH-BACKEND-APP-REG-CLIENT-ID
         identity: {{userAssignedIdentity}}
+      - name: ad-groups-platform-engineers
+        keyVaultUrl: https://{{appKeyVaultName}}.vault.azure.net/secrets/AD-GROUPS-PLATFORM-ENGINEERS
+        identity: {{userAssignedIdentity}}
   template:
     containers:
       - image: {{acrName}}.azurecr.io/image/{{imageRepoName}}:{{appVersion}}
@@ -126,6 +129,8 @@ properties:
             value: {{tenantid}}
           - name: Authentication__pipeline__ClientId
             secretRef: api-auth-backend-app-reg-client-id
+          - name: AdGroups__PostgresDBMembers__0
+            secretRef: ad-groups-platform-engineers
         resources:
           cpu: 0.5
           memory: 1Gi
