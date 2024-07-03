@@ -51,20 +51,29 @@ namespace ADP.Portal.Core.Ado.Infrastructure
                     var isAlreadyShared = endpoint.ServiceEndpointProjectReferences.Any(r => r.ProjectReference.Id == onBoardProject.Id);
                     if (!isAlreadyShared)
                     {
-                        logger.LogInformation("Sharing service endpoint {ServiceConnection} with project {Name}", serviceConnection, onBoardProject.Name);
+                        var existingConnections  = await serviceEndpointClient.GetServiceEndpointsAsync(onBoardProject.Name);
+                        var existingConnection = existingConnections?.Find(e => e.Name.Equals(serviceConnection, StringComparison.OrdinalIgnoreCase));
+                        if (existingConnection == null)
+                        {
+                            logger.LogInformation("Sharing service endpoint {ServiceConnection} with project {Name}", serviceConnection, onBoardProject.Name);
 
-                        var serviceEndpointProjectReferences = new List<ServiceEndpointProjectReference>() {
-                            new() { Name = serviceConnection,ProjectReference = onBoardProject.Adapt<ProjectReference>() }
-                        };
-
-                        await serviceEndpointClient.ShareServiceEndpointAsync(endpoint.Id, serviceEndpointProjectReferences);
+                            var serviceEndpointProjectReferences = new List<ServiceEndpointProjectReference>() {
+                                new() { Name = serviceConnection,ProjectReference = onBoardProject.Adapt<ProjectReference>() }
+                            };
+                            await serviceEndpointClient.ShareServiceEndpointAsync(endpoint.Id, serviceEndpointProjectReferences);
+                            serviceEndpointIds.Add(endpoint.Id);
+                        }
+                        else
+                        {
+                            logger.LogInformation("Service endpoint {ServiceConnection} already exists in the {Name} project", serviceConnection, onBoardProject.Name);
+                            serviceEndpointIds.Add(existingConnection.Id);
+                        }
                     }
                     else
                     {
                         logger.LogInformation("Service endpoint {ServiceConnection} already shared with project {Name}", serviceConnection, onBoardProject.Name);
+                        serviceEndpointIds.Add(endpoint.Id);
                     }
-
-                    serviceEndpointIds.Add(endpoint.Id);
                 }
                 else
                 {

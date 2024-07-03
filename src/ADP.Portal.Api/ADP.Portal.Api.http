@@ -3,6 +3,18 @@
 # ADO Controller
 GET {{ADP.Portal.Api_HostAddress}}/api/adoproject/string
 
+
+###
+PATCH https://localhost:7280/api/defra-ncea/onboard
+Content-Type: application/json
+
+{
+  "Environments": ["SND3"],
+  "ServiceConnections": ["DEFRA"],
+  "AgentPools": ["DEFRA-ADP-SND3-ubuntu2204"]
+}
+
+
 # AD Group Controller
 ###
 GET {{ADP.Portal.Api_HostAddress}}/api/aadgroup/get/ffc-demo

@@ -114,7 +114,7 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
                 .OmitAutoProperties()
                 .CreateMany(1).ToList();
 
-            serviceEndpointClientMock.GetServiceEndpointsAsync(Arg.Any<string>(), null, null, null, null, null, null, null, Arg.Any<CancellationToken>())
+            serviceEndpointClientMock.GetServiceEndpointsAsync("TestProject", null, null, null, null, null, null, null, Arg.Any<CancellationToken>())
                 .Returns(serviceEndpoint);
 
             serviceEndpointClientMock.ShareServiceEndpointAsync(Arg.Any<Guid>(), Arg.Any<List<ServiceEndpointProjectReference>>(), null, Arg.Any<CancellationToken>())
@@ -252,6 +252,42 @@ namespace ADP.Portal.Core.Tests.Ado.Infrastructure
             // Assert - ...the service connection IDs required for onboarding should be returned.
             var expectedEndpointIds = serviceEndpoints.Where(e => serviceConnections.Exists(c => c == e.Name)).Select(e => e.Id);
             Assert.That(endpontIds, Is.EquivalentTo(expectedEndpointIds));
+        }
+
+        [Test]
+        public async Task ShareServiceEndpointsAsync_LogsWarningMessage_WhenEndpointAlreadyExists()
+        {
+            // Arrange
+            var adpProjectName = "TestProject";
+            var serviceConnections = new List<string> { "ExistingServiceConnection" };
+            var onBoardProject = new TeamProjectReference { Id = Guid.NewGuid(), Name = "Dummy" };
+            var serviceEndpoint = new ServiceEndpoint
+            {
+                Name = "ExistingServiceConnection",
+                Id = Guid.NewGuid(),
+                ServiceEndpointProjectReferences = []
+            };
+            serviceEndpointClientMock.GetServiceEndpointsAsync(Arg.Any<string>(), null, null, null, null, null, null, null, Arg.Any<CancellationToken>())
+                .Returns([serviceEndpoint]);
+
+            vssConnectionMock.GetClientAsync<ServiceEndpointHttpClient>(Arg.Any<CancellationToken>())
+               .Returns(serviceEndpointClientMock);
+
+            var loggerMock = Substitute.For<ILogger<AdoService>>();
+            var adoService = new AdoService(loggerMock, Task.FromResult(vssConnectionMock), adoRestApiServiceMock);
+
+            // Act
+            var endpontIds = await adoService.ShareServiceEndpointsAsync(adpProjectName, serviceConnections, onBoardProject);
+
+            // Assert
+            loggerMock.Received(1).Log(
+                Arg.Is<LogLevel>(l => l == LogLevel.Information),
+                Arg.Any<EventId>(),
+                Arg.Is<object>(v => v.ToString() == $"Service endpoint {serviceConnections[0]} already exists in the {onBoardProject.Name} project"),
+                Arg.Any<Exception>(),
+                Arg.Any<Func<object, Exception?, string>>());
+
+            Assert.That(endpontIds.First(), Is.EqualTo(serviceEndpoint.Id));
         }
 
         [Test]

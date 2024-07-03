@@ -17,13 +17,13 @@ namespace ADP.Portal.Api.Controllers;
 public class AdoProjectController : ControllerBase
 {
     private readonly ILogger<AdoProjectController> logger;
-    private readonly IOptions<AdpAdoProjectConfig> adpAdpProjectConfig;
+    private readonly IOptions<AdpAdoProjectConfig> adpAdoProjectConfig;
     private readonly IAdoProjectService adoProjectService;
 
-    public AdoProjectController(ILogger<AdoProjectController> logger, IOptions<AdpAdoProjectConfig> adpAdpProjectConfig, IAdoProjectService adoProjectService)
+    public AdoProjectController(ILogger<AdoProjectController> logger, IOptions<AdpAdoProjectConfig> adpAdoProjectConfig, IAdoProjectService adoProjectService)
     {
         this.logger = logger;
-        this.adpAdpProjectConfig = adpAdpProjectConfig;
+        this.adpAdoProjectConfig = adpAdoProjectConfig;
         this.adoProjectService = adoProjectService;
     }
 
@@ -69,7 +69,7 @@ public class AdoProjectController : ControllerBase
         var adoProject = onBoardRequest.Adapt<AdoProject>();
         adoProject.ProjectReference = project;
 
-        var onboardResult = await adoProjectService.OnBoardAsync(adpAdpProjectConfig.Value.Name, adoProject);
+        var onboardResult = await adoProjectService.OnBoardAsync(adpAdoProjectConfig.Value.Name, adoProject);
 
         return Ok(onboardResult);
     }
