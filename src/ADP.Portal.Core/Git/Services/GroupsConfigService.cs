@@ -157,6 +157,20 @@ public partial class GroupsConfigService : IGroupsConfigService
             });
         });
 
+        root.Groups.Add(new Group
+        {
+            DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-Resources-Contributor",
+            Description = "AD group to grant contributor access to team resources. For e.g. Contributor to Team resource group, DataOwner to team queues and topic.",
+            Type = GroupType.AccessGroup
+        });
+
+        root.Groups.Add(new Group
+        {
+            DisplayName = $"AAG-Azure-ADP-{teamName.ToUpper()}-Resources-Reader",
+            Description = "AD group to grant reader access to team resources.",
+            Type = GroupType.AccessGroup
+        });
+
         return root;
     }
 

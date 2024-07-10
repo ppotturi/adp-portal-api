@@ -5,6 +5,7 @@ techUser:
   - AAG-Azure-ADP-{teamName}-SND4-PostgresDB_Writer
   - AAG-Azure-ADP-{teamName}-DEV1-PostgresDB_Reader
   - AAG-Azure-ADP-{teamName}-TST1-PostgresDB_Reader
+  - AAG-Azure-ADP-{teamName}-Resources-Contributor
 nontechUser:
   - AAG-Azure-ADP-GlobalRead
 admin:
@@ -12,3 +13,4 @@ admin:
   - AAG-Azure-ADP-{teamName}-SND4-PostgresDB_Writer
   - AAG-Azure-ADP-{teamName}-DEV1-PostgresDB_Reader
   - AAG-Azure-ADP-{teamName}-TST1-PostgresDB_Reader
+  - AAG-Azure-ADP-{teamName}-Resources-Contributor
