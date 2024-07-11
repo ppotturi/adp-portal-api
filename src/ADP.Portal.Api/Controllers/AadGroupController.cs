@@ -33,7 +33,7 @@ public class AadGroupController : ControllerBase
     /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
     /// <returns></returns>
     [HttpGet("{teamName}/groups-config", Name = "GetGroupsConfigForTeam")]
-    [Authorize(AuthenticationSchemes = "")]
+    [Authorize(AuthenticationSchemes = "backstage")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult> GetGroupsConfigAsync(string teamName)
     {
