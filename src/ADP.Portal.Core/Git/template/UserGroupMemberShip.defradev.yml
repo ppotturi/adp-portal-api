@@ -4,9 +4,11 @@ techUser:
   - AAG-Azure-ADP-SND3-AKS-Cluster-Custom-Resources-Reader
   - AAG-Azure-ADP-{teamName}-SND3-PostgresDB_Writer
   - AAG-Azure-ADP-{teamName}-Resources-Contributor
+  - AAG-Azure-ADP-{teamName}-Resources-Reader
 nontechUser: 
   - AAG-Azure-ADP-GlobalRead
 admin:
   - AAG-Azure-ADP-SND3-AKS-Cluster-Custom-Resources-Reader
   - AAG-Azure-ADP-{teamName}-SND3-PostgresDB_Writer
   - AAG-Azure-ADP-{teamName}-Resources-Contributor
+  - AAG-Azure-ADP-{teamName}-Resources-Reader
