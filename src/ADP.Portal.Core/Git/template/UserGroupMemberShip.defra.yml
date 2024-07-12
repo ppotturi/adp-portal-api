@@ -9,6 +9,8 @@ techUser:
   - AAG-Azure-ADP-{teamName}-TST1-PostgresDB_Reader
   - AAG-Azure-ADP-{teamName}-Resources-Contributor
   - AAG-Azure-ADP-{teamName}-Resources-Reader
+  - AAG-Azure-ADP-Resources-DataReadWriter
+  - AAG-Azure-ADP-Resources-DataReader
 nontechUser:
   - AAG-Azure-ADP-GlobalRead
 admin:
@@ -20,3 +22,5 @@ admin:
   - AAG-Azure-ADP-{teamName}-TST1-PostgresDB_Reader
   - AAG-Azure-ADP-{teamName}-Resources-Contributor
   - AAG-Azure-ADP-{teamName}-Resources-Reader
+  - AAG-Azure-ADP-Resources-DataReadWriter
+  - AAG-Azure-ADP-Resources-DataReader
