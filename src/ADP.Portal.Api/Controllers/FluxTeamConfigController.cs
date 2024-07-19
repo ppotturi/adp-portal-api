@@ -193,6 +193,7 @@ public class FluxTeamConfigController : ControllerBase
     /// </summary>
     /// <param name="teamName">Required: Name of the Team, like ffc-demo</param>
     /// <param name="serviceName">Optional: Generate manifests only for this service if specified. Default is All services</param>
+    /// <param name="environment">Optional: Generate manifests only for this environment if specified. Default is snd3/snd4 environment based on the TenantName</param>
     /// <returns></returns>
     [HttpPost("{teamName}/generate", Name = "GenerateFluxConfigForTeam")]
     [Authorize(AuthenticationSchemes = "pipeline,backstage")]
@@ -203,6 +204,9 @@ public class FluxTeamConfigController : ControllerBase
         var tenantName = azureAdConfig.Value.TenantName;
 
         logger.LogInformation("Generating Flux Manifests for the Team:{TeamName}", teamName);
+
+        environment ??= tenantName == "defra" ? "snd4" : "snd3";
+
         var result = await fluxTeamConfigService.GenerateManifestAsync(tenantName, teamName, serviceName, environment);
 
         if (!result.IsConfigExists)
