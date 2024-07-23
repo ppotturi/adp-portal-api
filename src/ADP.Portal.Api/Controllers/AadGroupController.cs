@@ -128,7 +128,7 @@ public class AadGroupController : ControllerBase
     /// <param name="groupType">Optional: Type of groups to sync i.e. UserGroup/AccessGroup/OpenVpnGroup</param>
     /// <returns></returns>
     [HttpPut("{teamName}/sync", Name = "SyncGroupsForTeam")]
-    [Authorize(AuthenticationSchemes = "")]
+    [Authorize(AuthenticationSchemes = "pipeline")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult> SyncGroupsAsync(string teamName, [FromQuery] string? groupType = null)
